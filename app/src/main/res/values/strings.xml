@@ -1,0 +1,28 @@
+<resources>
+    <string name="app_name">Attendance</string>
+    <string name="year">Batch: %d</string>
+    <!-- Strings related to login -->
+    <string name="prompt_email">Email</string>
+    <string name="prompt_password">Password</string>
+    <string name="log_in">Log In</string>
+    <string name="confirm_dialog">Total Students: %d\nPresent Students: %d\nAbsent Students: %d</string>
+    <string name="attendance_count">Total Attendace: %d</string>
+    <string name="login_api_url">https://bpit-att.herokuapp.com/api/auth/user/login/</string>
+    <string name="logout_api_url">https://bpit-att.herokuapp.com/api/auth/logout/</string>
+    <string name="profile_api_url">https://bpit-att.herokuapp.com/api/faculty/profile/</string>
+    <string name="subject_api_url">https://bpit-att.herokuapp.com/api/faculty/subjects/</string>
+    <string name="api_host">bpit-att.herokuapp.com</string>
+    <string name="submit_attendance_api_url">https://bpit-att.herokuapp.com/api/student/attendance/submit/</string>
+    <string name="nav_open">Open</string>
+    <string name="nav_close">Close</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="bpitLogo">bpitlogo</string>
+    <string name="profile_fragment_title">Faculty Profile</string>
+    <string name="name">Name</string>
+    <string name="mobile">Mobile</string>
+    <string name="email">Email</string>
+    <string name="designation">Designation</string>
+    <string name="date_of_joining">Date of Joining</string>
+    <string name="logout">Logout</string>
+</resources>

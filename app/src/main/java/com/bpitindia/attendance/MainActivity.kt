@@ -1,0 +1,188 @@
+package com.bpitindia.attendance
+
+import android.content.Context
+import android.content.SharedPreferences
+import android.os.Bundle
+import android.util.Log
+import android.view.MenuItem
+import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.app.ActionBarDrawerToggle
+import androidx.appcompat.app.AppCompatActivity
+import androidx.drawerlayout.widget.DrawerLayout
+import androidx.lifecycle.lifecycleScope
+import androidx.navigation.Navigation
+import com.google.android.material.navigation.NavigationView
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import okhttp3.*
+import org.json.JSONObject
+import java.io.IOException
+
+private const val SHARED_PREFERENCES_NAME = "shared_pref"
+private const val SHARED_PREFERENCES_TOKEN_KEY = "token"
+
+class MainActivity : AppCompatActivity(), MyDrawerLocker {
+    private lateinit var drawerLayout: DrawerLayout
+    lateinit var navigationView: NavigationView
+    private lateinit var actionBarDrawerToggle: ActionBarDrawerToggle
+    private var sharedPreferences: SharedPreferences? = null
+    var profileJSONString: String? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+        drawerLayout = findViewById(R.id.my_drawer_layout)
+        navigationView = findViewById(R.id.navigation_view)
+        actionBarDrawerToggle =
+            ActionBarDrawerToggle(this, drawerLayout, R.string.nav_open, R.string.nav_close)
+        drawerLayout.addDrawerListener(actionBarDrawerToggle)
+        actionBarDrawerToggle.syncState()
+
+        // to make the Navigation drawer icon always appear on the action bar
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        setupDrawerContent(navigationView)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (actionBarDrawerToggle.onOptionsItemSelected(item)) {
+            return true
+        }
+        return super.onOptionsItemSelected(item)
+    }
+
+    private fun setupDrawerContent(navigationView: NavigationView) {
+        navigationView.getHeaderView(0).setOnClickListener {
+            drawerLayout.closeDrawers()
+            val bundle = Bundle()
+            Log.d("debug", "profile string $profileJSONString")
+            bundle.putString("profile", profileJSONString)
+            Navigation.findNavController(this@MainActivity, R.id.fragmentContainerView)
+                .navigate(R.id.profileFragment, bundle)
+        }
+        navigationView.setNavigationItemSelectedListener {
+            if (it.itemId == R.id.logout) {
+                logout()
+            }
+            drawerLayout.closeDrawers()
+            true
+        }
+    }
+
+    fun logout() {
+        sharedPreferences = getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
+        val token = sharedPreferences?.getString(SHARED_PREFERENCES_TOKEN_KEY, null)
+        val url = getString(R.string.logout_api_url)
+        val client = OkHttpClient()
+        Log.d("debug", "logout token $token")
+        lifecycleScope.launch(Dispatchers.IO) {
+            val request =
+                Request.Builder().url(url).get().addHeader("Authorization", token!!).build()
+            client.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity, "Log Out Failed", Toast.LENGTH_SHORT)
+                            .show()
+                    }
+                    Log.d("debug", "logout failed")
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    if (response.isSuccessful) {
+                        Log.d("debug", "logout successful")
+                        deleteSharedPreferences(SHARED_PREFERENCES_NAME)
+                        runOnUiThread {
+                            Toast.makeText(
+                                this@MainActivity,
+                                "Logout Successful",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            val navController = Navigation.findNavController(
+                                this@MainActivity,
+                                R.id.fragmentContainerView
+                            )
+                            when (navController.currentDestination?.id) {
+                                R.id.subjectListFragment -> {
+                                    navController.navigate(R.id.action_subjectListFragment_to_loginFragment)
+                                }
+                                R.id.studentListFragment -> {
+                                    navController.navigate(R.id.action_studentListFragment_to_loginFragment2)
+                                }
+                                R.id.profileFragment -> {
+                                    navController.navigate(R.id.action_profileFragment_to_loginFragment)
+                                }
+                            }
+
+                        }
+
+                    } else {
+                        Log.d("debug", "logout failed ${response.body?.string()}")
+                        runOnUiThread {
+                            Toast.makeText(this@MainActivity, "Logout Failed", Toast.LENGTH_SHORT)
+                                .show()
+                        }
+                    }
+                }
+
+            })
+        }
+    }
+
+    fun fetchProfile(token: String) {
+        val url = getString(R.string.profile_api_url)
+        val client = OkHttpClient()
+        lifecycleScope.launch(Dispatchers.IO) {
+            val request = Request.Builder().url(url).get().addHeader("Authorization", token).build()
+            client.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    runOnUiThread {
+                        Toast.makeText(
+                            this@MainActivity,
+                            "Profile Loading Failed",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                    Log.d("debug", "profile load failed")
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    Log.d("debug", "profile response ${response.message}")
+                    if (response.isSuccessful) {
+                        Log.d("debug", "profile loading successful")
+                        profileJSONString = response.body?.string().toString()
+                        val jsonObject = JSONObject(profileJSONString!!)
+                        runOnUiThread {
+                            val view = navigationView.getHeaderView(0)
+                            view.findViewById<TextView>(R.id.header_name).text =
+                                jsonObject.getString("name")
+                            view.findViewById<TextView>(R.id.header_email).text =
+                                jsonObject.getString("email")
+                            view.findViewById<TextView>(R.id.header_phone).text =
+                                jsonObject.getString("phone_number")
+                        }
+
+                    } else {
+                        Log.d("debug", "profile loading failed ${response.message}")
+                        runOnUiThread {
+                            Toast.makeText(
+                                this@MainActivity,
+                                "Profile Loading Failed",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+                }
+
+            })
+        }
+    }
+
+    override fun setDrawerLocked() {
+        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
+    }
+
+    override fun setDrawerUnlocked() {
+        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
+    }
+
+}
