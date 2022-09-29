@@ -10,6 +10,7 @@ import android.util.Patterns
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.EditorInfo
 import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.Toast
@@ -62,6 +63,13 @@ class LoginFragment : Fragment() {
         button = view.findViewById(R.id.login)
         emailEditText = view.findViewById(R.id.email_edit_text)
         passwordEditText = view.findViewById(R.id.password_edit_text)
+        passwordEditText.setOnEditorActionListener { v, actionId, event ->
+            if (actionId == EditorInfo.IME_ACTION_GO) {
+                button.performClick()
+                true
+            }
+            false
+        }
         progressBar = view.findViewById(R.id.loading)
         button.setOnClickListener {
             logIn()

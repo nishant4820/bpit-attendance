@@ -76,6 +76,7 @@
             android:inputType="textPassword"
             android:id="@+id/password_edit_text"
             android:autofillHints="@string/prompt_password"
+            android:imeOptions="actionGo"
             android:layout_height="wrap_content" />
     </com.google.android.material.textfield.TextInputLayout>
 <!--    <EditText-->
