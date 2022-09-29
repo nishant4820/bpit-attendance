@@ -57,6 +57,15 @@
                 android:textSize="14sp"
                 tools:text="developer" />
 
+            <ImageButton
+                android:id="@+id/edit_name_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:backgroundTint="#00000000"
+                android:src="@drawable/ic_baseline_edit_24" />
+
+
         </RelativeLayout>
 
         <View style="@style/profileDetailsView" />
@@ -95,6 +104,14 @@
                 android:textColor="@color/blackTextColor"
                 android:textSize="14sp"
                 tools:text="+91-8129999999" />
+
+            <ImageButton
+                android:id="@+id/edit_phone_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:src="@drawable/ic_baseline_edit_24"
+                android:backgroundTint="#00000000" />
 
         </RelativeLayout>
 
