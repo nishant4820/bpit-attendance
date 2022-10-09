@@ -8,7 +8,6 @@ import android.util.Log
 import android.view.*
 import android.widget.ProgressBar
 import android.widget.Toast
-import androidx.core.content.ContextCompat
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
@@ -32,7 +31,6 @@ private const val SECTION = "section"
 private const val BRANCH = "branch"
 private const val AUTHORIZATION = "Authorization"
 private const val IS_LAB = "is_lab"
-private const val TOKEN = "token"
 private const val GROUP = "group"
 private const val SUBJECT = "subject"
 private const val SHARED_PREFERENCES_NAME = "shared_pref"
@@ -48,9 +46,6 @@ class StudentListFragment : Fragment() {
     private var subject: String? = null
     var jsonArray: JSONArray = JSONArray()
     private var sharedPreferences: SharedPreferences? = null
-//    val attendanceMap = mutableMapOf<String, Boolean>()
-//    var present: Int = 0
-//    var absent: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,7 +53,6 @@ class StudentListFragment : Fragment() {
             batch = it.getString(BATCH)
             section = it.getString(SECTION)
             branch = it.getString(BRANCH)
-//            token = it.getString(TOKEN)
             isLab = it.getBoolean(IS_LAB)
             group = it.getString(GROUP)
             subject = it.getString(SUBJECT)
@@ -141,7 +135,8 @@ class StudentListFragment : Fragment() {
                                 "API Failed!! Contact Developer",
                                 Toast.LENGTH_SHORT
                             ).show()
-                            view.findViewById<ProgressBar>(R.id.student_progress_bar).visibility = ProgressBar.INVISIBLE
+                            view.findViewById<ProgressBar>(R.id.student_progress_bar).visibility =
+                                ProgressBar.INVISIBLE
                         }
                         Log.d("debug", "fetch student api failed")
                     }
@@ -157,13 +152,18 @@ class StudentListFragment : Fragment() {
                             Log.d("debug", "student json size: ${jsonArray.length()}")
                             activity?.runOnUiThread {
                                 setRecyclerView(view.findViewById(R.id.studentList))
-                                view.findViewById<ProgressBar>(R.id.student_progress_bar).visibility = ProgressBar.INVISIBLE
+                                view.findViewById<ProgressBar>(R.id.student_progress_bar).visibility =
+                                    ProgressBar.INVISIBLE
                             }
-                        }
-                        else {
+                        } else {
                             activity?.runOnUiThread {
-                                Toast.makeText(context, "Student List Fetching Failed", Toast.LENGTH_SHORT).show()
-                                view.findViewById<ProgressBar>(R.id.student_progress_bar).visibility = ProgressBar.INVISIBLE
+                                Toast.makeText(
+                                    context,
+                                    "Student List Fetching Failed",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                view.findViewById<ProgressBar>(R.id.student_progress_bar).visibility =
+                                    ProgressBar.INVISIBLE
                             }
                         }
                     }
@@ -178,33 +178,6 @@ class StudentListFragment : Fragment() {
             adapter = StudentAdapter(jsonArray)
             present = 0
             absent = jsonArray.length()
-//            { enrollment_number, view ->
-//                val isPresent: Boolean =
-//                    attendanceMap[enrollment_number]!!
-//                attendanceMap.replace(
-//                    enrollment_number,
-//                    !isPresent
-//                )
-//                if (isPresent) {
-//                    view.setCardBackgroundColor(
-//                        ContextCompat.getColor(
-//                            context,
-//                            R.color.absent_color
-//                        )
-//                    )
-//                    absent++
-//                    present--
-//                } else {
-//                    view.setCardBackgroundColor(
-//                        ContextCompat.getColor(
-//                            context,
-//                            R.color.present_color
-//                        )
-//                    )
-//                    absent--
-//                    present++
-//                }
-//            }
         }
     }
 

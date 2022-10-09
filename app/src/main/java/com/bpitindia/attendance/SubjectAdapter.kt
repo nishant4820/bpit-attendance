@@ -87,6 +87,8 @@ class SubjectAdapter(private val dataSet: JSONArray, private val token: String) 
             "031" -> "IT"
             "028" -> "ECE"
             "049" -> "EEE"
+            "039" -> "MBA"
+            "017" -> "BBA"
             else -> "Invalid Branch"
         }
         return br

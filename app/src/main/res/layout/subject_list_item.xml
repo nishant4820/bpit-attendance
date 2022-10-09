@@ -22,12 +22,13 @@
 
 
             <LinearLayout
-                android:id="@+id/infolayout"
+                android:id="@+id/infoLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="12dp"
                 android:layout_marginTop="12dp"
                 android:background="@color/info_bg"
+                android:baselineAligned="false"
                 android:orientation="horizontal"
                 android:paddingBottom="8dp"
                 app:layout_constraintTop_toTopOf="parent">
@@ -42,28 +43,28 @@
                         android:id="@+id/subject_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:paddingStart="16dp"
-                        android:text="Database Management Systems"
+                        android:paddingHorizontal="16dp"
                         android:textColor="@color/black"
                         android:textSize="18sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        tools:text="Database Management Systems" />
 
                     <TextView
                         android:id="@+id/year"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
 
-                        android:paddingStart="24dp"
-                        android:text="2nd Year"
-                        android:textStyle="bold" />
+                        android:paddingHorizontal="24dp"
+                        android:textStyle="bold"
+                        tools:text="2nd Year" />
 
                     <TextView
                         android:id="@+id/branch_sec"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:paddingStart="24dp"
-                        android:text="CSE-B"
-                        android:textStyle="bold" />
+                        android:paddingHorizontal="24dp"
+                        android:textStyle="bold"
+                        tools:text="CSE-B" />
 
                 </LinearLayout>
 
@@ -77,26 +78,24 @@
                     <TextView
                         android:id="@+id/theory_lab"
                         android:layout_width="wrap_content"
-                        android:layout_height="0dp"
-                        android:layout_weight="1"
-                        android:background="@color/dark_bg"
+                        android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
+                        android:background="@color/dark_bg"
                         android:paddingHorizontal="8dp"
-                        android:text="Lab"
                         android:textColor="@color/white"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        tools:text="Lab" />
 
                     <TextView
                         android:id="@+id/group"
                         android:layout_width="wrap_content"
-                        android:layout_height="0dp"
+                        android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:layout_weight="1"
                         android:background="@color/dark_bg"
                         android:paddingHorizontal="8dp"
-                        android:text="G1"
                         android:textColor="@color/white"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        tools:text="G1" />
 
                 </LinearLayout>
 
@@ -105,12 +104,12 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="6dp"
                 android:layout_marginHorizontal="8dp"
+                android:layout_marginTop="6dp"
                 android:layout_marginBottom="8dp"
-                app:layout_constraintTop_toBottomOf="@+id/infolayout"
-                app:layout_constraintBottom_toBottomOf="parent">
+                android:orientation="horizontal"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/infoLayout">
 
                 <ImageButton
                     android:id="@+id/attendance_button"
@@ -119,22 +118,27 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:backgroundTint="@color/dark_bg"
+                    android:contentDescription="@string/take_attendance_button"
                     android:src="@drawable/ic_check_24" />
 
                 <ImageButton
+                    android:id="@+id/stats_button"
                     style="@android:style/Widget.ImageButton"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:backgroundTint="@color/dark_bg"
+                    android:contentDescription="@string/view_stats_button"
                     android:src="@drawable/ic_assessment_24" />
 
                 <ImageButton
+                    android:id="@+id/edit_attendance_button"
                     style="@android:style/Widget.ImageButton"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:backgroundTint="@color/dark_bg"
+                    android:contentDescription="@string/edit_attendance_button"
                     android:src="@drawable/ic_create_24" />
 
 

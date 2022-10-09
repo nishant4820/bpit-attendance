@@ -20,7 +20,6 @@ import okhttp3.*
 import org.json.JSONArray
 import java.io.IOException
 
-private const val TOKEN = "token"
 private const val SHARED_PREFERENCES_NAME = "shared_pref"
 private const val SHARED_PREFERENCES_TOKEN_KEY = "token"
 
@@ -32,9 +31,6 @@ class SubjectListFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        arguments?.let {
-//            token = it.getString(TOKEN)
-        }
         sharedPreferences =
             activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
         token = sharedPreferences?.getString(SHARED_PREFERENCES_TOKEN_KEY, null)
@@ -74,7 +70,8 @@ class SubjectListFragment : Fragment() {
                                 "Subject API Failed!! Contact Developer",
                                 Toast.LENGTH_SHORT
                             ).show()
-                            view.findViewById<ProgressBar>(R.id.subject_progress_bar).visibility = ProgressBar.INVISIBLE
+                            view.findViewById<ProgressBar>(R.id.subject_progress_bar).visibility =
+                                ProgressBar.INVISIBLE
                         }
                     }
 
@@ -88,13 +85,18 @@ class SubjectListFragment : Fragment() {
                                     layoutManager = LinearLayoutManager(activity)
                                     adapter = SubjectAdapter(jsonArray, token!!)
                                 }
-                                view.findViewById<ProgressBar>(R.id.subject_progress_bar).visibility = ProgressBar.INVISIBLE
+                                view.findViewById<ProgressBar>(R.id.subject_progress_bar).visibility =
+                                    ProgressBar.INVISIBLE
                             }
-                        }
-                        else {
+                        } else {
                             activity?.runOnUiThread {
-                                Toast.makeText(context, "Subject Fetching Failed", Toast.LENGTH_SHORT).show()
-                                view.findViewById<ProgressBar>(R.id.subject_progress_bar).visibility = ProgressBar.INVISIBLE
+                                Toast.makeText(
+                                    context,
+                                    "Subject Fetching Failed",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                view.findViewById<ProgressBar>(R.id.subject_progress_bar).visibility =
+                                    ProgressBar.INVISIBLE
                             }
                         }
                     }

@@ -16,8 +16,6 @@ var absent: Int = 0
 
 class StudentAdapter(
     private val dataSet: JSONArray
-//    ,
-//    private val listener: (String, CardView) -> Unit
 ) : RecyclerView.Adapter<StudentAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -69,13 +67,13 @@ class StudentAdapter(
                 )
             )
         holder.studentCard.setOnClickListener {
-            val isPresent: Boolean =
+            val isPresent1: Boolean =
                 attendanceMap[studentInfo.getString("enrollment_number")]!!
             attendanceMap.replace(
                 studentInfo.getString("enrollment_number"),
-                !isPresent
+                !isPresent1
             )
-            if (isPresent) {
+            if (isPresent1) {
                 (it as CardView).setCardBackgroundColor(
                     ContextCompat.getColor(
                         it.context,
@@ -94,9 +92,7 @@ class StudentAdapter(
                 absent--
                 present++
             }
-//            listener.invoke(studentInfo.getString("enrollment_number"), it as CardView)
         }
-//        notifyDataSetChanged()
     }
 
     override fun getItemCount(): Int {

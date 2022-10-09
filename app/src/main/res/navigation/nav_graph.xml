@@ -9,7 +9,7 @@
         android:id="@+id/loginFragment"
         android:name="com.bpitindia.attendance.LoginFragment"
         android:label="fragment_login"
-        tools:layout="@layout/fragment_login" >
+        tools:layout="@layout/fragment_login">
         <action
             android:id="@+id/action_loginFragment_to_subjectListFragment"
             app:destination="@id/subjectListFragment"
@@ -20,7 +20,7 @@
         android:id="@+id/subjectListFragment"
         android:name="com.bpitindia.attendance.SubjectListFragment"
         android:label="fragment_subject_list"
-        tools:layout="@layout/fragment_subject_list" >
+        tools:layout="@layout/fragment_subject_list">
         <action
             android:id="@+id/action_subjectListFragment_to_studentListFragment"
             app:destination="@id/studentListFragment" />
@@ -34,7 +34,7 @@
         android:id="@+id/studentListFragment"
         android:name="com.bpitindia.attendance.StudentListFragment"
         android:label="fragment_student_list"
-        tools:layout="@layout/fragment_student_list" >
+        tools:layout="@layout/fragment_student_list">
         <action
             android:id="@+id/action_studentListFragment_to_loginFragment2"
             app:destination="@id/loginFragment"
@@ -44,7 +44,8 @@
     <fragment
         android:id="@+id/profileFragment"
         android:name="com.bpitindia.attendance.ProfileFragment"
-        android:label="ProfileFragment" >
+        android:label="ProfileFragment"
+        tools:layout="@layout/fragment_profile">
         <action
             android:id="@+id/action_profileFragment_to_loginFragment"
             app:destination="@id/loginFragment"

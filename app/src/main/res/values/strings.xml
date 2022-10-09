@@ -6,7 +6,7 @@
     <string name="prompt_password">Password</string>
     <string name="log_in">Log In</string>
     <string name="confirm_dialog">Total Students: %d\nPresent Students: %d\nAbsent Students: %d</string>
-    <string name="attendance_count">Total Attendace: %d</string>
+    <string name="attendance_count">Total Attendance: %d</string>
     <string name="login_api_url">https://bpit-att.herokuapp.com/api/auth/user/login/</string>
     <string name="logout_api_url">https://bpit-att.herokuapp.com/api/auth/logout/</string>
     <string name="profile_api_url">https://bpit-att.herokuapp.com/api/faculty/profile/</string>
@@ -17,7 +17,7 @@
     <string name="nav_close">Close</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
-    <string name="bpitLogo">bpitlogo</string>
+    <string name="bpitLogo">BPIT Logo</string>
     <string name="profile_fragment_title">Faculty Profile</string>
     <string name="name">Name</string>
     <string name="mobile">Mobile</string>
@@ -25,4 +25,16 @@
     <string name="designation">Designation</string>
     <string name="date_of_joining">Date of Joining</string>
     <string name="logout">Logout</string>
+    <string name="log_in_to_continue">Log In to Continue</string>
+    <string name="name_image">name_image</string>
+    <string name="edit_logo">edit logo</string>
+    <string name="mobile_image">mobile image</string>
+    <string name="designation_image">designation image</string>
+    <string name="email_image">email image</string>
+    <string name="date_of_joining_image">date of joining image</string>
+    <string name="take_attendance_button">take attendance button</string>
+    <string name="view_stats_button">view stats button</string>
+    <string name="edit_attendance_button">edit attendance button</string>
+    <string name="upload">Upload</string>
+    <string name="log_out">Log Out</string>
 </resources>

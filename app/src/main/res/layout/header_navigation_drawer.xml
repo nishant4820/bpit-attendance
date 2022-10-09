@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/header_layout"
+    android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="20dp"
     android:background="#CF327B"
@@ -15,9 +16,9 @@
         android:layout_marginStart="24dp"
         android:layout_marginTop="24dp"
         android:layout_marginEnd="24dp"
-        android:text="Dr. Achal Kaushik"
         android:textAppearance="?attr/textAppearanceHeadline6"
-        android:textColor="@color/material_on_primary_emphasis_high_type" />
+        android:textColor="@color/material_on_primary_emphasis_high_type"
+        tools:text="Dr. Achal Kaushik" />
 
     <TextView
         android:id="@+id/header_email"
@@ -26,9 +27,9 @@
         android:layout_marginStart="24dp"
         android:layout_marginEnd="24dp"
         android:ellipsize="end"
-        android:text="achalkaushik@bpitindia.edu.in"
         android:textAppearance="?attr/textAppearanceBody2"
-        android:textColor="@color/material_on_primary_emphasis_medium" />
+        android:textColor="@color/material_on_primary_emphasis_medium"
+        tools:text="achalkaushik@bpitindia.edu.in" />
 
     <TextView
         android:id="@+id/header_phone"
@@ -38,9 +39,9 @@
         android:layout_marginEnd="24dp"
         android:layout_marginBottom="24dp"
         android:ellipsize="end"
-        android:text="+91 9832432454"
         android:textAppearance="?attr/textAppearanceBody2"
-        android:textColor="@color/material_on_primary_emphasis_medium" />
+        android:textColor="@color/material_on_primary_emphasis_medium"
+        tools:text="+91 9999999999" />
 
 
 </LinearLayout>

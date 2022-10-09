@@ -63,7 +63,7 @@ class LoginFragment : Fragment() {
         button = view.findViewById(R.id.login)
         emailEditText = view.findViewById(R.id.email_edit_text)
         passwordEditText = view.findViewById(R.id.password_edit_text)
-        passwordEditText.setOnEditorActionListener { v, actionId, event ->
+        passwordEditText.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_GO) {
                 button.performClick()
                 true
@@ -84,8 +84,7 @@ class LoginFragment : Fragment() {
             override fun afterTextChanged(s: Editable?) {
                 if (s.isNullOrEmpty() || Patterns.EMAIL_ADDRESS.matcher(s).matches()) {
                     emailEditText.error = null
-                }
-                else {
+                } else {
                     emailEditText.error = "Invalid Email ID"
                 }
 
@@ -105,8 +104,7 @@ class LoginFragment : Fragment() {
             Toast.makeText(context, "Invalid Email ID", Toast.LENGTH_SHORT).show()
             progressBar.visibility = ProgressBar.INVISIBLE
             return
-        }
-        else if (pass.isEmpty()) {
+        } else if (pass.isEmpty()) {
             Toast.makeText(context, "Enter Password", Toast.LENGTH_SHORT).show()
             progressBar.visibility = ProgressBar.INVISIBLE
             return
@@ -148,7 +146,8 @@ class LoginFragment : Fragment() {
 
                     } else {
                         activity?.runOnUiThread {
-                            Toast.makeText(context, "Invalid Credentials", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Invalid Credentials", Toast.LENGTH_SHORT)
+                                .show()
                         }
                     }
                 }

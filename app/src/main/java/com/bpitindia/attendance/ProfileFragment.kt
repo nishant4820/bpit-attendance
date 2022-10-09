@@ -108,7 +108,8 @@ class ProfileFragment : Fragment() {
         lifecycleScope.launch(Dispatchers.IO) {
             val mediaType = "application/json; charset=utf-8".toMediaType()
             val body = jsonObject.toString().toRequestBody(mediaType)
-            val request = Request.Builder().url(url).patch(body).addHeader("Authorization", token).build()
+            val request =
+                Request.Builder().url(url).patch(body).addHeader("Authorization", token).build()
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
                     activity?.runOnUiThread {
