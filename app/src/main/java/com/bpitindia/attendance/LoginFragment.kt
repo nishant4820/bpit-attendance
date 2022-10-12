@@ -13,10 +13,12 @@ import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.widget.Button
 import android.widget.ProgressBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -32,6 +34,7 @@ class LoginFragment : Fragment() {
     private lateinit var emailEditText: TextInputEditText
     private lateinit var passwordEditText: TextInputEditText
     private lateinit var progressBar: ProgressBar
+    private lateinit var forgotPassword: TextView
     private var token: String = ""
     private var sharedPreferences: SharedPreferences? = null
 
@@ -53,8 +56,6 @@ class LoginFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        (activity as MainActivity).setDrawerLocked()
-        (activity as MainActivity).supportActionBar?.setDisplayHomeAsUpEnabled(false)
         return inflater.inflate(R.layout.fragment_login, container, false)
     }
 
@@ -63,16 +64,22 @@ class LoginFragment : Fragment() {
         button = view.findViewById(R.id.login)
         emailEditText = view.findViewById(R.id.email_edit_text)
         passwordEditText = view.findViewById(R.id.password_edit_text)
+        forgotPassword = view.findViewById(R.id.forgotPasswordText)
         passwordEditText.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_GO) {
-                button.performClick()
+                logIn(view)
                 true
             }
             false
         }
         progressBar = view.findViewById(R.id.loading)
         button.setOnClickListener {
-            logIn()
+            logIn(view)
+        }
+        forgotPassword.setOnClickListener {
+            val bundle  = Bundle()
+            bundle.putString("email", emailEditText.text.toString())
+            findNavController().navigate(R.id.action_loginFragment_to_forgotPasswordFragment, bundle)
         }
         emailEditText.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
@@ -93,7 +100,7 @@ class LoginFragment : Fragment() {
     }
 
 
-    private fun logIn() {
+    private fun logIn(view: View) {
         progressBar.visibility = ProgressBar.VISIBLE
         val url = getString(R.string.login_api_url)
         val client = OkHttpClient()
@@ -126,22 +133,24 @@ class LoginFragment : Fragment() {
                 override fun onResponse(call: Call, response: Response) {
                     progressBar.visibility = ProgressBar.INVISIBLE
                     if (response.isSuccessful) {
-                        val key = response.body?.string()
-                            ?.let { JSONObject(it).getString("token") }
+                        val jsonObject = response.body?.string()
+                            ?.let { JSONObject(it) }
+                        val isFirstLogin = jsonObject?.getBoolean("is_first_login")
+                        val key = jsonObject?.getString("token")
                         token = "Token $key"
                         editor?.putString(SHARED_PREFERENCES_TOKEN_KEY, token)
                         editor?.apply()
                         Log.d("debug", "first token: $token")
                         (activity as MainActivity).fetchProfile(token)
                         activity?.runOnUiThread {
-                            Toast.makeText(context, "Login Successful", Toast.LENGTH_SHORT)
-                                .show()
-                            val bundle = Bundle()
-                            bundle.putString("token", token)
-                            findNavController().navigate(
-                                R.id.action_loginFragment_to_subjectListFragment,
-                                bundle
-                            )
+                            if (isFirstLogin!!) {
+                                Snackbar.make(view, "Change Password after First Login", Snackbar.LENGTH_LONG).show()
+                                findNavController().navigate(R.id.action_loginFragment_to_changePasswordFragment)
+                            }
+                            else {
+                                Snackbar.make(view, "Login Successful", Snackbar.LENGTH_SHORT).show()
+                                findNavController().navigate(R.id.action_loginFragment_to_subjectListFragment)
+                            }
                         }
 
                     } else {
@@ -150,17 +159,12 @@ class LoginFragment : Fragment() {
                                 .show()
                         }
                     }
+                    response.body?.close()
                 }
 
             })
         }
 
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        (activity as MainActivity).setDrawerUnlocked()
-        (activity as MainActivity).supportActionBar?.setDisplayHomeAsUpEnabled(true)
     }
 
 }

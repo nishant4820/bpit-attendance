@@ -40,6 +40,8 @@ class SubjectListFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
+        (activity as MainActivity).setDrawerUnlocked()
+        (activity as MainActivity).supportActionBar?.setDisplayHomeAsUpEnabled(true)
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_subject_list, container, false)
     }
@@ -99,11 +101,18 @@ class SubjectListFragment : Fragment() {
                                     ProgressBar.INVISIBLE
                             }
                         }
+                        response.body?.close()
                     }
 
                 })
             }
         }
 
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        (activity as MainActivity).setDrawerLocked()
+        (activity as MainActivity).supportActionBar?.setDisplayHomeAsUpEnabled(false)
     }
 }

@@ -41,8 +41,6 @@ class ProfileFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        (activity as MainActivity).setDrawerLocked()
-        (activity as MainActivity).supportActionBar?.setDisplayHomeAsUpEnabled(false)
         return inflater.inflate(R.layout.fragment_profile, container, false)
     }
 
@@ -137,14 +135,9 @@ class ProfileFragment : Fragment() {
                             ).show()
                         }
                     }
+                    response.body?.close()
                 }
             })
         }
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        (activity as MainActivity).setDrawerUnlocked()
-        (activity as MainActivity).supportActionBar?.setDisplayHomeAsUpEnabled(true)
     }
 }

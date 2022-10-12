@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.Navigation
+import androidx.navigation.findNavController
 import com.google.android.material.navigation.NavigationView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -40,7 +41,7 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
         actionBarDrawerToggle.syncState()
 
         // to make the Navigation drawer icon always appear on the action bar
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setDisplayHomeAsUpEnabled(false)
         setupDrawerContent(navigationView)
     }
 
@@ -61,10 +62,15 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                 .navigate(R.id.profileFragment, bundle)
         }
         navigationView.setNavigationItemSelectedListener {
+            drawerLayout.closeDrawers()
             if (it.itemId == R.id.logout) {
                 logout()
             }
-            drawerLayout.closeDrawers()
+            else if (it.itemId == R.id.change_password) {
+                Navigation.findNavController(this@MainActivity, R.id.fragmentContainerView)
+                    .navigate(R.id.action_subjectListFragment_to_changePasswordFragment)
+            }
+
             true
         }
     }
@@ -105,9 +111,6 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                                 R.id.subjectListFragment -> {
                                     navController.navigate(R.id.action_subjectListFragment_to_loginFragment)
                                 }
-                                R.id.studentListFragment -> {
-                                    navController.navigate(R.id.action_studentListFragment_to_loginFragment2)
-                                }
                                 R.id.profileFragment -> {
                                     navController.navigate(R.id.action_profileFragment_to_loginFragment)
                                 }
@@ -122,6 +125,7 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                                 .show()
                         }
                     }
+                    response.body?.close()
                 }
 
             })
@@ -171,6 +175,7 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                             ).show()
                         }
                     }
+                    response.body?.close()
                 }
 
             })
@@ -179,10 +184,12 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
 
     override fun setDrawerLocked() {
         drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
+        Log.d("debug", "drawer locked")
     }
 
     override fun setDrawerUnlocked() {
         drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
+        Log.d("debug", "drawer unlocked")
     }
 
 }

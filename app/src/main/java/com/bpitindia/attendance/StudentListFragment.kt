@@ -227,6 +227,8 @@ class StudentListFragment : Fragment() {
                                 .show()
                         }
                     }
+
+                    response.body?.close()
                 }
 
             })
