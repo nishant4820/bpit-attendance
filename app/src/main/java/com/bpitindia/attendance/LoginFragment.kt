@@ -11,7 +11,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
-import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
@@ -30,7 +29,7 @@ private const val SHARED_PREFERENCES_NAME = "shared_pref"
 private const val SHARED_PREFERENCES_TOKEN_KEY = "token"
 
 class LoginFragment : Fragment() {
-    private lateinit var button: Button
+    private lateinit var button: TextView
     private lateinit var emailEditText: TextInputEditText
     private lateinit var passwordEditText: TextInputEditText
     private lateinit var progressBar: ProgressBar
@@ -77,9 +76,12 @@ class LoginFragment : Fragment() {
             logIn(view)
         }
         forgotPassword.setOnClickListener {
-            val bundle  = Bundle()
+            val bundle = Bundle()
             bundle.putString("email", emailEditText.text.toString())
-            findNavController().navigate(R.id.action_loginFragment_to_forgotPasswordFragment, bundle)
+            findNavController().navigate(
+                R.id.action_loginFragment_to_forgotPasswordFragment,
+                bundle
+            )
         }
         emailEditText.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
@@ -101,7 +103,6 @@ class LoginFragment : Fragment() {
 
 
     private fun logIn(view: View) {
-        progressBar.visibility = ProgressBar.VISIBLE
         val url = getString(R.string.login_api_url)
         val client = OkHttpClient()
         val mailID: String = emailEditText.text.toString()
@@ -109,13 +110,13 @@ class LoginFragment : Fragment() {
 
         if (mailID.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(mailID).matches()) {
             Toast.makeText(context, "Invalid Email ID", Toast.LENGTH_SHORT).show()
-            progressBar.visibility = ProgressBar.INVISIBLE
             return
         } else if (pass.isEmpty()) {
             Toast.makeText(context, "Enter Password", Toast.LENGTH_SHORT).show()
-            progressBar.visibility = ProgressBar.INVISIBLE
             return
         }
+        progressBar.visibility = ProgressBar.VISIBLE
+        button.visibility = TextView.INVISIBLE
         val editor = sharedPreferences?.edit()
         lifecycleScope.launch(Dispatchers.IO) {
             val body: RequestBody =
@@ -124,6 +125,7 @@ class LoginFragment : Fragment() {
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
                     progressBar.visibility = ProgressBar.INVISIBLE
+                    button.visibility = TextView.VISIBLE
                     activity?.runOnUiThread {
                         Toast.makeText(context, "Log In Failed", Toast.LENGTH_SHORT).show()
                     }
@@ -131,7 +133,7 @@ class LoginFragment : Fragment() {
                 }
 
                 override fun onResponse(call: Call, response: Response) {
-                    progressBar.visibility = ProgressBar.INVISIBLE
+
                     if (response.isSuccessful) {
                         val jsonObject = response.body?.string()
                             ?.let { JSONObject(it) }
@@ -143,18 +145,26 @@ class LoginFragment : Fragment() {
                         Log.d("debug", "first token: $token")
                         (activity as MainActivity).fetchProfile(token)
                         activity?.runOnUiThread {
+                            progressBar.visibility = ProgressBar.INVISIBLE
+                            button.visibility = TextView.VISIBLE
                             if (isFirstLogin!!) {
-                                Snackbar.make(view, "Change Password after First Login", Snackbar.LENGTH_LONG).show()
+                                Snackbar.make(
+                                    view,
+                                    "Change Password after First Login",
+                                    Snackbar.LENGTH_LONG
+                                ).show()
                                 findNavController().navigate(R.id.action_loginFragment_to_changePasswordFragment)
-                            }
-                            else {
-                                Snackbar.make(view, "Login Successful", Snackbar.LENGTH_SHORT).show()
+                            } else {
+                                Snackbar.make(view, "Login Successful", Snackbar.LENGTH_SHORT)
+                                    .show()
                                 findNavController().navigate(R.id.action_loginFragment_to_subjectListFragment)
                             }
                         }
 
                     } else {
                         activity?.runOnUiThread {
+                            progressBar.visibility = ProgressBar.INVISIBLE
+                            button.visibility = TextView.VISIBLE
                             Toast.makeText(context, "Invalid Credentials", Toast.LENGTH_SHORT)
                                 .show()
                         }

@@ -13,7 +13,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="24dp"
         android:layout_marginTop="36dp"
-        android:text="Enter OTP"
+        android:text="@string/enter_otp"
         android:textColor="@color/blackTextColor"
         android:textSize="32sp"
         android:textStyle="bold"
@@ -59,28 +59,41 @@
         app:lineWidth="2dp"
         app:viewType="rectangle" />
 
-    <Button
-        android:id="@+id/submit_otp_button"
+    <androidx.cardview.widget.CardView
         android:layout_width="200dp"
-        android:layout_height="wrap_content"
+        android:layout_height="36dp"
         android:layout_marginTop="48dp"
-        android:text="@string/submit_and_verify"
+        android:elevation="8dp"
+        app:cardBackgroundColor="@color/purple_500"
+        app:cardCornerRadius="4sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/firstPinView" />
+        app:layout_constraintTop_toBottomOf="@id/firstPinView">
 
-    <ProgressBar
-        android:id="@+id/progressBarValidateOTP"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginTop="48dp"
-        android:layout_marginBottom="64dp"
-        android:indeterminate="true"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/submit_otp_button" />
+        <RelativeLayout
+            style="@style/Widget.MaterialComponents.Button"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <TextView
+                android:id="@+id/submit_otp_button"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="@string/submit_and_verify"
+                android:textAppearance="@style/TextAppearance.MaterialComponents.Button"
+                android:textColor="@color/white" />
+
+            <ProgressBar
+                android:id="@+id/progressBarValidateOTP"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:indeterminate="true"
+                android:indeterminateTint="#FF9800"
+                android:paddingHorizontal="2dp"
+                android:paddingVertical="2dp"
+                android:visibility="gone" />
+        </RelativeLayout>
+    </androidx.cardview.widget.CardView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

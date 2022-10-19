@@ -6,17 +6,17 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
-import androidx.fragment.app.Fragment
-import androidx.navigation.fragment.findNavController
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
-import android.widget.Button
 import android.widget.ProgressBar
+import android.widget.TextView
 import android.widget.Toast
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.Dispatchers
@@ -33,7 +33,7 @@ private const val SHARED_PREFERENCES_TOKEN_KEY = "token"
 class ChangePasswordFragment : Fragment() {
     private var token: String? = null
     private var sharedPreferences: SharedPreferences? = null
-    private lateinit var changeButton: Button
+    private lateinit var changeButton: TextView
     private lateinit var currentPasswordEdittext: TextInputEditText
     private lateinit var newPasswordEdittext: TextInputEditText
     private lateinit var confirmNewPasswordEdittext: TextInputEditText
@@ -93,21 +93,21 @@ class ChangePasswordFragment : Fragment() {
     }
 
     private fun changePassword(view: View) {
-        progressBar.visibility = ProgressBar.VISIBLE
         inputMethodManager.hideSoftInputFromWindow(confirmNewPasswordEdittext.windowToken, 0)
         val currentPassword = currentPasswordEdittext.text.toString()
         val newPassword = newPasswordEdittext.text.toString()
         if (newPassword.length < 8) {
-            Snackbar.make(view, "Password should be of atleast 8 length", Snackbar.LENGTH_LONG).show()
-            progressBar.visibility = ProgressBar.INVISIBLE
+            Snackbar.make(view, "Password should be of atleast 8 length", Snackbar.LENGTH_LONG)
+                .show()
             return
         }
         val confirmNewPassword = confirmNewPasswordEdittext.text.toString()
         if (confirmNewPassword != newPassword) {
             Snackbar.make(view, "Passwords do not match.", Snackbar.LENGTH_SHORT).show()
-            progressBar.visibility = ProgressBar.INVISIBLE
             return
         }
+        progressBar.visibility = ProgressBar.VISIBLE
+        changeButton.visibility = TextView.INVISIBLE
         val editor = sharedPreferences?.edit()
         val url = getString(R.string.reset_password_api_url)
         val client = OkHttpClient()
@@ -120,18 +120,19 @@ class ChangePasswordFragment : Fragment() {
             }
             val mediaType = "application/json; charset=utf-8".toMediaType()
             val body = bodyJSONObject.toString().toRequestBody(mediaType)
-            val request: Request = Request.Builder().url(url).addHeader("Authorization", token!!).put(body).build()
+            val request: Request =
+                Request.Builder().url(url).addHeader("Authorization", token!!).put(body).build()
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
-                    progressBar.visibility = ProgressBar.INVISIBLE
                     activity?.runOnUiThread {
+                        progressBar.visibility = ProgressBar.INVISIBLE
+                        changeButton.visibility = TextView.VISIBLE
                         Toast.makeText(context, "Some error occurred", Toast.LENGTH_SHORT).show()
                     }
                     Log.d("debug", "Change Password Request Failed")
                 }
 
                 override fun onResponse(call: Call, response: Response) {
-                    progressBar.visibility = ProgressBar.INVISIBLE
                     val jsonObject: JSONObject? = response.body?.string()?.let { JSONObject(it) }
                     if (response.isSuccessful) {
                         val key = jsonObject?.getString("token")
@@ -139,15 +140,22 @@ class ChangePasswordFragment : Fragment() {
                         editor?.putString(SHARED_PREFERENCES_TOKEN_KEY, newToken)
                         editor?.apply()
                         activity?.runOnUiThread {
+                            progressBar.visibility = ProgressBar.INVISIBLE
+                            changeButton.visibility = TextView.VISIBLE
                             val bundle = Bundle()
                             bundle.putString("fromFragment", "change")
-                            findNavController().navigate(R.id.action_changePasswordFragment_to_resetSuccessfulFragment, bundle)
+                            findNavController().navigate(
+                                R.id.action_changePasswordFragment_to_resetSuccessfulFragment,
+                                bundle
+                            )
                         }
 
                     } else {
                         val error: String = jsonObject?.getJSONArray("error")?.get(0) as String
                         Log.d("debug", "error $error")
                         activity?.runOnUiThread {
+                            progressBar.visibility = ProgressBar.INVISIBLE
+                            changeButton.visibility = TextView.VISIBLE
                             if (error == "Your current password was entered incorrectly. Please enter it again.") {
                                 currentPasswordEdittext.setText("")
                             } else if (error == "The two password fields didn't match.") {

@@ -11,6 +11,7 @@ import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.Dispatchers
@@ -24,16 +25,19 @@ private const val SHARED_PREFERENCES_NAME = "shared_pref"
 private const val SHARED_PREFERENCES_TOKEN_KEY = "token"
 
 class SubjectListFragment : Fragment() {
-    // TODO: Rename and change types of parameters
     private var token: String? = null
     var jsonArray: JSONArray = JSONArray()
     private var sharedPreferences: SharedPreferences? = null
+    private lateinit var progressBar: ProgressBar
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         sharedPreferences =
             activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
         token = sharedPreferences?.getString(SHARED_PREFERENCES_TOKEN_KEY, null)
+        if (token == null) {
+            findNavController().navigate(R.id.action_subjectListFragment_to_loginFragment)
+        }
     }
 
     override fun onCreateView(
@@ -48,11 +52,12 @@ class SubjectListFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        view.findViewById<ProgressBar>(R.id.subject_progress_bar).visibility = ProgressBar.VISIBLE
+        progressBar = view.findViewById(R.id.subject_progress_bar)
         fetchSubjects(view)
     }
 
     private fun fetchSubjects(view: View) {
+        progressBar.visibility = ProgressBar.VISIBLE
         val url = getString(R.string.subject_api_url)
         val client = OkHttpClient()
         Log.d("debug", "fetchSub Token $token")
@@ -69,11 +74,10 @@ class SubjectListFragment : Fragment() {
                         activity?.runOnUiThread {
                             Toast.makeText(
                                 context,
-                                "Subject API Failed!! Contact Developer",
+                                "Some error occurred!!",
                                 Toast.LENGTH_SHORT
                             ).show()
-                            view.findViewById<ProgressBar>(R.id.subject_progress_bar).visibility =
-                                ProgressBar.INVISIBLE
+                            progressBar.visibility = ProgressBar.INVISIBLE
                         }
                     }
 
@@ -87,18 +91,18 @@ class SubjectListFragment : Fragment() {
                                     layoutManager = LinearLayoutManager(activity)
                                     adapter = SubjectAdapter(jsonArray, token!!)
                                 }
-                                view.findViewById<ProgressBar>(R.id.subject_progress_bar).visibility =
-                                    ProgressBar.INVISIBLE
+                                progressBar.visibility = ProgressBar.INVISIBLE
                             }
                         } else {
+                            activity?.deleteSharedPreferences(SHARED_PREFERENCES_NAME)
                             activity?.runOnUiThread {
                                 Toast.makeText(
                                     context,
-                                    "Subject Fetching Failed",
+                                    "Session Expired!! Log in again.",
                                     Toast.LENGTH_SHORT
                                 ).show()
-                                view.findViewById<ProgressBar>(R.id.subject_progress_bar).visibility =
-                                    ProgressBar.INVISIBLE
+                                progressBar.visibility = ProgressBar.INVISIBLE
+                                findNavController().navigate(R.id.action_subjectListFragment_to_loginFragment)
                             }
                         }
                         response.body?.close()

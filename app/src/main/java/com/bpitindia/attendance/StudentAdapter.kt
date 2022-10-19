@@ -11,8 +11,6 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 val attendanceMap = mutableMapOf<String, Boolean>()
-var present: Int = 0
-var absent: Int = 0
 
 class StudentAdapter(
     private val dataSet: JSONArray
@@ -80,8 +78,6 @@ class StudentAdapter(
                         R.color.absent_color
                     )
                 )
-                absent++
-                present--
             } else {
                 (it as CardView).setCardBackgroundColor(
                     ContextCompat.getColor(
@@ -89,8 +85,6 @@ class StudentAdapter(
                         R.color.present_color
                     )
                 )
-                absent--
-                present++
             }
         }
     }

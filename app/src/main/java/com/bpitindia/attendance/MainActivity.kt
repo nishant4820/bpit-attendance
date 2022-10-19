@@ -12,7 +12,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.Navigation
-import androidx.navigation.findNavController
 import com.google.android.material.navigation.NavigationView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -65,8 +64,7 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
             drawerLayout.closeDrawers()
             if (it.itemId == R.id.logout) {
                 logout()
-            }
-            else if (it.itemId == R.id.change_password) {
+            } else if (it.itemId == R.id.change_password) {
                 Navigation.findNavController(this@MainActivity, R.id.fragmentContainerView)
                     .navigate(R.id.action_subjectListFragment_to_changePasswordFragment)
             }
@@ -94,37 +92,38 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                 }
 
                 override fun onResponse(call: Call, response: Response) {
-                    if (response.isSuccessful) {
-                        Log.d("debug", "logout successful")
-                        deleteSharedPreferences(SHARED_PREFERENCES_NAME)
-                        runOnUiThread {
-                            Toast.makeText(
-                                this@MainActivity,
-                                "Logout Successful",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            val navController = Navigation.findNavController(
-                                this@MainActivity,
-                                R.id.fragmentContainerView
-                            )
-                            when (navController.currentDestination?.id) {
-                                R.id.subjectListFragment -> {
-                                    navController.navigate(R.id.action_subjectListFragment_to_loginFragment)
-                                }
-                                R.id.profileFragment -> {
-                                    navController.navigate(R.id.action_profileFragment_to_loginFragment)
-                                }
+//                    if (response.isSuccessful) {
+                    Log.d("debug", "logout successful")
+                    deleteSharedPreferences(SHARED_PREFERENCES_NAME)
+                    runOnUiThread {
+                        Toast.makeText(
+                            this@MainActivity,
+                            "Logout Successful",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        val navController = Navigation.findNavController(
+                            this@MainActivity,
+                            R.id.fragmentContainerView
+                        )
+                        when (navController.currentDestination?.id) {
+                            R.id.subjectListFragment -> {
+                                navController.navigate(R.id.action_subjectListFragment_to_loginFragment)
                             }
-
+                            R.id.profileFragment -> {
+                                navController.navigate(R.id.action_profileFragment_to_loginFragment)
+                            }
                         }
 
-                    } else {
-                        Log.d("debug", "logout failed ${response.body?.string()}")
-                        runOnUiThread {
-                            Toast.makeText(this@MainActivity, "Logout Failed", Toast.LENGTH_SHORT)
-                                .show()
-                        }
+//                        }
+
                     }
+//                    else {
+//                        Log.d("debug", "logout failed ${response.body?.string()}")
+//                        runOnUiThread {
+//                            Toast.makeText(this@MainActivity, "Logout Failed", Toast.LENGTH_SHORT)
+//                                .show()
+//                        }
+//                    }
                     response.body?.close()
                 }
 
@@ -142,7 +141,7 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                     runOnUiThread {
                         Toast.makeText(
                             this@MainActivity,
-                            "Profile Loading Failed",
+                            "Some error occurred!!",
                             Toast.LENGTH_SHORT
                         ).show()
                     }
@@ -168,11 +167,7 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                     } else {
                         Log.d("debug", "profile loading failed ${response.message}")
                         runOnUiThread {
-                            Toast.makeText(
-                                this@MainActivity,
-                                "Profile Loading Failed",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            deleteSharedPreferences(SHARED_PREFERENCES_NAME)
                         }
                     }
                     response.body?.close()

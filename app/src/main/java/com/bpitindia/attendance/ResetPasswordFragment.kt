@@ -10,8 +10,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
-import android.widget.Button
 import android.widget.ProgressBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -34,7 +34,7 @@ class ResetPasswordFragment : Fragment() {
     private var otp: String? = null
     private lateinit var newPasswordEditText: TextInputEditText
     private lateinit var confirmNewPasswordEditText: TextInputEditText
-    private lateinit var resetButton: Button
+    private lateinit var resetButton: TextView
     private lateinit var progressBar: ProgressBar
     private lateinit var inputMethodManager: InputMethodManager
 
@@ -92,20 +92,20 @@ class ResetPasswordFragment : Fragment() {
     }
 
     private fun resetPassword(view: View) {
-        progressBar.visibility = ProgressBar.VISIBLE
         inputMethodManager.hideSoftInputFromWindow(confirmNewPasswordEditText.windowToken, 0)
         val newPassword: String = newPasswordEditText.text.toString()
         if (newPassword.length < 8) {
-            Snackbar.make(view, "Password should be of atleast 8 length", Snackbar.LENGTH_LONG).show()
-            progressBar.visibility = ProgressBar.INVISIBLE
+            Snackbar.make(view, "Password should be of atleast 8 length", Snackbar.LENGTH_LONG)
+                .show()
             return
         }
         val confirmNewPassword: String = confirmNewPasswordEditText.text.toString()
         if (confirmNewPassword != newPassword) {
             Snackbar.make(view, "Passwords do not match.", Snackbar.LENGTH_SHORT).show()
-            progressBar.visibility = ProgressBar.INVISIBLE
             return
         }
+        progressBar.visibility = ProgressBar.VISIBLE
+        resetButton.visibility = TextView.INVISIBLE
         val url = getString(R.string.reset_password_api_url)
         val client = OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
@@ -123,29 +123,36 @@ class ResetPasswordFragment : Fragment() {
             val request: Request = Request.Builder().url(url).put(body).build()
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
-                    progressBar.visibility = ProgressBar.INVISIBLE
                     activity?.runOnUiThread {
+                        progressBar.visibility = ProgressBar.INVISIBLE
+                        resetButton.visibility = TextView.VISIBLE
                         Toast.makeText(context, "Some error occurred", Toast.LENGTH_SHORT).show()
                     }
                     Log.d("debug", "Reset Password Request Failed")
                 }
 
                 override fun onResponse(call: Call, response: Response) {
-                    progressBar.visibility = ProgressBar.INVISIBLE
                     val jsonObject: JSONObject? = response.body?.string()?.let { JSONObject(it) }
                     if (response.isSuccessful) {
                         val msg = jsonObject?.getString("message")
                         activity?.runOnUiThread {
+                            progressBar.visibility = ProgressBar.INVISIBLE
+                            resetButton.visibility = TextView.VISIBLE
                             Snackbar.make(view, msg!!, Snackbar.LENGTH_SHORT).show()
                             val bundle = Bundle()
                             bundle.putString("fromFragment", "reset")
-                            findNavController().navigate(R.id.action_resetPasswordFragment_to_resetSuccessfulFragment, bundle)
+                            findNavController().navigate(
+                                R.id.action_resetPasswordFragment_to_resetSuccessfulFragment,
+                                bundle
+                            )
                         }
                     } else {
                         val error: String = jsonObject?.getJSONArray("error")?.get(0) as String
                         Log.d("debug", "error $error")
                         Log.d("debug", "email: $email")
                         activity?.runOnUiThread {
+                            progressBar.visibility = ProgressBar.INVISIBLE
+                            resetButton.visibility = TextView.VISIBLE
                             Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
                         }
                     }

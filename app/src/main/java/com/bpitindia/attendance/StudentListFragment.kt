@@ -46,6 +46,7 @@ class StudentListFragment : Fragment() {
     private var subject: String? = null
     var jsonArray: JSONArray = JSONArray()
     private var sharedPreferences: SharedPreferences? = null
+    private lateinit var progressBar: ProgressBar
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,6 +62,9 @@ class StudentListFragment : Fragment() {
         sharedPreferences =
             activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
         token = sharedPreferences?.getString(SHARED_PREFERENCES_TOKEN_KEY, null)
+        if (token == null) {
+            findNavController().navigate(R.id.action_studentListFragment_to_loginFragment)
+        }
     }
 
     override fun onCreateView(
@@ -73,7 +77,8 @@ class StudentListFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        view.findViewById<ProgressBar>(R.id.student_progress_bar).visibility = ProgressBar.VISIBLE
+        progressBar = view.findViewById(R.id.student_progress_bar)
+        progressBar.visibility = ProgressBar.VISIBLE
         attendanceMap.clear()
         fetchStudents(view)
         val menuHost: MenuHost = requireActivity()
@@ -83,6 +88,11 @@ class StudentListFragment : Fragment() {
             }
 
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
+                var present = 0
+                var absent = 0
+                attendanceMap.forEach { (key, value) ->
+                    if (value) present++ else absent++
+                }
                 AlertDialog.Builder(context).apply {
                     setTitle("Submit?")
                     setMessage(
@@ -132,13 +142,13 @@ class StudentListFragment : Fragment() {
                         activity?.runOnUiThread {
                             Toast.makeText(
                                 context,
-                                "API Failed!! Contact Developer",
+                                "Some error occurred!!",
                                 Toast.LENGTH_SHORT
                             ).show()
                             view.findViewById<ProgressBar>(R.id.student_progress_bar).visibility =
                                 ProgressBar.INVISIBLE
                         }
-                        Log.d("debug", "fetch student api failed")
+                        Log.d("debug", "Some error occurred!!")
                     }
 
                     override fun onResponse(call: Call, response: Response) {
@@ -148,24 +158,18 @@ class StudentListFragment : Fragment() {
                                 val student = jsonArray.getJSONObject(i)
                                 attendanceMap[student.getString("enrollment_number")] = false
                             }
-                            absent = jsonArray.length()
                             Log.d("debug", "student json size: ${jsonArray.length()}")
                             activity?.runOnUiThread {
                                 setRecyclerView(view.findViewById(R.id.studentList))
-                                view.findViewById<ProgressBar>(R.id.student_progress_bar).visibility =
-                                    ProgressBar.INVISIBLE
+                                progressBar.visibility = ProgressBar.INVISIBLE
                             }
                         } else {
                             activity?.runOnUiThread {
-                                Toast.makeText(
-                                    context,
-                                    "Student List Fetching Failed",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                view.findViewById<ProgressBar>(R.id.student_progress_bar).visibility =
-                                    ProgressBar.INVISIBLE
+                                progressBar.visibility = ProgressBar.INVISIBLE
+                                findNavController().navigate(R.id.action_studentListFragment_to_loginFragment)
                             }
                         }
+                        response.body?.close()
                     }
                 })
             }
@@ -176,8 +180,6 @@ class StudentListFragment : Fragment() {
         view.apply {
             layoutManager = LinearLayoutManager(activity)
             adapter = StudentAdapter(jsonArray)
-            present = 0
-            absent = jsonArray.length()
         }
     }
 
@@ -207,7 +209,7 @@ class StudentListFragment : Fragment() {
                     activity?.runOnUiThread {
                         Toast.makeText(
                             context,
-                            "Upload API Failed!! Contact Developer",
+                            "Some error occurred!!",
                             Toast.LENGTH_SHORT
                         ).show()
                     }
