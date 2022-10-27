@@ -18,4 +18,5 @@
     <color name="profileBackground">#fff</color>
     <color name="blackTextColor">#000</color>
     <color name="profileEditTextColor">#707070</color>
+    <color name="bpitColor">#E6141B83</color>
 </resources>

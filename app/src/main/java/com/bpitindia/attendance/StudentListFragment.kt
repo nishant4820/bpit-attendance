@@ -25,6 +25,8 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.*
 
 private const val BATCH = "batch"
 private const val SECTION = "section"
@@ -44,6 +46,7 @@ class StudentListFragment : Fragment() {
     private var group: String? = null
     private var isLab: Boolean? = null
     private var subject: String? = null
+    private var isMarkedAll: Boolean = false
     var jsonArray: JSONArray = JSONArray()
     private var sharedPreferences: SharedPreferences? = null
     private lateinit var progressBar: ProgressBar
@@ -88,27 +91,47 @@ class StudentListFragment : Fragment() {
             }
 
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
-                var present = 0
-                var absent = 0
-                attendanceMap.forEach { (key, value) ->
-                    if (value) present++ else absent++
-                }
-                AlertDialog.Builder(context).apply {
-                    setTitle("Submit?")
-                    setMessage(
-                        getString(
-                            R.string.confirm_dialog,
-                            jsonArray.length(),
-                            present,
-                            absent
-                        )
-                    )
-                    setPositiveButton("Confirm") { _, _ ->
-                        markAttendance()
+                if (menuItem.itemId == R.id.upload_attendance) {
+                    var present = 0
+                    var absent = 0
+                    attendanceMap.forEach { (_, value) ->
+                        if (value) present++ else absent++
                     }
-                    setNegativeButton("Cancel") { _, _ -> }
-                }.create().show()
-                return true
+                    AlertDialog.Builder(context).apply {
+                        setTitle("Submit?")
+                        setMessage(
+                            getString(
+                                R.string.confirm_dialog,
+                                jsonArray.length(),
+                                present,
+                                absent
+                            )
+                        )
+                        setPositiveButton("Confirm") { _, _ ->
+                            markAttendance()
+                        }
+                        setNegativeButton("Cancel") { _, _ -> }
+                    }.create().show()
+                    return true
+                }
+                if (menuItem.itemId == R.id.mark_all) {
+                    if (isMarkedAll) {
+                        attendanceMap.forEach { (key, _) ->
+                            attendanceMap[key] = false
+                        }
+                        isMarkedAll = !isMarkedAll
+                        Toast.makeText(context, "Unmarked All", Toast.LENGTH_SHORT).show()
+                    } else {
+                        attendanceMap.forEach { (key, _) ->
+                            attendanceMap[key] = true
+                        }
+                        isMarkedAll = !isMarkedAll
+                        Toast.makeText(context, "Marked All", Toast.LENGTH_SHORT).show()
+                    }
+                    (view.findViewById<RecyclerView>(R.id.studentList).adapter as StudentAdapter).notifyDataSetChanged()
+                    return true
+                }
+                return false
             }
 
         }, viewLifecycleOwner, Lifecycle.State.RESUMED)
@@ -145,8 +168,7 @@ class StudentListFragment : Fragment() {
                                 "Some error occurred!!",
                                 Toast.LENGTH_SHORT
                             ).show()
-                            view.findViewById<ProgressBar>(R.id.student_progress_bar).visibility =
-                                ProgressBar.INVISIBLE
+                            progressBar.visibility = ProgressBar.INVISIBLE
                         }
                         Log.d("debug", "Some error occurred!!")
                     }
@@ -184,6 +206,8 @@ class StudentListFragment : Fragment() {
     }
 
     private fun markAttendance() {
+        val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+        val currentDateAndTime = sdf.format(Date())
         val jsonArray = JSONArray()
         attendanceMap.forEach { (key, value) ->
             val attendanceJSONObject = JSONObject()
@@ -191,6 +215,7 @@ class StudentListFragment : Fragment() {
             attendanceJSONObject.put("subject", subject)
             attendanceJSONObject.put("batch", batch)
             attendanceJSONObject.put("status", value)
+            attendanceJSONObject.put("date", currentDateAndTime)
             jsonArray.put(attendanceJSONObject)
         }
         val url = getString(R.string.submit_attendance_api_url)

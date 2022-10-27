@@ -9,7 +9,7 @@
     <string name="attendance_count">Total Attendance: %d</string>
     <string name="login_api_url">https://bpit-att.herokuapp.com/api/auth/user/login/</string>
     <string name="logout_api_url">https://bpit-att.herokuapp.com/api/auth/logout/</string>
-    <string name="profile_api_url">https://bpit-att.herokuapp.com/api/faculty/profile/</string>
+    <string name="profile_api_url">https://bpit-att.herokuapp.com/api/faculty/profile/%d</string>
     <string name="subject_api_url">https://bpit-att.herokuapp.com/api/faculty/subjects/</string>
     <string name="forgot_password_api_url">https://bpit-att.herokuapp.com/api/auth/forgot_password/</string>
     <string name="validate_otp_api_url">https://bpit-att.herokuapp.com/api/auth/validate_otp/</string>
@@ -55,4 +55,24 @@
     <string name="confirm">Confirm</string>
     <string name="enter_otp">Enter OTP</string>
     <string name="reset">reset</string>
+    <string name="fab_content_desc">Floating Action Button</string>
+    <string name="all_subject_api_url">https://bpit-att.herokuapp.com/api/subjects/</string>
+    <string name="mark_all">Mark All</string>
+    <string name="action_spinner">SPINNER</string>
+    <string name="no_data">No data available for %s</string>
+    <string name="available_subjects">Available Subjects</string>
+    <string-array name="months_array">
+        <item>January</item>
+        <item>February</item>
+        <item>March</item>
+        <item>April</item>
+        <item>May</item>
+        <item>June</item>
+        <item>July</item>
+        <item>August</item>
+        <item>September</item>
+        <item>October</item>
+        <item>November</item>
+        <item>December</item>
+    </string-array>
 </resources>
