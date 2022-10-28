@@ -27,6 +27,7 @@ import java.io.IOException
 
 private const val SHARED_PREFERENCES_NAME = "shared_pref"
 private const val SHARED_PREFERENCES_TOKEN_KEY = "token"
+private const val SHARED_PREFERENCES_ID_KEY = "id_key"
 
 class LoginFragment : Fragment() {
     private lateinit var button: TextView
@@ -35,6 +36,7 @@ class LoginFragment : Fragment() {
     private lateinit var progressBar: ProgressBar
     private lateinit var forgotPassword: TextView
     private var token: String = ""
+    private var id_key: Int = 0
     private var sharedPreferences: SharedPreferences? = null
 
 
@@ -43,11 +45,12 @@ class LoginFragment : Fragment() {
         sharedPreferences =
             activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
         val stringObject: String? = sharedPreferences?.getString(SHARED_PREFERENCES_TOKEN_KEY, null)
+        val id = sharedPreferences?.getInt(SHARED_PREFERENCES_ID_KEY, 0)
         if (stringObject != null) {
-            (activity as MainActivity).fetchProfile(stringObject)
-            val bundle = Bundle()
-            bundle.putString("token", stringObject)
-            findNavController().navigate(R.id.action_loginFragment_to_subjectListFragment, bundle)
+            (activity as MainActivity).fetchProfile(stringObject, id!!)
+//            val bundle = Bundle()
+//            bundle.putString("token", stringObject)
+            findNavController().navigate(R.id.action_loginFragment_to_subjectListFragment)
         }
     }
 
@@ -140,10 +143,12 @@ class LoginFragment : Fragment() {
                         val isFirstLogin = jsonObject?.getBoolean("is_first_login")
                         val key = jsonObject?.getString("token")
                         token = "Token $key"
+                        id_key = jsonObject?.getInt("id")!!
                         editor?.putString(SHARED_PREFERENCES_TOKEN_KEY, token)
+                        editor?.putInt(SHARED_PREFERENCES_ID_KEY, id_key)
                         editor?.apply()
-                        Log.d("debug", "first token: $token")
-                        (activity as MainActivity).fetchProfile(token)
+                        Log.d("debug", "first token: $token id $id_key")
+                        (activity as MainActivity).fetchProfile(token, id_key)
                         activity?.runOnUiThread {
                             progressBar.visibility = ProgressBar.INVISIBLE
                             button.visibility = TextView.VISIBLE

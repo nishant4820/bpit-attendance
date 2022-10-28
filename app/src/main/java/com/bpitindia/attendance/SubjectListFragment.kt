@@ -14,6 +14,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -29,12 +30,14 @@ class SubjectListFragment : Fragment() {
     var jsonArray: JSONArray = JSONArray()
     private var sharedPreferences: SharedPreferences? = null
     private lateinit var progressBar: ProgressBar
+    private lateinit var floatingActionButton: FloatingActionButton
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         sharedPreferences =
             activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
         token = sharedPreferences?.getString(SHARED_PREFERENCES_TOKEN_KEY, null)
+        Log.d("debug", "subject $token")
         if (token == null) {
             findNavController().navigate(R.id.action_subjectListFragment_to_loginFragment)
         }
@@ -53,6 +56,10 @@ class SubjectListFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         progressBar = view.findViewById(R.id.subject_progress_bar)
+        floatingActionButton = view.findViewById(R.id.floating_action_button)
+        floatingActionButton.setOnClickListener {
+            findNavController().navigate(R.id.action_subjectListFragment_to_addSubjectFragment)
+        }
         fetchSubjects(view)
     }
 

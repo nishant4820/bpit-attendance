@@ -21,6 +21,8 @@ class SubjectAdapter(private val dataSet: JSONArray, private val token: String) 
         val theoryOrLab: TextView
         val group: TextView
         val takeAttendance: ImageButton
+        val viewStats: ImageButton
+        val editAttendance: ImageButton
 
 
         init {
@@ -31,6 +33,8 @@ class SubjectAdapter(private val dataSet: JSONArray, private val token: String) 
             theoryOrLab = view.findViewById(R.id.theory_lab)
             group = view.findViewById(R.id.group)
             takeAttendance = view.findViewById(R.id.attendance_button)
+            viewStats = view.findViewById(R.id.stats_button)
+            editAttendance = view.findViewById(R.id.edit_attendance_button)
         }
     }
 
@@ -52,18 +56,28 @@ class SubjectAdapter(private val dataSet: JSONArray, private val token: String) 
         val group = subInfo.getString("group")
         if (group != "null") holder.group.text = group else holder.group.visibility = View.INVISIBLE
 
+        val bundle = Bundle()
+        bundle.putString("batch", subInfo.getString("batch"))
+        bundle.putString("section", subInfo.getString("section"))
+        bundle.putString("branch", subInfo.getString("branch_code"))
+        bundle.putBoolean("is_lab", subInfo.getBoolean("is_lab"))
+        bundle.putString("group", subInfo.getString("group"))
+        bundle.putString("subject", subInfo.getString("subject_code"))
+
+//        val navController = holder.itemView.findNavController()
+
         holder.takeAttendance.setOnClickListener {
-            val bundle = Bundle()
-            bundle.putString("batch", subInfo.getString("batch"))
-            bundle.putString("section", subInfo.getString("section"))
-            bundle.putString("branch", subInfo.getString("branch_code"))
-            bundle.putBoolean("is_lab", subInfo.getBoolean("is_lab"))
-            bundle.putString("group", subInfo.getString("group"))
-            bundle.putString("subject", subInfo.getString("subject_code"))
-            bundle.putString("token", token)
-            holder.itemView.findNavController()
-                .navigate(R.id.action_subjectListFragment_to_studentListFragment, bundle)
+            holder.itemView.findNavController().navigate(R.id.action_subjectListFragment_to_studentListFragment, bundle)
         }
+
+        holder.viewStats.setOnClickListener {
+            holder.itemView.findNavController().navigate(R.id.action_subjectListFragment_to_statisticsFragment, bundle)
+        }
+
+        holder.editAttendance.setOnClickListener {
+            holder.itemView.findNavController().navigate(R.id.action_subjectListFragment_to_editAttendanceFragment, bundle)
+        }
+
     }
 
     override fun getItemCount(): Int {

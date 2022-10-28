@@ -3,6 +3,7 @@ package com.bpitindia.attendance
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.text.InputFilter
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -22,6 +23,8 @@ import java.io.IOException
 private const val PROFILE = "profile"
 private const val SHARED_PREFERENCES_NAME = "shared_pref"
 private const val SHARED_PREFERENCES_TOKEN_KEY = "token"
+private const val SHARED_PREFERENCES_ID_KEY = "id_key"
+
 
 class ProfileFragment : Fragment() {
     private var sharedPreferences: SharedPreferences? = null
@@ -77,6 +80,9 @@ class ProfileFragment : Fragment() {
         }
         edittext.setText(textview?.text)
         edittext.maxLines = 1
+        if (field == "Phone Number") {
+            edittext.filters = arrayOf(InputFilter.LengthFilter(10))
+        }
 
         val layout = FrameLayout(requireContext())
         layout.setPaddingRelative(45, 25, 45, 0)
@@ -93,15 +99,16 @@ class ProfileFragment : Fragment() {
                     "Phone Number" -> jsonObject.put("phone_number", newValue)
                 }
                 val token = sharedPreferences?.getString(SHARED_PREFERENCES_TOKEN_KEY, null)
-                updateProfile(token!!)
+                val id = sharedPreferences?.getInt(SHARED_PREFERENCES_ID_KEY, 0)
+                updateProfile(token!!, id!!)
             }
             setNegativeButton("Discard") { _, _ -> }
 
         }.create().show()
     }
 
-    private fun updateProfile(token: String) {
-        val url = getString(R.string.profile_api_url)
+    private fun updateProfile(token: String, id: Int) {
+        val url = getString(R.string.profile_api_url, id)
         val client = OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val mediaType = "application/json; charset=utf-8".toMediaType()
@@ -124,7 +131,7 @@ class ProfileFragment : Fragment() {
                     Log.d("debug", "profile update response ${response.message}")
                     if (response.isSuccessful) {
                         Log.d("debug", "profile loading successful")
-                        (activity as MainActivity).fetchProfile(token)
+                        (activity as MainActivity).fetchProfile(token, id)
                     } else {
                         Log.d("debug", "profile update failed ${response.message}")
                         activity?.runOnUiThread {

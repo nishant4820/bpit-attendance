@@ -131,9 +131,10 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
         }
     }
 
-    fun fetchProfile(token: String) {
-        val url = getString(R.string.profile_api_url)
+    fun fetchProfile(token: String, id: Int) {
+        val url = getString(R.string.profile_api_url, id)
         val client = OkHttpClient()
+        Log.d("debug", "profile $token")
         lifecycleScope.launch(Dispatchers.IO) {
             val request = Request.Builder().url(url).get().addHeader("Authorization", token).build()
             client.newCall(request).enqueue(object : Callback {
@@ -166,9 +167,9 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
 
                     } else {
                         Log.d("debug", "profile loading failed ${response.message}")
-                        runOnUiThread {
-                            deleteSharedPreferences(SHARED_PREFERENCES_NAME)
-                        }
+//                        runOnUiThread {
+//                            deleteSharedPreferences(SHARED_PREFERENCES_NAME)
+//                        }
                     }
                     response.body?.close()
                 }
