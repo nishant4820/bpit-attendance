@@ -64,9 +64,10 @@ class SubjectAdapter(private val dataSet: JSONArray, private val token: String) 
         bundle.putString("group", subInfo.getString("group"))
         bundle.putString("subject", subInfo.getString("subject_code"))
 
+//        val navController = holder.itemView.findNavController()
+
         holder.takeAttendance.setOnClickListener {
-            holder.itemView.findNavController()
-                .navigate(R.id.action_subjectListFragment_to_studentListFragment, bundle)
+            holder.itemView.findNavController().navigate(R.id.action_subjectListFragment_to_studentListFragment, bundle)
         }
 
         holder.viewStats.setOnClickListener {
@@ -74,7 +75,7 @@ class SubjectAdapter(private val dataSet: JSONArray, private val token: String) 
         }
 
         holder.editAttendance.setOnClickListener {
-            // TODO: Implement edit last submitted attendance feature
+            holder.itemView.findNavController().navigate(R.id.action_subjectListFragment_to_editAttendanceFragment, bundle)
         }
 
     }

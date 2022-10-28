@@ -72,6 +72,8 @@ class AddSubjectFragment : Fragment() {
                 }
 
                 override fun onResponse(call: Call, response: Response) {
+                    // change response fetching from main thread to io thread
+
                     activity?.runOnUiThread {
                         progressBar.visibility = ProgressBar.INVISIBLE
                         if (response.isSuccessful) {
@@ -82,6 +84,7 @@ class AddSubjectFragment : Fragment() {
                                 Toast.makeText(context, "Subject Fetching Failed!!", Toast.LENGTH_SHORT).show()
                         }
                     }
+                    response.body?.close()
                 }
 
             })

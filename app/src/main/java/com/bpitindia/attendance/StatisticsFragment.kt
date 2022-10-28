@@ -14,6 +14,7 @@ import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import com.github.zardozz.FixedHeaderTableLayout.FixedHeaderSubTableLayout
 import com.github.zardozz.FixedHeaderTableLayout.FixedHeaderTableLayout
 import com.github.zardozz.FixedHeaderTableLayout.FixedHeaderTableRow
@@ -64,6 +65,9 @@ class StatisticsFragment : Fragment() {
         sharedPreferences =
             activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
         token = sharedPreferences?.getString(SHARED_PREFERENCES_TOKEN_KEY, null)
+        if (token == null) {
+            findNavController().navigate(R.id.action_statisticsFragment_to_loginFragment)
+        }
     }
 
     override fun onCreateView(
@@ -179,8 +183,15 @@ class StatisticsFragment : Fragment() {
                             displayData(arrayJSONColumns, studentData)
                         }
                     } else {
+                        activity?.deleteSharedPreferences(SHARED_PREFERENCES_NAME)
                         activity?.runOnUiThread {
+                            Toast.makeText(
+                                context,
+                                "Session Expired!! Log in again.",
+                                Toast.LENGTH_SHORT
+                            ).show()
                             progressBar.visibility = ProgressBar.INVISIBLE
+                            findNavController().navigate(R.id.action_statisticsFragment_to_loginFragment)
                         }
                     }
                     response.body?.close()

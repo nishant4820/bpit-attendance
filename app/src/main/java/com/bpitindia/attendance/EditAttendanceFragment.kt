@@ -6,11 +6,12 @@ import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
 import android.view.*
+import androidx.fragment.app.Fragment
 import android.widget.ProgressBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
-import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -24,8 +25,6 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
-import java.text.SimpleDateFormat
-import java.util.*
 
 private const val BATCH = "batch"
 private const val SECTION = "section"
@@ -37,7 +36,7 @@ private const val SUBJECT = "subject"
 private const val SHARED_PREFERENCES_NAME = "shared_pref"
 private const val SHARED_PREFERENCES_TOKEN_KEY = "token"
 
-class StudentListFragment : Fragment() {
+class EditAttendanceFragment : Fragment() {
     private var batch: String? = null
     private var section: String? = null
     private var branch: String? = null
@@ -45,10 +44,11 @@ class StudentListFragment : Fragment() {
     private var group: String? = null
     private var isLab: Boolean? = null
     private var subject: String? = null
-    private var isMarkedAll: Boolean = false
     var jsonArray: JSONArray = JSONArray()
     private var sharedPreferences: SharedPreferences? = null
+    private lateinit var recyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
+    private lateinit var noDataTextView: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,13 +59,12 @@ class StudentListFragment : Fragment() {
             isLab = it.getBoolean(IS_LAB)
             group = it.getString(GROUP)
             subject = it.getString(SUBJECT)
-
         }
         sharedPreferences =
             activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
         token = sharedPreferences?.getString(SHARED_PREFERENCES_TOKEN_KEY, null)
         if (token == null) {
-            findNavController().navigate(R.id.action_studentListFragment_to_loginFragment)
+            findNavController().navigate(R.id.action_editAttendanceFragment_to_loginFragment)
         }
     }
 
@@ -74,38 +73,33 @@ class StudentListFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_student_list, container, false)
+        return inflater.inflate(R.layout.fragment_edit_attendance, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        progressBar = view.findViewById(R.id.student_progress_bar)
-        progressBar.visibility = ProgressBar.VISIBLE
-        attendanceMap.clear()
-        fetchStudents(view)
+        progressBar = view.findViewById(R.id.edit_attendance_progress_bar)
+        recyclerView = view.findViewById(R.id.edit_attendance_recycler_view)
+        noDataTextView = view.findViewById(R.id.no_data_edit)
+        recyclerView.apply {
+            layoutManager = LinearLayoutManager(activity)
+            adapter = EditAttendanceAdapter {
+//                editAttendance(it)
+            }
+            setHasFixedSize(true)
+        }
+        fetchData()
         val menuHost: MenuHost = requireActivity()
-        menuHost.addMenuProvider(object : MenuProvider {
+        menuHost.addMenuProvider(object: MenuProvider {
             override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
-                menuInflater.inflate(R.menu.menu_student_fragment, menu)
+                menuInflater.inflate(R.menu.menu_edit_attendance_fragment, menu)
             }
 
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
-                if (menuItem.itemId == R.id.upload_attendance) {
-                    var present = 0
-                    var absent = 0
-                    attendanceMap.forEach { (_, value) ->
-                        if (value) present++ else absent++
-                    }
+                if (menuItem.itemId == R.id.upload_edit_attendance) {
                     AlertDialog.Builder(context).apply {
-                        setTitle("Submit?")
-                        setMessage(
-                            getString(
-                                R.string.confirm_dialog,
-                                jsonArray.length(),
-                                present,
-                                absent
-                            )
-                        )
+                        setTitle("Submit")
+                        setMessage("Are you sure you want to update attendance?")
                         setPositiveButton("Confirm") { _, _ ->
                             markAttendance()
                         }
@@ -113,45 +107,32 @@ class StudentListFragment : Fragment() {
                     }.create().show()
                     return true
                 }
-                if (menuItem.itemId == R.id.mark_all) {
-                    if (isMarkedAll) {
-                        attendanceMap.forEach { (key, _) ->
-                            attendanceMap[key] = false
-                        }
-                        isMarkedAll = !isMarkedAll
-                        Toast.makeText(context, "Unmarked All", Toast.LENGTH_SHORT).show()
-                    } else {
-                        attendanceMap.forEach { (key, _) ->
-                            attendanceMap[key] = true
-                        }
-                        isMarkedAll = !isMarkedAll
-                        Toast.makeText(context, "Marked All", Toast.LENGTH_SHORT).show()
-                    }
-                    (view.findViewById<RecyclerView>(R.id.studentList).adapter as StudentAdapter).notifyDataSetChanged()
-                    return true
-                }
                 return false
             }
 
         }, viewLifecycleOwner, Lifecycle.State.RESUMED)
+
     }
 
-    private fun fetchStudents(view: View) {
-        val httpUrlBuilder: HttpUrl.Builder = HttpUrl.Builder()
+    private fun fetchData() {
+        progressBar.visibility = ProgressBar.VISIBLE
+        noDataTextView.visibility = TextView.GONE
+        val httpUrlBuilder = HttpUrl.Builder()
             .scheme("https")
             .host(getString(R.string.api_host))
             .addPathSegment("api")
             .addPathSegment("student")
             .addPathSegment("attendance")
             .addPathSegment("list")
+            .addPathSegment("last")
             .addQueryParameter("batch", batch.toString())
             .addQueryParameter("branch", branch)
             .addQueryParameter("subject", subject)
             .addQueryParameter("section", section)
-        if (isLab == true) httpUrlBuilder.addQueryParameter("group", group)
+            .addQueryParameter("group", group)
         val httpUrl = httpUrlBuilder.build()
         val client = OkHttpClient()
-        Log.d("debug", "student fragment token ${token.toString()}")
+        Log.d("debug", "edit attendance fetch ${token.toString()}")
         lifecycleScope.launch(Dispatchers.IO) {
             val request: Request = Request.Builder()
                 .url(httpUrl)
@@ -166,67 +147,62 @@ class StudentListFragment : Fragment() {
                             "Some error occurred!!",
                             Toast.LENGTH_SHORT
                         ).show()
-                        progressBar.visibility = ProgressBar.INVISIBLE
+                        progressBar.visibility = ProgressBar.GONE
                     }
                     Log.d("debug", "Some error occurred!!")
                 }
 
                 override fun onResponse(call: Call, response: Response) {
                     if (response.isSuccessful) {
-                        jsonArray = JSONArray(response.body?.string())
-                        for (i in 0 until jsonArray.length()) {
-                            val student = jsonArray.getJSONObject(i)
-                            attendanceMap[student.getString("enrollment_number")] = false
+                        try {
+                            jsonArray = JSONArray(response.body?.string())
+                            activity?.runOnUiThread {
+                                progressBar.visibility = ProgressBar.GONE
+                                (recyclerView.adapter as EditAttendanceAdapter).dataSet = jsonArray
+                            }
                         }
-                        Log.d("debug", "student json size: ${jsonArray.length()}")
-                        activity?.runOnUiThread {
-                            setRecyclerView(view.findViewById(R.id.studentList))
-                            progressBar.visibility = ProgressBar.INVISIBLE
+                        catch (e: Exception) {
+                            activity?.runOnUiThread {
+                                noDataTextView.visibility = TextView.VISIBLE
+                                progressBar.visibility = ProgressBar.GONE
+                            }
                         }
-                    } else {
+                    }
+                    else {
+                        activity?.deleteSharedPreferences(SHARED_PREFERENCES_NAME)
                         activity?.runOnUiThread {
+                            Toast.makeText(
+                                context,
+                                "Session Expired!! Log in again.",
+                                Toast.LENGTH_SHORT
+                            ).show()
                             progressBar.visibility = ProgressBar.INVISIBLE
-                            findNavController().navigate(R.id.action_studentListFragment_to_loginFragment)
+                            findNavController().navigate(R.id.action_editAttendanceFragment_to_loginFragment)
                         }
                     }
                     response.body?.close()
                 }
+
             })
-        }
-
-    }
-
-    private fun setRecyclerView(view: RecyclerView) {
-        view.apply {
-            layoutManager = LinearLayoutManager(activity)
-            adapter = StudentAdapter(jsonArray)
         }
     }
 
     private fun markAttendance() {
-        val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
-        val currentDateAndTime = sdf.format(Date())
-        val jsonArray = JSONArray()
-        attendanceMap.forEach { (key, value) ->
-            val attendanceJSONObject = JSONObject()
-            attendanceJSONObject.put("enrollment_number", key)
-            attendanceJSONObject.put("subject", subject)
-            attendanceJSONObject.put("batch", batch)
-            attendanceJSONObject.put("status", value)
-            attendanceJSONObject.put("date", currentDateAndTime)
-            jsonArray.put(attendanceJSONObject)
-        }
+        val dataSet = (recyclerView.adapter as EditAttendanceAdapter).dataSet
+        val obj = JSONObject()
+        obj.put("record", dataSet)
+        val mediaType = "application/json; charset=utf-8".toMediaType()
+        val body = obj.toString().toRequestBody(mediaType)
         val url = getString(R.string.submit_attendance_api_url)
         val client = OkHttpClient()
+        Log.d("debug", "edit attendance upload ${token.toString()}")
 
-        lifecycleScope.launch {
-            val obj = JSONObject()
-            obj.put("record", jsonArray)
-            val mediaType = "application/json; charset=utf-8".toMediaType()
-            val body = obj.toString().toRequestBody(mediaType)
-            Log.d("debug", "token student fragment= $token")
-            val request: Request =
-                Request.Builder().url(url).addHeader("Authorization", token!!).post(body).build()
+        lifecycleScope.launch(Dispatchers.IO) {
+            val request: Request = Request.Builder()
+                .url(url)
+                .addHeader(AUTHORIZATION, token!!)
+                .patch(body)
+                .build()
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
                     activity?.runOnUiThread {
@@ -244,12 +220,18 @@ class StudentListFragment : Fragment() {
 
                     activity?.runOnUiThread {
                         if (response.isSuccessful) {
-                            Toast.makeText(context, "Attendance Submitted", Toast.LENGTH_SHORT)
+                            Toast.makeText(context, "Attendance Updated", Toast.LENGTH_SHORT)
                                 .show()
                             findNavController().popBackStack()
                         } else {
-                            Toast.makeText(context, "Error Occurred!", Toast.LENGTH_SHORT)
-                                .show()
+                            activity?.deleteSharedPreferences(SHARED_PREFERENCES_NAME)
+                            Toast.makeText(
+                                context,
+                                "Session Expired!! Log in again.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            progressBar.visibility = ProgressBar.INVISIBLE
+                            findNavController().navigate(R.id.action_editAttendanceFragment_to_loginFragment)
                         }
                     }
 
@@ -258,5 +240,6 @@ class StudentListFragment : Fragment() {
 
             })
         }
+
     }
 }

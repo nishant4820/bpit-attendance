@@ -17,8 +17,8 @@ class SubjectAddAdapter(private val listener: (JSONObject) -> Unit) : RecyclerVi
     }
 
     inner class MyViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val subject_code: TextView = view.findViewById(R.id.subject_code_search)
-        val subject_name: TextView = view.findViewById(R.id.subject_name_search)
+        private val subjectCode: TextView = view.findViewById(R.id.subject_code_search)
+        private val subjectName: TextView = view.findViewById(R.id.subject_name_search)
         init {
             itemView.setOnClickListener {
                 listener.invoke(dataSet.getJSONObject(adapterPosition))
@@ -26,8 +26,8 @@ class SubjectAddAdapter(private val listener: (JSONObject) -> Unit) : RecyclerVi
         }
         fun bind(subjectData: JSONObject) {
             with(subjectData) {
-                subject_code.text = this.getString("subject_code")
-                subject_name.text = this.getString("subject_name")
+                subjectCode.text = this.getString("subject_code")
+                subjectName.text = this.getString("subject_name")
             }
         }
     }

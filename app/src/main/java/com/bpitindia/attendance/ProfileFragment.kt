@@ -3,6 +3,7 @@ package com.bpitindia.attendance
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.text.InputFilter
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -79,6 +80,9 @@ class ProfileFragment : Fragment() {
         }
         edittext.setText(textview?.text)
         edittext.maxLines = 1
+        if (field == "Phone Number") {
+            edittext.filters = arrayOf(InputFilter.LengthFilter(10))
+        }
 
         val layout = FrameLayout(requireContext())
         layout.setPaddingRelative(45, 25, 45, 0)
