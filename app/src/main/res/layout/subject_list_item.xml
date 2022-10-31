@@ -80,7 +80,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:background="@color/dark_bg"
+                        android:background="@color/primary"
                         android:paddingHorizontal="8dp"
                         android:textColor="@color/white"
                         android:textStyle="bold"
@@ -91,7 +91,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:background="@color/dark_bg"
+                        android:background="@color/primary"
                         android:paddingHorizontal="8dp"
                         android:textColor="@color/white"
                         android:textStyle="bold"
@@ -117,7 +117,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:backgroundTint="@color/dark_bg"
+                    android:backgroundTint="@color/primary"
                     android:contentDescription="@string/take_attendance_button"
                     android:src="@drawable/ic_check_24" />
 
@@ -127,7 +127,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:backgroundTint="@color/dark_bg"
+                    android:backgroundTint="@color/primary"
                     android:contentDescription="@string/view_stats_button"
                     android:src="@drawable/ic_assessment_24" />
 
@@ -137,7 +137,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:backgroundTint="@color/dark_bg"
+                    android:backgroundTint="@color/primary"
                     android:contentDescription="@string/edit_attendance_button"
                     android:src="@drawable/ic_create_24" />
 

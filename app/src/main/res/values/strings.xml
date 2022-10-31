@@ -62,6 +62,9 @@
     <string name="no_data">No data available for %s</string>
     <string name="available_subjects">Available Subjects</string>
     <string name="no_attendance_taken_yet">No attendance taken yet!!</string>
+    <string name="my_profile">My Profile</string>
+    <string name="about">About</string>
+    <string name="welcome">Welcome!</string>
     <string-array name="months_array">
         <item>January</item>
         <item>February</item>

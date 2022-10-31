@@ -17,6 +17,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:paddingHorizontal="32sp"
+        android:textAlignment="center"
         android:text="@string/no_attendance_taken_yet"
         android:textColor="@color/black"
         android:textSize="26sp"

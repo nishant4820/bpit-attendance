@@ -95,13 +95,12 @@
         android:layout_width="100dp"
         android:layout_height="36dp"
         android:elevation="8dp"
-        app:cardBackgroundColor="@color/purple_500"
+        app:cardBackgroundColor="@color/primary"
         app:cardCornerRadius="4sp"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginTop="24dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/password"
-        app:layout_constraintVertical_bias="0.2">
+        app:layout_constraintTop_toBottomOf="@+id/forgotPasswordText">
 
         <RelativeLayout
             style="@style/Widget.MaterialComponents.Button"

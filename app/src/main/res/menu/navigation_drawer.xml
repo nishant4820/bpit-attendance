@@ -1,14 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
+
     <group android:id="@+id/group1">
         <item
-            android:id="@+id/change_password"
-            android:icon="@drawable/ic_baseline_lock_reset_24"
-            android:title="@string/change_password" />
+            android:id="@+id/subtitle2"
+            android:title="@string/welcome">
+            <menu>
+                <item
+                    android:id="@+id/my_profile"
+                    android:icon="@drawable/ic_baseline_person_outline_24"
+                    android:title="@string/my_profile" />
+                <item
+                    android:id="@+id/change_password"
+                    android:icon="@drawable/ic_baseline_lock_reset_24"
+                    android:title="@string/change_password" />
 
-        <item
-            android:id="@+id/logout"
-            android:icon="@drawable/ic_baseline_logout_24"
-            android:title="@string/log_out" />
+            </menu>
+        </item>
     </group>
-</menu>
+
+    <group>
+        <item
+            android:id="@+id/about"
+            android:icon="@drawable/ic_baseline_numbers_24"
+            android:visible="false"
+            android:title="@string/about" />
+    </group>
+
+ </menu>

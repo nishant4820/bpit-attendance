@@ -28,5 +28,24 @@
         android:fitsSystemWindows="true"
         android:visibility="visible"
         app:headerLayout="@layout/header_navigation_drawer"
-        app:menu="@menu/navigation_drawer" />
+        app:menu="@menu/navigation_drawer">
+
+        <TextView
+            android:id="@+id/logout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:paddingStart="24dp"
+            android:paddingEnd="8dp"
+            android:clickable="true"
+            android:padding="32dp"
+            android:background="@color/white"
+            android:drawablePadding="12dp"
+            android:gravity="start"
+            android:text="@string/log_out"
+            android:textColor="#BD0000"
+            android:textStyle="bold"
+            app:drawableStartCompat="@drawable/ic_baseline_logout_24" />
+
+    </com.google.android.material.navigation.NavigationView>
 </androidx.drawerlayout.widget.DrawerLayout>

@@ -131,7 +131,7 @@ class ProfileFragment : Fragment() {
                     Log.d("debug", "profile update response ${response.message}")
                     if (response.isSuccessful) {
                         Log.d("debug", "profile loading successful")
-                        (activity as MainActivity).fetchProfile(token, id)
+                        (activity as? MainActivity)?.fetchProfile(token, id)
                     } else {
                         Log.d("debug", "profile update failed ${response.message}")
                         activity?.runOnUiThread {

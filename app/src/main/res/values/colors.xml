@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
+    <color name="primary">#1E6091</color>
+    <color name="primary2">#184E77</color>
     <color name="teal_200">#FF03DAC5</color>
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="dark_bg">#2E65EA</color>
     <color name="info_bg">#B7CCEC</color>
     <color name="card_bg">#8CA9D8</color>
-    <color name="absent_color">#FB5757</color>
+    <color name="checkBoxColor">#34A0A4</color>
+    <color name="absent_color">#FA4848</color>
     <color name="present_color">#27BD22</color>
     <color name="profilePrimaryDark">#FF3B30</color>
     <color name="profileAccentColor">#F7F7F7</color>

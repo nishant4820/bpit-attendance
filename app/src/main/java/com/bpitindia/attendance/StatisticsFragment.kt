@@ -1,10 +1,14 @@
 package com.bpitindia.attendance
 
+import android.app.Activity
 import android.content.Context
 import android.content.SharedPreferences
+import android.graphics.Insets
 import android.graphics.Typeface
+import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
+import android.util.DisplayMetrics
 import android.util.Log
 import android.view.*
 import android.widget.*
@@ -209,7 +213,7 @@ class StatisticsFragment : Fragment() {
         nameTV.gravity = Gravity.CENTER
         nameTV.setPadding(5, 5, 5, 5)
         nameTV.textSize = 20.0f
-        nameTV.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.purple_700))
+        nameTV.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.primary2))
         nameTV.setTextColor(ContextCompat.getColor(requireContext(), R.color.white))
         val cornerRow = FixedHeaderTableRow(context)
         cornerRow.addView(nameTV)
@@ -223,7 +227,7 @@ class StatisticsFragment : Fragment() {
             tv.gravity = Gravity.CENTER
             tv.text = colName
             tv.setPadding(20, 5, 20, 5)
-            tv.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.purple_700))
+            tv.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.primary2))
             tv.setTextColor(ContextCompat.getColor(requireContext(), R.color.white))
             columnHeader.addView(tv)
         }
@@ -235,18 +239,19 @@ class StatisticsFragment : Fragment() {
             val name = "${jsonObj.getString("class_roll_number")}. ${
                 jsonObj.getString("name").uppercase()
             }"
-            val headerrow = FixedHeaderTableRow(context)
+            val headerRow = FixedHeaderTableRow(context)
             val tv = TextView(context)
             tv.gravity = Gravity.START
             tv.text = name
-            tv.layoutParams = ViewGroup.LayoutParams(500, ViewGroup.LayoutParams.WRAP_CONTENT)
+            val width = getScreenWidth(requireActivity())*2/5
+            tv.layoutParams = ViewGroup.LayoutParams(width, ViewGroup.LayoutParams.WRAP_CONTENT)
             tv.ellipsize = TextUtils.TruncateAt.END
             tv.maxLines = 1
             tv.setPadding(20, 20, 20, 20)
-            tv.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.purple_500))
+            tv.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.primary))
             tv.setTextColor(ContextCompat.getColor(requireContext(), R.color.white))
-            headerrow.addView(tv)
-            rowHeaderLayout.addView(headerrow)
+            headerRow.addView(tv)
+            rowHeaderLayout.addView(headerRow)
         }
 
         val mainTableLayout = FixedHeaderSubTableLayout(context)
@@ -282,8 +287,17 @@ class StatisticsFragment : Fragment() {
 
     }
 
-    private fun noDataAvailable() {
-
+    private fun getScreenWidth(activity: Activity): Int {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val windowMetrics = activity.windowManager.currentWindowMetrics
+            val insets: Insets = windowMetrics.windowInsets
+                .getInsetsIgnoringVisibility(WindowInsets.Type.systemBars())
+            windowMetrics.bounds.width() - insets.left - insets.right
+        } else {
+            val displayMetrics = DisplayMetrics()
+            activity.windowManager.defaultDisplay.getMetrics(displayMetrics)
+            displayMetrics.widthPixels
+        }
     }
 
     private fun String.toDate(

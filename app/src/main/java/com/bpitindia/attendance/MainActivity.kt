@@ -12,7 +12,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.Navigation
+import com.bumptech.glide.Glide
 import com.google.android.material.navigation.NavigationView
+import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import okhttp3.*
@@ -62,14 +64,27 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
         }
         navigationView.setNavigationItemSelectedListener {
             drawerLayout.closeDrawers()
-            if (it.itemId == R.id.logout) {
-                logout()
-            } else if (it.itemId == R.id.change_password) {
-                Navigation.findNavController(this@MainActivity, R.id.fragmentContainerView)
-                    .navigate(R.id.action_subjectListFragment_to_changePasswordFragment)
+            val navController = Navigation.findNavController(this@MainActivity, R.id.fragmentContainerView)
+            when (it.itemId) {
+                R.id.my_profile -> {
+                    val bundle = Bundle()
+                    Log.d("debug", "profile string $profileJSONString")
+                    bundle.putString("profile", profileJSONString)
+                    navController.navigate(R.id.profileFragment, bundle)
+                }
+                R.id.change_password -> {
+                    navController.navigate(R.id.action_subjectListFragment_to_changePasswordFragment)
+                }
+                R.id.about -> {
+                    navController.navigate(R.id.action_subjectListFragment_to_aboutFragment)
+                }
             }
 
             true
+        }
+        navigationView.findViewById<TextView>(R.id.logout).setOnClickListener {
+            drawerLayout.closeDrawers()
+            logout()
         }
     }
 
@@ -157,19 +172,21 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                         val jsonObject = JSONObject(profileJSONString!!)
                         runOnUiThread {
                             val view = navigationView.getHeaderView(0)
+                            val imageView =
+                                view.findViewById<CircleImageView>(R.id.profile_image_header)
+                            val imageUrl = jsonObject.getString("image_url")
+                            if (imageUrl != "null" && imageUrl != "")
+                                Glide.with(view).load(imageUrl).into(imageView)
                             view.findViewById<TextView>(R.id.header_name).text =
                                 jsonObject.getString("name")
                             view.findViewById<TextView>(R.id.header_email).text =
                                 jsonObject.getString("email")
-                            view.findViewById<TextView>(R.id.header_phone).text =
-                                jsonObject.getString("phone_number")
+                            view.findViewById<TextView>(R.id.header_designation).text =
+                                jsonObject.getString("designation")
                         }
 
                     } else {
                         Log.d("debug", "profile loading failed ${response.message}")
-//                        runOnUiThread {
-//                            deleteSharedPreferences(SHARED_PREFERENCES_NAME)
-//                        }
                     }
                     response.body?.close()
                 }
