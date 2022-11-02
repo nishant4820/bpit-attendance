@@ -8,13 +8,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -79,11 +79,7 @@ class SubjectListFragment : Fragment() {
                 client.newCall(request).enqueue(object : Callback {
                     override fun onFailure(call: Call, e: IOException) {
                         activity?.runOnUiThread {
-                            Toast.makeText(
-                                context,
-                                "Some error occurred!!",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            Snackbar.make(view, "Some error occurred", Snackbar.LENGTH_SHORT).show()
                             progressBar.visibility = ProgressBar.INVISIBLE
                         }
                     }
@@ -96,17 +92,17 @@ class SubjectListFragment : Fragment() {
                             activity?.runOnUiThread {
                                 view.findViewById<RecyclerView>(R.id.subjectList).apply {
                                     layoutManager = LinearLayoutManager(activity)
-                                    adapter = SubjectAdapter(jsonArray, token!!)
+                                    adapter = SubjectAdapter(jsonArray)
                                 }
                                 progressBar.visibility = ProgressBar.INVISIBLE
                             }
                         } else {
                             activity?.deleteSharedPreferences(SHARED_PREFERENCES_NAME)
                             activity?.runOnUiThread {
-                                Toast.makeText(
-                                    context,
-                                    "Session Expired!! Log in again.",
-                                    Toast.LENGTH_SHORT
+                                Snackbar.make(
+                                    view,
+                                    "Session Expired! Log in again.",
+                                    Snackbar.LENGTH_SHORT
                                 ).show()
                                 progressBar.visibility = ProgressBar.INVISIBLE
                                 findNavController().navigate(R.id.action_subjectListFragment_to_loginFragment)
@@ -118,7 +114,6 @@ class SubjectListFragment : Fragment() {
                 })
             }
         }
-
     }
 
     override fun onDestroyView() {

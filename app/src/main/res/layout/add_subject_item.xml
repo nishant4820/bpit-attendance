@@ -1,26 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:orientation="horizontal"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingStart="?attr/listPreferredItemPaddingStart"
+    android:orientation="horizontal"
     android:paddingVertical="8dp"
+    android:paddingStart="?attr/listPreferredItemPaddingStart"
     android:paddingEnd="?attr/listPreferredItemPaddingEnd">
-    <TextView android:id="@+id/subject_code_search"
+
+    <TextView
+        android:id="@+id/subject_code_search"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_weight="3"
-        tools:text="ETCS-202"
-        android:textAppearance="?attr/textAppearanceListItem" />
+        android:textAppearance="?attr/textAppearanceListItem"
+        tools:text="ETCS-202" />
 
-    <TextView android:id="@+id/subject_name_search"
+    <TextView
+        android:id="@+id/subject_name_search"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:maxLines="1"
         android:ellipsize="marquee"
-        tools:text="Database Management System"
-        android:textAppearance="?attr/textAppearanceListItem" />
+        android:maxLines="1"
+        android:textAppearance="?attr/textAppearanceListItem"
+        tools:text="Database Management System" />
 
 </LinearLayout>

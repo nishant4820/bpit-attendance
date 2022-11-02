@@ -1,19 +1,24 @@
 package com.bpitindia.attendance
 
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.MenuItem
+import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.ActionBarDrawerToggle
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.Navigation
 import com.bumptech.glide.Glide
 import com.google.android.material.navigation.NavigationView
+import com.google.android.material.snackbar.Snackbar
 import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -44,6 +49,7 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
         // to make the Navigation drawer icon always appear on the action bar
         supportActionBar?.setDisplayHomeAsUpEnabled(false)
         setupDrawerContent(navigationView)
+        checkForUpdates(1)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -64,7 +70,8 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
         }
         navigationView.setNavigationItemSelectedListener {
             drawerLayout.closeDrawers()
-            val navController = Navigation.findNavController(this@MainActivity, R.id.fragmentContainerView)
+            val navController =
+                Navigation.findNavController(this@MainActivity, R.id.fragmentContainerView)
             when (it.itemId) {
                 R.id.my_profile -> {
                     val bundle = Bundle()
@@ -75,6 +82,9 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                 R.id.change_password -> {
                     navController.navigate(R.id.action_subjectListFragment_to_changePasswordFragment)
                 }
+                R.id.check_update -> {
+                    checkForUpdates(2)
+                }
                 R.id.about -> {
                     navController.navigate(R.id.action_subjectListFragment_to_aboutFragment)
                 }
@@ -84,11 +94,60 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
         }
         navigationView.findViewById<TextView>(R.id.logout).setOnClickListener {
             drawerLayout.closeDrawers()
-            logout()
+            logout(it)
         }
     }
 
-    fun logout() {
+    private fun checkForUpdates(callID: Int) {
+        /*
+            call id used for detecting from where the function is called.
+            1 -> call made by onCreate activity
+            2 -> call from check for update menu item in nav drawer
+         */
+
+        val url = getString(R.string.update_version_api_url)
+        val client = OkHttpClient()
+        lifecycleScope.launch(Dispatchers.IO) {
+            val request =
+                Request.Builder().url(url).get().build()
+            client.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    val jsonObject = response.body?.string()
+                        ?.let { JSONObject(it) }
+                    val newVersion = jsonObject?.getInt("versionCode")
+                    val currentVersion = BuildConfig.VERSION_CODE
+                    Log.d("debug", "$newVersion $currentVersion")
+                    val apkURL = jsonObject?.getString("url")
+                    runOnUiThread {
+                        if (newVersion!! > currentVersion) {
+                            AlertDialog.Builder(this@MainActivity).apply {
+                                setTitle("Update App?")
+                                setMessage("It is recommended that you update to the latest version.")
+                                setPositiveButton("UPDATE") { _, _ ->
+                                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(apkURL)))
+                                }
+                                setNegativeButton("NO, THANKS") { _, _ -> }
+                            }.show()
+                        } else if (callID == 2) {
+                            AlertDialog.Builder(this@MainActivity).apply {
+                                setTitle("No Update Available!")
+                                setMessage("Version: ${BuildConfig.VERSION_NAME}\nContact developer for any bugs.")
+                                setPositiveButton("Continue") { _, _ -> }
+                            }.show()
+                        }
+                    }
+                }
+
+            })
+        }
+
+    }
+
+    private fun logout(view: View) {
         sharedPreferences = getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
         val token = sharedPreferences?.getString(SHARED_PREFERENCES_TOKEN_KEY, null)
         val url = getString(R.string.logout_api_url)
@@ -100,45 +159,22 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
                     runOnUiThread {
-                        Toast.makeText(this@MainActivity, "Log Out Failed", Toast.LENGTH_SHORT)
-                            .show()
+                        Snackbar.make(view, "Log Out Failed", Snackbar.LENGTH_SHORT).show()
                     }
                     Log.d("debug", "logout failed")
                 }
 
                 override fun onResponse(call: Call, response: Response) {
-//                    if (response.isSuccessful) {
                     Log.d("debug", "logout successful")
                     deleteSharedPreferences(SHARED_PREFERENCES_NAME)
                     runOnUiThread {
-                        Toast.makeText(
-                            this@MainActivity,
-                            "Logout Successful",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        Snackbar.make(view, "Logout Successful", Snackbar.LENGTH_SHORT).show()
                         val navController = Navigation.findNavController(
                             this@MainActivity,
                             R.id.fragmentContainerView
                         )
-                        when (navController.currentDestination?.id) {
-                            R.id.subjectListFragment -> {
-                                navController.navigate(R.id.action_subjectListFragment_to_loginFragment)
-                            }
-                            R.id.profileFragment -> {
-                                navController.navigate(R.id.action_profileFragment_to_loginFragment)
-                            }
-                        }
-
-//                        }
-
+                        navController.navigate(R.id.action_subjectListFragment_to_loginFragment)
                     }
-//                    else {
-//                        Log.d("debug", "logout failed ${response.body?.string()}")
-//                        runOnUiThread {
-//                            Toast.makeText(this@MainActivity, "Logout Failed", Toast.LENGTH_SHORT)
-//                                .show()
-//                        }
-//                    }
                     response.body?.close()
                 }
 

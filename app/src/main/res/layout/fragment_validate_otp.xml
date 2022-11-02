@@ -43,6 +43,7 @@
         android:elevation="10dp"
         android:imeOptions="actionGo"
         android:inputType="number"
+        android:itemBackground="@color/inputEditTextBackground"
         android:textSize="18sp"
         android:textStyle="bold"
         app:cursorWidth="2dp"
@@ -89,7 +90,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:indeterminate="true"
-                android:indeterminateTint="#FF9800"
+                android:indeterminateTint="@color/buttonLoaderColor"
                 android:paddingHorizontal="2dp"
                 android:paddingVertical="2dp"
                 android:visibility="gone" />

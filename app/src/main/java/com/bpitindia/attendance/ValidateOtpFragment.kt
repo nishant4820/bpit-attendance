@@ -12,7 +12,6 @@ import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.ProgressBar
 import android.widget.TextView
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -71,8 +70,7 @@ class ValidateOtpFragment : Fragment() {
             if (actionId == EditorInfo.IME_ACTION_GO) {
                 verifyOTP(view)
                 true
-            }
-            false
+            } else false
         }
         pinView.requestFocus()
 
@@ -97,7 +95,7 @@ class ValidateOtpFragment : Fragment() {
                     activity?.runOnUiThread {
                         progressBar.visibility = ProgressBar.INVISIBLE
                         button.visibility = TextView.VISIBLE
-                        Toast.makeText(context, "Some error occurred", Toast.LENGTH_SHORT).show()
+                        Snackbar.make(view, "Some error occurred", Snackbar.LENGTH_SHORT).show()
                     }
                     Log.d("debug", "Validate Request Failed")
                 }

@@ -11,9 +11,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.ProgressBar
 import android.widget.TextView
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -35,8 +35,9 @@ class LoginFragment : Fragment() {
     private lateinit var passwordEditText: TextInputEditText
     private lateinit var progressBar: ProgressBar
     private lateinit var forgotPassword: TextView
+    private lateinit var inputMethodManager: InputMethodManager
     private var token: String = ""
-    private var id_key: Int = 0
+    private var idKey: Int = 0
     private var sharedPreferences: SharedPreferences? = null
 
 
@@ -55,9 +56,10 @@ class LoginFragment : Fragment() {
     }
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
+        inputMethodManager =
+            activity?.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         return inflater.inflate(R.layout.fragment_login, container, false)
     }
 
@@ -67,12 +69,12 @@ class LoginFragment : Fragment() {
         emailEditText = view.findViewById(R.id.email_edit_text)
         passwordEditText = view.findViewById(R.id.password_edit_text)
         forgotPassword = view.findViewById(R.id.forgotPasswordText)
+        view.findViewById<TextView>(R.id.versionLogin).text = BuildConfig.VERSION_NAME
         passwordEditText.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_GO) {
                 logIn(view)
                 true
-            }
-            false
+            } else false
         }
         progressBar = view.findViewById(R.id.loading)
         button.setOnClickListener {
@@ -82,8 +84,7 @@ class LoginFragment : Fragment() {
             val bundle = Bundle()
             bundle.putString("email", emailEditText.text.toString())
             findNavController().navigate(
-                R.id.action_loginFragment_to_forgotPasswordFragment,
-                bundle
+                R.id.action_loginFragment_to_forgotPasswordFragment, bundle
             )
         }
         emailEditText.addTextChangedListener(object : TextWatcher {
@@ -102,20 +103,22 @@ class LoginFragment : Fragment() {
 
             }
         })
+
     }
 
 
     private fun logIn(view: View) {
+        inputMethodManager.hideSoftInputFromWindow(button.windowToken, 0)
         val url = getString(R.string.login_api_url)
         val client = OkHttpClient()
-        val mailID: String = emailEditText.text.toString()
+        val mailID: String = emailEditText.text.toString().lowercase()
         val pass: String = passwordEditText.text.toString()
 
         if (mailID.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(mailID).matches()) {
-            Toast.makeText(context, "Invalid Email ID", Toast.LENGTH_SHORT).show()
+            Snackbar.make(view, "Invalid Email ID", Snackbar.LENGTH_SHORT).show()
             return
         } else if (pass.isEmpty()) {
-            Toast.makeText(context, "Enter Password", Toast.LENGTH_SHORT).show()
+            Snackbar.make(view, "Enter Password", Snackbar.LENGTH_SHORT).show()
             return
         }
         progressBar.visibility = ProgressBar.VISIBLE
@@ -130,7 +133,7 @@ class LoginFragment : Fragment() {
                     progressBar.visibility = ProgressBar.INVISIBLE
                     button.visibility = TextView.VISIBLE
                     activity?.runOnUiThread {
-                        Toast.makeText(context, "Log In Failed", Toast.LENGTH_SHORT).show()
+                        Snackbar.make(view, "Some error occurred", Snackbar.LENGTH_SHORT).show()
                     }
                     Log.d("debug", "login failed")
                 }
@@ -138,25 +141,22 @@ class LoginFragment : Fragment() {
                 override fun onResponse(call: Call, response: Response) {
 
                     if (response.isSuccessful) {
-                        val jsonObject = response.body?.string()
-                            ?.let { JSONObject(it) }
+                        val jsonObject = response.body?.string()?.let { JSONObject(it) }
                         val isFirstLogin = jsonObject?.getBoolean("is_first_login")
                         val key = jsonObject?.getString("token")
                         token = "Token $key"
-                        id_key = jsonObject?.getInt("id")!!
+                        idKey = jsonObject?.getInt("id")!!
                         editor?.putString(SHARED_PREFERENCES_TOKEN_KEY, token)
-                        editor?.putInt(SHARED_PREFERENCES_ID_KEY, id_key)
+                        editor?.putInt(SHARED_PREFERENCES_ID_KEY, idKey)
                         editor?.apply()
-                        Log.d("debug", "first token: $token id $id_key")
-                        (activity as MainActivity).fetchProfile(token, id_key)
+                        Log.d("debug", "first token: $token id $idKey")
+                        (activity as MainActivity).fetchProfile(token, idKey)
                         activity?.runOnUiThread {
                             progressBar.visibility = ProgressBar.INVISIBLE
                             button.visibility = TextView.VISIBLE
                             if (isFirstLogin!!) {
                                 Snackbar.make(
-                                    view,
-                                    "Change Password after First Login",
-                                    Snackbar.LENGTH_LONG
+                                    view, "Change Password after First Login", Snackbar.LENGTH_LONG
                                 ).show()
                                 findNavController().navigate(R.id.action_loginFragment_to_changePasswordFragment)
                             } else {
@@ -170,8 +170,7 @@ class LoginFragment : Fragment() {
                         activity?.runOnUiThread {
                             progressBar.visibility = ProgressBar.INVISIBLE
                             button.visibility = TextView.VISIBLE
-                            Toast.makeText(context, "Invalid Credentials", Toast.LENGTH_SHORT)
-                                .show()
+                            Snackbar.make(view, "Invalid Credentials", Snackbar.LENGTH_SHORT).show()
                         }
                     }
                     response.body?.close()

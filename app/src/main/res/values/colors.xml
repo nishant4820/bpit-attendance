@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="purple_200">#FFBB86FC</color>
-    <color name="primary">#1E6091</color>
-    <color name="primary2">#184E77</color>
+    <color name="primary">#283593</color>
+    <color name="primary2">#1A237E</color>
     <color name="teal_200">#FF03DAC5</color>
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="info_bg">#B7CCEC</color>
-    <color name="card_bg">#8CA9D8</color>
-    <color name="checkBoxColor">#34A0A4</color>
+    <color name="info_bg">#C5CAE9</color>
+    <color name="card_bg">#7986CB</color>
+    <color name="checkBoxColor">#3F51B5</color>
     <color name="absent_color">#FA4848</color>
     <color name="present_color">#27BD22</color>
     <color name="profilePrimaryDark">#FF3B30</color>
@@ -19,4 +19,11 @@
     <color name="blackTextColor">#000</color>
     <color name="profileEditTextColor">#707070</color>
     <color name="bpitColor">#E6141B83</color>
+    <color name="subtitleColor">#FFE2E2E2</color>
+    <color name="cardAboutColor">#5C6BC0</color>
+    <color name="inputEditTextBackground">#E8EAF6</color>
+    <color name="loaderColor">#3F51B5</color>
+    <color name="buttonLoaderColor">#FF9800</color>
+    <color name="versionColor">#3F51B5</color>
+    <color name="profileItemHeadingColor">#303F9F</color>
 </resources>

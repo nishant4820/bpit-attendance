@@ -1,6 +1,6 @@
 package com.bpitindia.attendance
 
-import android.util.Log.e
+import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,16 +10,17 @@ import androidx.recyclerview.widget.RecyclerView
 import org.json.JSONArray
 import org.json.JSONObject
 
-class EditAttendanceAdapter(private val listener: (JSONObject) -> Unit) : RecyclerView.Adapter<EditAttendanceAdapter.MyViewHolder>() {
+class EditAttendanceAdapter : RecyclerView.Adapter<EditAttendanceAdapter.MyViewHolder>() {
 
     var dataSet = JSONArray()
-    set(value) {
-        field = value
-        notifyDataSetChanged()
-    }
+        @SuppressLint("NotifyDataSetChanged")
+        set(value) {
+            field = value
+            notifyDataSetChanged()
+        }
 
     inner class MyViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val rollNumber: TextView = view.findViewById(R.id.edit_roll_no)
+        private val rollNumber: TextView = view.findViewById(R.id.edit_roll_no)
         val name: TextView = view.findViewById(R.id.edit_name)
         val checkBox: CheckBox = view.findViewById(R.id.edit_check_box)
 
@@ -33,18 +34,19 @@ class EditAttendanceAdapter(private val listener: (JSONObject) -> Unit) : Recycl
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
-        val layout = LayoutInflater.from(parent.context).inflate(R.layout.edit_attendance_student_item, parent, false)
+        val layout = LayoutInflater.from(parent.context)
+            .inflate(R.layout.edit_attendance_student_item, parent, false)
         return MyViewHolder(layout)
     }
 
     override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
         val subInfo: JSONObject = dataSet.getJSONObject(position)
-        holder.checkBox.setOnCheckedChangeListener { buttonView, isChecked ->
+        holder.checkBox.setOnCheckedChangeListener { _, isChecked ->
             subInfo.put("status", isChecked)
             dataSet.put(position, subInfo)
         }
         holder.bind(subInfo)
     }
 
-    override fun getItemCount(): Int =  dataSet.length()
+    override fun getItemCount(): Int = dataSet.length()
 }

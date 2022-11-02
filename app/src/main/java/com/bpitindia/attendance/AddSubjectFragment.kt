@@ -3,16 +3,16 @@ package com.bpitindia.attendance
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
 import android.widget.ProgressBar
 import android.widget.Toast
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import okhttp3.*
@@ -50,15 +50,15 @@ class AddSubjectFragment : Fragment() {
                 assignSubject(it)
             }
         }
-        loadSubjects()
+        loadSubjects(view)
     }
 
-    private fun loadSubjects() {
+    private fun loadSubjects(view: View) {
         progressBar.visibility = ProgressBar.VISIBLE
         val url = getString(R.string.all_subject_api_url)
         val client = OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
-            val request : Request = Request.Builder()
+            val request: Request = Request.Builder()
                 .url(url)
                 .addHeader("Authorization", token!!)
                 .get()
@@ -67,7 +67,7 @@ class AddSubjectFragment : Fragment() {
                 override fun onFailure(call: Call, e: IOException) {
                     activity?.runOnUiThread {
                         progressBar.visibility = ProgressBar.INVISIBLE
-                        Toast.makeText(context, "Some error occurred!!", Toast.LENGTH_SHORT).show()
+                        Snackbar.make(view, "Some error occurred!!", Snackbar.LENGTH_SHORT).show()
                     }
                 }
 
@@ -79,9 +79,9 @@ class AddSubjectFragment : Fragment() {
                         if (response.isSuccessful) {
                             val jsonArray = JSONArray(response.body?.string())
                             (recyclerView.adapter as SubjectAddAdapter).dataSet = jsonArray
-                        }
-                        else {
-                                Toast.makeText(context, "Subject Fetching Failed!!", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Snackbar.make(view, "Subject Fetching Failed!!", Snackbar.LENGTH_SHORT)
+                                .show()
                         }
                     }
                     response.body?.close()

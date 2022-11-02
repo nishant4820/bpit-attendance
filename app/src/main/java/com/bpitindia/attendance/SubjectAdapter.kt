@@ -1,40 +1,42 @@
 package com.bpitindia.attendance
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageButton
+import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.appcompat.widget.PopupMenu
 import androidx.navigation.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import org.json.JSONArray
 import org.json.JSONObject
 
-class SubjectAdapter(private val dataSet: JSONArray, private val token: String) :
+class SubjectAdapter(private val dataSet: JSONArray) :
     RecyclerView.Adapter<SubjectAdapter.ViewHolder>() {
 
-    class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val subjectName: TextView
-        val year: TextView
-        val branchSec: TextView
-        val theoryOrLab: TextView
-        val group: TextView
-        val takeAttendance: ImageButton
-        val viewStats: ImageButton
-        val editAttendance: ImageButton
+    inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        private val subjectName: TextView = view.findViewById(R.id.subject_name)
+        private val year: TextView = view.findViewById(R.id.year)
+        private val branchSec: TextView = view.findViewById(R.id.branch_sec)
+        private val theoryOrLab: TextView = view.findViewById(R.id.theory_lab)
+        private val groupTextView: TextView = view.findViewById(R.id.group)
+        val takeAttendance: LinearLayout = view.findViewById(R.id.infoLayout)
+        val optionMenu: TextView = view.findViewById(R.id.textViewOptions)
 
+        fun bind(subInfo: JSONObject) {
+            subjectName.text = subInfo.getString("subject_name")
+            year.text = findYear(subInfo.getInt("semester"))
+            val branchSection =
+                "${findBranch(subInfo.getString("branch_code"))}-${subInfo.getString("section")}"
+            branchSec.text = branchSection
+            val isLab: String = if (subInfo.getBoolean("is_lab")) "Lab" else "Theory"
+            theoryOrLab.text = isLab
+            val group = subInfo.getString("group")
+            if (group != "null") groupTextView.text = group else groupTextView.visibility =
+                View.INVISIBLE
 
-        init {
-            // Define click listener for the ViewHolder's View.
-            subjectName = view.findViewById(R.id.subject_name)
-            year = view.findViewById(R.id.year)
-            branchSec = view.findViewById(R.id.branch_sec)
-            theoryOrLab = view.findViewById(R.id.theory_lab)
-            group = view.findViewById(R.id.group)
-            takeAttendance = view.findViewById(R.id.attendance_button)
-            viewStats = view.findViewById(R.id.stats_button)
-            editAttendance = view.findViewById(R.id.edit_attendance_button)
         }
     }
 
@@ -46,15 +48,7 @@ class SubjectAdapter(private val dataSet: JSONArray, private val token: String) 
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val subInfo: JSONObject = dataSet.getJSONObject(position)
-        holder.subjectName.text = subInfo.getString("subject_name")
-        holder.year.text = findYear(subInfo.getInt("semester"))
-        val branchSection =
-            "${findBranch(subInfo.getString("branch_code"))}-${subInfo.getString("section")}"
-        holder.branchSec.text = branchSection
-        val isLab: String = if (subInfo.getBoolean("is_lab")) "Lab" else "Theory"
-        holder.theoryOrLab.text = isLab
-        val group = subInfo.getString("group")
-        if (group != "null") holder.group.text = group else holder.group.visibility = View.INVISIBLE
+        holder.bind(subInfo)
 
         val bundle = Bundle()
         bundle.putString("batch", subInfo.getString("batch"))
@@ -64,18 +58,36 @@ class SubjectAdapter(private val dataSet: JSONArray, private val token: String) 
         bundle.putString("group", subInfo.getString("group"))
         bundle.putString("subject", subInfo.getString("subject_code"))
 
-//        val navController = holder.itemView.findNavController()
+        holder.optionMenu.setOnClickListener {
+            val popup = PopupMenu(it.context, holder.optionMenu)
+            popup.inflate(R.menu.menu_subject_options)
+            popup.setOnMenuItemClickListener { menuItem ->
+                Log.e(">>", menuItem.toString())
+                when (menuItem.itemId) {
+                    R.id.stats_button -> {
+                        holder.itemView.findNavController()
+                            .navigate(R.id.action_subjectListFragment_to_statisticsFragment, bundle)
+                        true
+                    }
+
+                    R.id.edit_attendance_button -> {
+                        holder.itemView.findNavController()
+                            .navigate(
+                                R.id.action_subjectListFragment_to_editAttendanceFragment,
+                                bundle
+                            )
+                        true
+                    }
+                    else -> false
+                }
+
+            }
+            popup.show()
+        }
 
         holder.takeAttendance.setOnClickListener {
-            holder.itemView.findNavController().navigate(R.id.action_subjectListFragment_to_studentListFragment, bundle)
-        }
-
-        holder.viewStats.setOnClickListener {
-            holder.itemView.findNavController().navigate(R.id.action_subjectListFragment_to_statisticsFragment, bundle)
-        }
-
-        holder.editAttendance.setOnClickListener {
-            holder.itemView.findNavController().navigate(R.id.action_subjectListFragment_to_editAttendanceFragment, bundle)
+            holder.itemView.findNavController()
+                .navigate(R.id.action_subjectListFragment_to_studentListFragment, bundle)
         }
 
     }

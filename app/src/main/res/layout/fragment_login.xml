@@ -43,6 +43,7 @@
         android:layout_marginTop="64dp"
         android:layout_marginEnd="24dp"
         android:hint="@string/prompt_email"
+        app:boxBackgroundColor="@color/inputEditTextBackground"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/login_textview"
@@ -64,6 +65,7 @@
         android:layout_marginTop="8dp"
         android:layout_marginEnd="24dp"
         android:hint="@string/prompt_password"
+        app:boxBackgroundColor="@color/inputEditTextBackground"
         app:endIconMode="password_toggle"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -92,12 +94,13 @@
         app:layout_constraintTop_toBottomOf="@id/password" />
 
     <androidx.cardview.widget.CardView
+        android:id="@+id/cardView"
         android:layout_width="100dp"
         android:layout_height="36dp"
+        android:layout_marginTop="24dp"
         android:elevation="8dp"
         app:cardBackgroundColor="@color/primary"
         app:cardCornerRadius="4sp"
-        android:layout_marginTop="24dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/forgotPasswordText">
@@ -121,11 +124,24 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:indeterminate="true"
-                android:indeterminateTint="#FF9800"
+                android:indeterminateTint="@color/buttonLoaderColor"
                 android:paddingHorizontal="2dp"
                 android:paddingVertical="2dp"
                 android:visibility="gone" />
         </RelativeLayout>
     </androidx.cardview.widget.CardView>
+
+    <TextView
+        android:id="@+id/versionLogin"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:gravity="bottom"
+        android:textColor="@color/versionColor"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/cardView"
+        tools:text="v2022.11.1" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,7 +1,6 @@
 <resources>
     <string name="app_name">Attendance</string>
     <string name="year">Batch: %d</string>
-    <!-- Strings related to login -->
     <string name="prompt_email">Email</string>
     <string name="prompt_password">Password</string>
     <string name="log_in">Log In</string>
@@ -65,6 +64,24 @@
     <string name="my_profile">My Profile</string>
     <string name="about">About</string>
     <string name="welcome">Welcome!</string>
+    <string name="update_version_api_url">https://bpit-att.herokuapp.com/api/version/check_updates?platform=android</string>
+    <string name="check_for_updates">Check for Updates</string>
+    <string name="android_developer_name">Nishant Mittal</string>
+    <string name="android_developer">Android Developer</string>
+    <string name="backend_developer">Backend Developer</string>
+    <string name="backend_developer_name">Shubham Jindal</string>
+    <string name="mentor_designation">HOD (Computer Science)</string>
+    <string name="mentor_name">Prof. Achal Kaushik</string>
+    <string name="about_title">ABOUT</string>
+    <string name="mentors_title">Mentors</string>
+    <string name="developers_title">Developers</string>
+    <string name="view_statistics">View Statistics</string>
+    <string name="edit_last_attendance">Edit Last Attendance</string>
+    <string name="optionIcon">⋮</string>
+    <string name="profile">Profile</string>
+    <string name="my">My</string>
+    <string name="tick_logo">Tick Logo</string>
+    <string name="password_changed">Password Changed!</string>
     <string-array name="months_array">
         <item>January</item>
         <item>February</item>

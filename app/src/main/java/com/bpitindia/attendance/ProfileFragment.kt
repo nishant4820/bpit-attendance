@@ -8,10 +8,15 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
+import android.widget.EditText
+import android.widget.FrameLayout
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import com.bumptech.glide.Glide
+import com.google.android.material.snackbar.Snackbar
+import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import okhttp3.*
@@ -41,21 +46,17 @@ class ProfileFragment : Fragment() {
     }
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
         return inflater.inflate(R.layout.fragment_profile, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        view.findViewById<Button>(R.id.logout_button).setOnClickListener {
-            (activity as MainActivity).logout()
-        }
-        view.findViewById<ImageButton>(R.id.edit_name_button).setOnClickListener {
+        view.findViewById<TextView>(R.id.name_profile).setOnClickListener {
             showAlertDialog("Name", view)
         }
-        view.findViewById<ImageButton>(R.id.edit_phone_button).setOnClickListener {
+        view.findViewById<TextView>(R.id.phone_profile).setOnClickListener {
             showAlertDialog("Phone Number", view)
         }
         setProfile(view)
@@ -63,9 +64,15 @@ class ProfileFragment : Fragment() {
 
     private fun setProfile(view: View) {
 
+        val imageView: CircleImageView = view.findViewById(R.id.card_image_profile)
+        val imageUrl = jsonObject.getString("image_url")
+        if (imageUrl != "null" && imageUrl != "") Glide.with(view).load(imageUrl).into(imageView)
+        view.findViewById<TextView>(R.id.card_name_profile).text = jsonObject.getString("name")
         view.findViewById<TextView>(R.id.name_profile).text = jsonObject.getString("name")
         view.findViewById<TextView>(R.id.email_profile).text = jsonObject.getString("email")
         view.findViewById<TextView>(R.id.phone_profile).text = jsonObject.getString("phone_number")
+        view.findViewById<TextView>(R.id.card_designation_profile).text =
+            jsonObject.getString("designation")
         view.findViewById<TextView>(R.id.designation_profile).text =
             jsonObject.getString("designation")
         view.findViewById<TextView>(R.id.doj_profile).text = jsonObject.getString("date_joined")
@@ -80,10 +87,11 @@ class ProfileFragment : Fragment() {
         }
         edittext.setText(textview?.text)
         edittext.maxLines = 1
-        if (field == "Phone Number") {
+        if (field == "Name") {
+            edittext.filters = arrayOf(InputFilter.LengthFilter(25))
+        } else if (field == "Phone Number") {
             edittext.filters = arrayOf(InputFilter.LengthFilter(10))
         }
-
         val layout = FrameLayout(requireContext())
         layout.setPaddingRelative(45, 25, 45, 0)
         layout.addView(edittext)
@@ -98,16 +106,18 @@ class ProfileFragment : Fragment() {
                     "Name" -> jsonObject.put("name", newValue)
                     "Phone Number" -> jsonObject.put("phone_number", newValue)
                 }
+                view.findViewById<TextView>(R.id.card_name_profile).text =
+                    jsonObject.getString("name")
                 val token = sharedPreferences?.getString(SHARED_PREFERENCES_TOKEN_KEY, null)
                 val id = sharedPreferences?.getInt(SHARED_PREFERENCES_ID_KEY, 0)
-                updateProfile(token!!, id!!)
+                updateProfile(token!!, id!!, view)
             }
             setNegativeButton("Discard") { _, _ -> }
 
         }.create().show()
     }
 
-    private fun updateProfile(token: String, id: Int) {
+    private fun updateProfile(token: String, id: Int, view: View) {
         val url = getString(R.string.profile_api_url, id)
         val client = OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
@@ -118,11 +128,7 @@ class ProfileFragment : Fragment() {
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
                     activity?.runOnUiThread {
-                        Toast.makeText(
-                            context,
-                            "Profile Update API Failed",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        Snackbar.make(view, "Some error occurred", Snackbar.LENGTH_SHORT).show()
                     }
                     Log.d("debug", "profile update failed")
                 }
@@ -135,11 +141,8 @@ class ProfileFragment : Fragment() {
                     } else {
                         Log.d("debug", "profile update failed ${response.message}")
                         activity?.runOnUiThread {
-                            Toast.makeText(
-                                context,
-                                "Profile Update Failed",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            Snackbar.make(view, "Profile Update Failed", Snackbar.LENGTH_SHORT)
+                                .show()
                         }
                     }
                     response.body?.close()

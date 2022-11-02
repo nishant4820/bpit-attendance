@@ -6,17 +6,17 @@ import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
 import android.view.*
-import androidx.fragment.app.Fragment
 import android.widget.ProgressBar
 import android.widget.TextView
-import android.widget.Toast
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import okhttp3.*
@@ -45,6 +45,7 @@ class EditAttendanceFragment : Fragment() {
     private var isLab: Boolean? = null
     private var subject: String? = null
     var jsonArray: JSONArray = JSONArray()
+    private var dataPresent: Boolean = true
     private var sharedPreferences: SharedPreferences? = null
     private lateinit var recyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
@@ -83,28 +84,34 @@ class EditAttendanceFragment : Fragment() {
         noDataTextView = view.findViewById(R.id.no_data_edit)
         recyclerView.apply {
             layoutManager = LinearLayoutManager(activity)
-            adapter = EditAttendanceAdapter {
-//                editAttendance(it)
-            }
+            adapter = EditAttendanceAdapter()
             setHasFixedSize(true)
         }
-        fetchData()
+        fetchData(view)
         val menuHost: MenuHost = requireActivity()
-        menuHost.addMenuProvider(object: MenuProvider {
+        menuHost.addMenuProvider(object : MenuProvider {
             override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
                 menuInflater.inflate(R.menu.menu_edit_attendance_fragment, menu)
             }
 
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
                 if (menuItem.itemId == R.id.upload_edit_attendance) {
-                    AlertDialog.Builder(context).apply {
-                        setTitle("Submit")
-                        setMessage("Are you sure you want to update attendance?")
-                        setPositiveButton("Confirm") { _, _ ->
-                            markAttendance()
-                        }
-                        setNegativeButton("Cancel") { _, _ -> }
-                    }.create().show()
+                    if (dataPresent) {
+                        AlertDialog.Builder(context).apply {
+                            setTitle("Submit")
+                            setMessage("Are you sure you want to update attendance?")
+                            setPositiveButton("Confirm") { _, _ ->
+                                markAttendance(view)
+                            }
+                            setNegativeButton("Cancel") { _, _ -> }
+                        }.create().show()
+                    } else {
+                        AlertDialog.Builder(context).apply {
+                            setTitle("Cannot Update")
+                            setMessage("No attendance is taken yet")
+                            setPositiveButton("Continue") { _, _ -> }
+                        }.create().show()
+                    }
                     return true
                 }
                 return false
@@ -114,7 +121,7 @@ class EditAttendanceFragment : Fragment() {
 
     }
 
-    private fun fetchData() {
+    private fun fetchData(view: View) {
         progressBar.visibility = ProgressBar.VISIBLE
         noDataTextView.visibility = TextView.GONE
         val httpUrlBuilder = HttpUrl.Builder()
@@ -142,11 +149,7 @@ class EditAttendanceFragment : Fragment() {
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
                     activity?.runOnUiThread {
-                        Toast.makeText(
-                            context,
-                            "Some error occurred!!",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        Snackbar.make(view, "Some error occurred", Snackbar.LENGTH_SHORT).show()
                         progressBar.visibility = ProgressBar.GONE
                     }
                     Log.d("debug", "Some error occurred!!")
@@ -160,21 +163,20 @@ class EditAttendanceFragment : Fragment() {
                                 progressBar.visibility = ProgressBar.GONE
                                 (recyclerView.adapter as EditAttendanceAdapter).dataSet = jsonArray
                             }
-                        }
-                        catch (e: Exception) {
+                        } catch (e: Exception) {
+                            dataPresent = false
                             activity?.runOnUiThread {
                                 noDataTextView.visibility = TextView.VISIBLE
                                 progressBar.visibility = ProgressBar.GONE
                             }
                         }
-                    }
-                    else {
+                    } else {
                         activity?.deleteSharedPreferences(SHARED_PREFERENCES_NAME)
                         activity?.runOnUiThread {
-                            Toast.makeText(
-                                context,
+                            Snackbar.make(
+                                view,
                                 "Session Expired!! Log in again.",
-                                Toast.LENGTH_SHORT
+                                Snackbar.LENGTH_SHORT
                             ).show()
                             progressBar.visibility = ProgressBar.INVISIBLE
                             findNavController().navigate(R.id.action_editAttendanceFragment_to_loginFragment)
@@ -187,7 +189,7 @@ class EditAttendanceFragment : Fragment() {
         }
     }
 
-    private fun markAttendance() {
+    private fun markAttendance(view: View) {
         val dataSet = (recyclerView.adapter as EditAttendanceAdapter).dataSet
         val obj = JSONObject()
         obj.put("record", dataSet)
@@ -206,11 +208,7 @@ class EditAttendanceFragment : Fragment() {
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
                     activity?.runOnUiThread {
-                        Toast.makeText(
-                            context,
-                            "Some error occurred!!",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        Snackbar.make(view, "Some error occurred", Snackbar.LENGTH_SHORT).show()
                     }
                     Log.d("debug", "upload api failed")
                 }
@@ -220,15 +218,14 @@ class EditAttendanceFragment : Fragment() {
 
                     activity?.runOnUiThread {
                         if (response.isSuccessful) {
-                            Toast.makeText(context, "Attendance Updated", Toast.LENGTH_SHORT)
-                                .show()
+                            Snackbar.make(view, "Attendance Updated", Snackbar.LENGTH_SHORT).show()
                             findNavController().popBackStack()
                         } else {
                             activity?.deleteSharedPreferences(SHARED_PREFERENCES_NAME)
-                            Toast.makeText(
-                                context,
+                            Snackbar.make(
+                                view,
                                 "Session Expired!! Log in again.",
-                                Toast.LENGTH_SHORT
+                                Snackbar.LENGTH_SHORT
                             ).show()
                             progressBar.visibility = ProgressBar.INVISIBLE
                             findNavController().navigate(R.id.action_editAttendanceFragment_to_loginFragment)

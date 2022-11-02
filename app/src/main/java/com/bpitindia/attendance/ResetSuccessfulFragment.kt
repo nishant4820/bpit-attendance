@@ -1,16 +1,15 @@
 package com.bpitindia.attendance
 
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 
 class ResetSuccessfulFragment : Fragment() {
     private var fromFragment: String? = null
-
     private lateinit var logInButton: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {

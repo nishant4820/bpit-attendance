@@ -12,7 +12,6 @@ import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.ProgressBar
 import android.widget.TextView
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -85,8 +84,7 @@ class ResetPasswordFragment : Fragment() {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
                 resetPassword(view)
                 true
-            }
-            false
+            } else false
         }
 
     }
@@ -126,7 +124,7 @@ class ResetPasswordFragment : Fragment() {
                     activity?.runOnUiThread {
                         progressBar.visibility = ProgressBar.INVISIBLE
                         resetButton.visibility = TextView.VISIBLE
-                        Toast.makeText(context, "Some error occurred", Toast.LENGTH_SHORT).show()
+                        Snackbar.make(view, "Some error occurred", Snackbar.LENGTH_SHORT).show()
                     }
                     Log.d("debug", "Reset Password Request Failed")
                 }
@@ -153,7 +151,7 @@ class ResetPasswordFragment : Fragment() {
                         activity?.runOnUiThread {
                             progressBar.visibility = ProgressBar.INVISIBLE
                             resetButton.visibility = TextView.VISIBLE
-                            Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                            Snackbar.make(view, error, Snackbar.LENGTH_SHORT).show()
                         }
                     }
                     response.body?.close()

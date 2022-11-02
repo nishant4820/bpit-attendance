@@ -21,10 +21,14 @@
 
     <group>
         <item
+            android:id="@+id/check_update"
+            android:icon="@drawable/ic_baseline_system_update_24"
+            android:title="@string/check_for_updates" />
+
+        <item
             android:id="@+id/about"
             android:icon="@drawable/ic_baseline_numbers_24"
-            android:visible="false"
             android:title="@string/about" />
     </group>
 
- </menu>
+</menu>

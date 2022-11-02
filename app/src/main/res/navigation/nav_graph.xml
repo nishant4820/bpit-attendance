@@ -114,17 +114,7 @@
         android:id="@+id/profileFragment"
         android:name="com.bpitindia.attendance.ProfileFragment"
         android:label="ProfileFragment"
-        tools:layout="@layout/fragment_profile">
-        <action
-            android:id="@+id/action_profileFragment_to_loginFragment"
-            app:destination="@id/loginFragment"
-            app:enterAnim="@anim/nav_default_enter_anim"
-            app:exitAnim="@anim/nav_default_exit_anim"
-            app:popEnterAnim="@anim/nav_default_pop_enter_anim"
-            app:popExitAnim="@anim/nav_default_pop_exit_anim"
-            app:popUpTo="@id/subjectListFragment"
-            app:popUpToInclusive="true" />
-    </fragment>
+        tools:layout="@layout/fragment_profile" />
     <fragment
         android:id="@+id/forgotPasswordFragment"
         android:name="com.bpitindia.attendance.ForgotPasswordFragment"
@@ -214,7 +204,7 @@
         android:id="@+id/statisticsFragment"
         android:name="com.bpitindia.attendance.StatisticsFragment"
         android:label="fragment_statistics"
-        tools:layout="@layout/fragment_statistics" >
+        tools:layout="@layout/fragment_statistics">
         <action
             android:id="@+id/action_statisticsFragment_to_loginFragment"
             app:destination="@id/loginFragment"
@@ -229,7 +219,7 @@
         android:id="@+id/editAttendanceFragment"
         android:name="com.bpitindia.attendance.EditAttendanceFragment"
         android:label="fragment_edit_attendance"
-        tools:layout="@layout/fragment_edit_attendance" >
+        tools:layout="@layout/fragment_edit_attendance">
         <action
             android:id="@+id/action_editAttendanceFragment_to_loginFragment"
             app:destination="@id/loginFragment"

@@ -10,8 +10,8 @@
         android:layout_height="match_parent"
         android:layout_weight="2"
         android:gravity="center"
-        android:textSize="16sp"
         android:textColor="@color/black"
+        android:textSize="16sp"
         tools:text="43" />
 
     <View
@@ -25,20 +25,20 @@
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="8"
-        android:textSize="16sp"
-        android:gravity="center_vertical"
-        android:textColor="@color/black"
-        android:paddingHorizontal="20sp"
-        android:maxLines="1"
         android:ellipsize="end"
+        android:gravity="center_vertical"
+        android:maxLines="1"
+        android:paddingHorizontal="20sp"
+        android:textColor="@color/black"
+        android:textSize="16sp"
         tools:text="NISHANT MITTAL" />
 
     <CheckBox
         android:id="@+id/edit_check_box"
         android:layout_width="0dp"
-        android:buttonTint="@color/checkBoxColor"
         android:layout_height="wrap_content"
         android:layout_weight="2"
+        android:buttonTint="@color/checkBoxColor"
         android:gravity="center" />
 
 </LinearLayout>

@@ -1,5 +1,6 @@
 package com.bpitindia.attendance
 
+import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Context
 import android.content.SharedPreferences
@@ -7,7 +8,6 @@ import android.os.Bundle
 import android.util.Log
 import android.view.*
 import android.widget.ProgressBar
-import android.widget.Toast
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
@@ -16,6 +16,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import okhttp3.*
@@ -89,6 +90,7 @@ class StudentListFragment : Fragment() {
                 menuInflater.inflate(R.menu.menu_student_fragment, menu)
             }
 
+            @SuppressLint("NotifyDataSetChanged")
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
                 if (menuItem.itemId == R.id.upload_attendance) {
                     var present = 0
@@ -107,7 +109,7 @@ class StudentListFragment : Fragment() {
                             )
                         )
                         setPositiveButton("Confirm") { _, _ ->
-                            markAttendance()
+                            markAttendance(view)
                         }
                         setNegativeButton("Cancel") { _, _ -> }
                     }.create().show()
@@ -119,13 +121,13 @@ class StudentListFragment : Fragment() {
                             attendanceMap[key] = false
                         }
                         isMarkedAll = !isMarkedAll
-                        Toast.makeText(context, "Unmarked All", Toast.LENGTH_SHORT).show()
+                        Snackbar.make(view, "Unmarked All", Snackbar.LENGTH_SHORT).show()
                     } else {
                         attendanceMap.forEach { (key, _) ->
                             attendanceMap[key] = true
                         }
                         isMarkedAll = !isMarkedAll
-                        Toast.makeText(context, "Marked All", Toast.LENGTH_SHORT).show()
+                        Snackbar.make(view, "Marked All", Snackbar.LENGTH_SHORT).show()
                     }
                     (view.findViewById<RecyclerView>(R.id.studentList).adapter as StudentAdapter).notifyDataSetChanged()
                     return true
@@ -161,11 +163,7 @@ class StudentListFragment : Fragment() {
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
                     activity?.runOnUiThread {
-                        Toast.makeText(
-                            context,
-                            "Some error occurred!!",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        Snackbar.make(view, "Some error occurred", Snackbar.LENGTH_SHORT).show()
                         progressBar.visibility = ProgressBar.INVISIBLE
                     }
                     Log.d("debug", "Some error occurred!!")
@@ -203,7 +201,7 @@ class StudentListFragment : Fragment() {
         }
     }
 
-    private fun markAttendance() {
+    private fun markAttendance(view: View) {
         val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
         val currentDateAndTime = sdf.format(Date())
         val jsonArray = JSONArray()
@@ -230,11 +228,7 @@ class StudentListFragment : Fragment() {
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
                     activity?.runOnUiThread {
-                        Toast.makeText(
-                            context,
-                            "Some error occurred!!",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        Snackbar.make(view, "Some error occurred", Snackbar.LENGTH_SHORT).show()
                     }
                     Log.d("debug", "upload api failed")
                 }
@@ -244,12 +238,11 @@ class StudentListFragment : Fragment() {
 
                     activity?.runOnUiThread {
                         if (response.isSuccessful) {
-                            Toast.makeText(context, "Attendance Submitted", Toast.LENGTH_SHORT)
+                            Snackbar.make(view, "Attendance Submitted", Snackbar.LENGTH_SHORT)
                                 .show()
                             findNavController().popBackStack()
                         } else {
-                            Toast.makeText(context, "Error Occurred!", Toast.LENGTH_SHORT)
-                                .show()
+                            Snackbar.make(view, "Error Occurred!", Snackbar.LENGTH_SHORT).show()
                         }
                     }
 

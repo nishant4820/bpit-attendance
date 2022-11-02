@@ -13,7 +13,6 @@ import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.ProgressBar
 import android.widget.TextView
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -87,8 +86,7 @@ class ChangePasswordFragment : Fragment() {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
                 changePassword(view)
                 true
-            }
-            false
+            } else false
         }
     }
 
@@ -127,7 +125,7 @@ class ChangePasswordFragment : Fragment() {
                     activity?.runOnUiThread {
                         progressBar.visibility = ProgressBar.INVISIBLE
                         changeButton.visibility = TextView.VISIBLE
-                        Toast.makeText(context, "Some error occurred", Toast.LENGTH_SHORT).show()
+                        Snackbar.make(view, "Some error occurred", Snackbar.LENGTH_SHORT).show()
                     }
                     Log.d("debug", "Change Password Request Failed")
                 }

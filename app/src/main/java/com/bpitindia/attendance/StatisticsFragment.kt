@@ -8,7 +8,6 @@ import android.graphics.Typeface
 import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
-import android.util.DisplayMetrics
 import android.util.Log
 import android.view.*
 import android.widget.*
@@ -22,6 +21,7 @@ import androidx.navigation.fragment.findNavController
 import com.github.zardozz.FixedHeaderTableLayout.FixedHeaderSubTableLayout
 import com.github.zardozz.FixedHeaderTableLayout.FixedHeaderTableLayout
 import com.github.zardozz.FixedHeaderTableLayout.FixedHeaderTableRow
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import okhttp3.*
@@ -103,17 +103,17 @@ class StatisticsFragment : Fragment() {
                     adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
                     spinner.adapter = adapter
                 }
-                spinner.setSelection(Integer.parseInt(currentMonth)-1)
+                spinner.setSelection(Integer.parseInt(currentMonth) - 1)
                 spinner.onItemSelectedListener = (object : AdapterView.OnItemSelectedListener {
                     override fun onItemSelected(
                         parent: AdapterView<*>?,
-                        view: View?,
+                        view2: View?,
                         position: Int,
                         id: Long
                     ) {
                         val month: String = parent?.getItemAtPosition(position) as String
                         tableLayout.removeAllViews()
-                        fetchData(month)
+                        fetchData(month, view)
                     }
 
                     override fun onNothingSelected(parent: AdapterView<*>?) {}
@@ -127,7 +127,7 @@ class StatisticsFragment : Fragment() {
         }, viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
 
-    private fun fetchData(month: String) {
+    private fun fetchData(month: String, view: View) {
         progressBar.visibility = ProgressBar.VISIBLE
         noDataTextView.visibility = TextView.GONE
         Log.d("debug", "stats month $month")
@@ -155,11 +155,7 @@ class StatisticsFragment : Fragment() {
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
                     activity?.runOnUiThread {
-                        Toast.makeText(
-                            context,
-                            "Some error occurred!!",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        Snackbar.make(view, "Some error occurred", Snackbar.LENGTH_SHORT).show()
                         progressBar.visibility = ProgressBar.INVISIBLE
                     }
                     Log.d("debug", "Some error occurred!!")
@@ -172,14 +168,14 @@ class StatisticsFragment : Fragment() {
                         var msg: String? = ""
                         try {
                             msg = jsonObject?.getString("msg")
-                        } catch (e: Exception) {
+                        } catch (_: Exception) {
                         }
                         activity?.runOnUiThread {
                             progressBar.visibility = ProgressBar.INVISIBLE
                             if (msg == "No data available") {
                                 noDataTextView.text = getString(R.string.no_data, month)
                                 noDataTextView.visibility = TextView.VISIBLE
-                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
                                 return@runOnUiThread
                             }
                             val arrayJSONColumns = jsonObject?.getJSONArray("columns")
@@ -189,10 +185,10 @@ class StatisticsFragment : Fragment() {
                     } else {
                         activity?.deleteSharedPreferences(SHARED_PREFERENCES_NAME)
                         activity?.runOnUiThread {
-                            Toast.makeText(
-                                context,
+                            Snackbar.make(
+                                view,
                                 "Session Expired!! Log in again.",
-                                Toast.LENGTH_SHORT
+                                Snackbar.LENGTH_SHORT
                             ).show()
                             progressBar.visibility = ProgressBar.INVISIBLE
                             findNavController().navigate(R.id.action_statisticsFragment_to_loginFragment)
@@ -233,6 +229,7 @@ class StatisticsFragment : Fragment() {
         }
         columnHeaderLayout.addView(columnHeader)
 
+        val width = getScreenWidth(requireActivity()) * 2 / 5
         val rowHeaderLayout = FixedHeaderSubTableLayout(context)
         for (i in 0 until studentData!!.length()) {
             val jsonObj = studentData.getJSONObject(i)
@@ -243,7 +240,6 @@ class StatisticsFragment : Fragment() {
             val tv = TextView(context)
             tv.gravity = Gravity.START
             tv.text = name
-            val width = getScreenWidth(requireActivity())*2/5
             tv.layoutParams = ViewGroup.LayoutParams(width, ViewGroup.LayoutParams.WRAP_CONTENT)
             tv.ellipsize = TextUtils.TruncateAt.END
             tv.maxLines = 1
@@ -294,9 +290,12 @@ class StatisticsFragment : Fragment() {
                 .getInsetsIgnoringVisibility(WindowInsets.Type.systemBars())
             windowMetrics.bounds.width() - insets.left - insets.right
         } else {
-            val displayMetrics = DisplayMetrics()
-            activity.windowManager.defaultDisplay.getMetrics(displayMetrics)
-            displayMetrics.widthPixels
+//            val displayMetrics = DisplayMetrics()
+            val wid = context?.resources?.displayMetrics?.widthPixels!!
+            Log.d("debug", wid.toString())
+            wid
+//            activity.windowManager.defaultDisplay.getMetrics(displayMetrics)
+//            displayMetrics.widthPixels
         }
     }
 
