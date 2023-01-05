@@ -1,192 +1,306 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:layout_marginHorizontal="24dp"
-    android:layout_marginVertical="32dp"
-    android:orientation="vertical"
-    tools:context=".AboutFragment">
+    android:layout_height="wrap_content">
 
-    <TextView
-        style="@style/TextAppearance.Material3.HeadlineMedium"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:text="@string/about_title"
-        android:textSize="24sp"
-        android:textStyle="bold|italic" />
-
-    <TextView
-        style="@style/TextAppearance.MaterialComponents.Headline6"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="64dp"
-        android:text="@string/mentors_title" />
-
-
-    <com.google.android.material.card.MaterialCardView
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:elevation="4dp"
-        app:cardBackgroundColor="@color/cardAboutColor"
-        app:cardCornerRadius="8dp">
+        android:background="@color/white"
+        android:orientation="vertical"
+        tools:context=".AboutFragment">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="8dp"
-            android:orientation="horizontal">
+            android:orientation="vertical"
+            android:paddingVertical="24dp">
 
-            <de.hdodenhof.circleimageview.CircleImageView
-                android:layout_width="56dp"
-                android:layout_height="56dp"
-                android:src="@drawable/achal_sir_profile" />
-
-            <LinearLayout
+            <TextView
+                style="@style/TextAppearance.Material3.HeadlineMedium"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_vertical"
-                android:orientation="vertical">
-
-                <TextView
-                    style="@style/TextAppearance.Material3.LabelLarge"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
-                    android:layout_marginStart="16dp"
-                    android:text="@string/mentor_name"
-                    android:textColor="@color/white"
-                    android:textSize="16sp" />
-
-                <TextView
-                    style="@style/TextAppearance.Material3.LabelSmall"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
-                    android:layout_marginStart="16dp"
-                    android:text="@string/mentor_designation"
-                    android:textColor="@color/subtitleColor"
-                    android:textSize="12sp" />
-            </LinearLayout>
-
+                android:layout_gravity="center_horizontal"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="8dp"
+                android:text="@string/about_title"
+                android:textColor="@color/aboutBG"
+                android:textSize="24sp"
+                android:textStyle="bold|italic" />
         </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
-
-
-    <TextView
-        style="@style/TextAppearance.MaterialComponents.Headline6"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:text="@string/developers_title" />
-
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:elevation="4dp"
-        app:cardBackgroundColor="@color/cardAboutColor"
-        app:cardCornerRadius="8dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="8dp">
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginVertical="36dp"
+            android:background="@drawable/about_layer"
+            android:orientation="vertical"
+            android:paddingHorizontal="24dp"
+            android:paddingVertical="48dp">
 
-            <de.hdodenhof.circleimageview.CircleImageView
-                android:layout_width="56dp"
-                android:layout_height="56dp"
-                android:src="@drawable/shubham_profile" />
 
-            <LinearLayout
+            <TextView
+                style="@style/TextAppearance.MaterialComponents.Headline6"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_vertical"
-                android:orientation="vertical">
+                android:text="@string/mentors_title"
+                android:textColor="@color/white" />
 
-                <TextView
-                    style="@style/TextAppearance.Material3.LabelLarge"
-                    android:layout_width="wrap_content"
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:elevation="4dp"
+                app:cardCornerRadius="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
-                    android:layout_marginStart="16dp"
-                    android:text="@string/backend_developer_name"
-                    android:textColor="@color/white"
-                    android:textSize="16sp" />
+                    android:layout_margin="8dp"
+                    android:orientation="horizontal">
 
-                <TextView
-                    style="@style/TextAppearance.Material3.LabelSmall"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
-                    android:layout_marginStart="16dp"
-                    android:text="@string/backend_developer"
-                    android:textColor="@color/subtitleColor"
-                    android:textSize="12sp" />
-            </LinearLayout>
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+                    <de.hdodenhof.circleimageview.CircleImageView
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"
+                        android:src="@drawable/achal_sir_profile" />
 
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:elevation="4dp"
-        app:cardBackgroundColor="@color/cardAboutColor"
-        app:cardCornerRadius="8dp">
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:orientation="vertical">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="8dp">
+                        <TextView
+                            style="@style/TextAppearance.Material3.LabelLarge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_vertical"
+                            android:layout_marginStart="16dp"
+                            android:text="@string/mentor_name"
+                            android:textColor="@color/black"
+                            android:textSize="16sp" />
 
-            <de.hdodenhof.circleimageview.CircleImageView
-                android:layout_width="56dp"
-                android:layout_height="56dp"
-                android:src="@drawable/nishant_profile" />
+                        <TextView
+                            style="@style/TextAppearance.Material3.LabelSmall"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_vertical"
+                            android:layout_marginStart="16dp"
+                            android:text="@string/mentor_designation"
+                            android:textSize="12sp" />
+                    </LinearLayout>
 
-            <LinearLayout
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+
+            <TextView
+                style="@style/TextAppearance.MaterialComponents.Headline6"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_vertical"
-                android:orientation="vertical">
+                android:layout_marginTop="32dp"
+                android:text="@string/developers_title"
+                android:textColor="@color/white" />
 
-                <TextView
-                    style="@style/TextAppearance.Material3.LabelLarge"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
-                    android:layout_marginStart="16dp"
-                    android:text="@string/android_developer_name"
-                    android:textColor="@color/white"
-                    android:textSize="16sp" />
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:elevation="4dp"
+                app:cardCornerRadius="8dp">
 
-                <TextView
-                    style="@style/TextAppearance.Material3.LabelSmall"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
-                    android:layout_marginStart="16dp"
-                    android:text="@string/android_developer"
-                    android:textColor="@color/subtitleColor"
-                    android:textSize="12sp" />
-            </LinearLayout>
+                    android:layout_margin="8dp">
+
+                    <de.hdodenhof.circleimageview.CircleImageView
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"
+                        android:src="@drawable/shubham_profile" />
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/TextAppearance.Material3.LabelLarge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_vertical"
+                            android:layout_marginStart="16dp"
+                            android:text="@string/backend_developer_name"
+                            android:textColor="@color/black"
+                            android:textSize="16sp" />
+
+                        <TextView
+                            style="@style/TextAppearance.Material3.LabelSmall"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_vertical"
+                            android:layout_marginStart="16dp"
+                            android:text="@string/backend_developer"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:elevation="4dp"
+                app:cardCornerRadius="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="8dp">
+
+                    <de.hdodenhof.circleimageview.CircleImageView
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"
+                        android:src="@drawable/nishant_profile" />
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/TextAppearance.Material3.LabelLarge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_vertical"
+                            android:layout_marginStart="16dp"
+                            android:text="@string/android_developer_name"
+                            android:textColor="@color/black"
+                            android:textSize="16sp" />
+
+                        <TextView
+                            style="@style/TextAppearance.Material3.LabelSmall"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_vertical"
+                            android:layout_marginStart="16dp"
+                            android:text="@string/android_developer"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:elevation="4dp"
+                app:cardCornerRadius="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="8dp">
+
+                    <de.hdodenhof.circleimageview.CircleImageView
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"
+                        android:src="@drawable/rajat_profile" />
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/TextAppearance.Material3.LabelLarge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_vertical"
+                            android:layout_marginStart="16dp"
+                            android:text="@string/ios_developer_name"
+                            android:textColor="@color/black"
+                            android:textSize="16sp" />
+
+                        <TextView
+                            style="@style/TextAppearance.Material3.LabelSmall"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_vertical"
+                            android:layout_marginStart="16dp"
+                            android:text="@string/ios_developer"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:elevation="4dp"
+                app:cardCornerRadius="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="8dp">
+
+                    <de.hdodenhof.circleimageview.CircleImageView
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"
+                        android:src="@drawable/mohak_profile" />
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/TextAppearance.Material3.LabelLarge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_vertical"
+                            android:layout_marginStart="16dp"
+                            android:text="@string/react_developer_name"
+                            android:textColor="@color/black"
+                            android:textSize="16sp" />
+
+                        <TextView
+                            style="@style/TextAppearance.Material3.LabelSmall"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_vertical"
+                            android:layout_marginStart="16dp"
+                            android:text="@string/react_developer"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
 
-    <TextView
-        android:id="@+id/versionAbout"
-        android:layout_width="wrap_content"
-        android:layout_height="0dp"
-        android:layout_gravity="center_horizontal"
-        android:layout_weight="1"
-        android:gravity="bottom"
-        android:textColor="@color/versionColor"
-        android:textStyle="bold"
-        tools:text="v2022.11.1" />
+        <TextView
+            android:id="@+id/versionAbout"
+            android:layout_width="wrap_content"
+            android:layout_height="0dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="32dp"
+            android:layout_weight="1"
+            android:gravity="bottom"
+            android:textColor="@color/versionColor"
+            android:textStyle="bold"
+            tools:text="v2022.11.1" />
 
 
-</LinearLayout>
+    </LinearLayout>
+</ScrollView>

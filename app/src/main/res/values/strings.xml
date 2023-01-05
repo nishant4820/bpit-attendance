@@ -72,7 +72,7 @@
     <string name="backend_developer_name">Shubham Jindal</string>
     <string name="mentor_designation">HOD (Computer Science)</string>
     <string name="mentor_name">Prof. Achal Kaushik</string>
-    <string name="about_title">ABOUT</string>
+    <string name="about_title">ABOUT US</string>
     <string name="mentors_title">Mentors</string>
     <string name="developers_title">Developers</string>
     <string name="view_statistics">View Statistics</string>
@@ -82,6 +82,10 @@
     <string name="my">My</string>
     <string name="tick_logo">Tick Logo</string>
     <string name="password_changed">Password Changed!</string>
+    <string name="ios_developer_name">Rajat Verma</string>
+    <string name="ios_developer">iOS Developer</string>
+    <string name="react_developer_name">Mohak Sharma</string>
+    <string name="react_developer">React Developer</string>
     <string-array name="months_array">
         <item>January</item>
         <item>February</item>

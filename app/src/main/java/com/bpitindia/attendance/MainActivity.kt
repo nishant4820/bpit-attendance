@@ -49,6 +49,7 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
         // to make the Navigation drawer icon always appear on the action bar
         supportActionBar?.setDisplayHomeAsUpEnabled(false)
         setupDrawerContent(navigationView)
+        setDrawerLocked()
         checkForUpdates(1)
     }
 

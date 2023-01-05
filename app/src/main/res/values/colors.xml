@@ -20,10 +20,11 @@
     <color name="profileEditTextColor">#707070</color>
     <color name="bpitColor">#E6141B83</color>
     <color name="subtitleColor">#FFE2E2E2</color>
-    <color name="cardAboutColor">#5C6BC0</color>
+    <color name="cardAboutColor">#3F51B5</color>
     <color name="inputEditTextBackground">#E8EAF6</color>
     <color name="loaderColor">#3F51B5</color>
     <color name="buttonLoaderColor">#FF9800</color>
     <color name="versionColor">#3F51B5</color>
     <color name="profileItemHeadingColor">#303F9F</color>
+    <color name="aboutBG">#3949AB</color>
 </resources>

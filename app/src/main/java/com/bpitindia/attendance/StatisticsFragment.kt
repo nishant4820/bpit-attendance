@@ -185,10 +185,10 @@ class StatisticsFragment : Fragment() {
                     } else {
                         activity?.deleteSharedPreferences(SHARED_PREFERENCES_NAME)
                         activity?.runOnUiThread {
-                            Snackbar.make(
-                                view,
+                            Toast.makeText(
+                                context,
                                 "Session Expired!! Log in again.",
-                                Snackbar.LENGTH_SHORT
+                                Toast.LENGTH_SHORT
                             ).show()
                             progressBar.visibility = ProgressBar.INVISIBLE
                             findNavController().navigate(R.id.action_statisticsFragment_to_loginFragment)

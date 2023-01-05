@@ -8,6 +8,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -99,10 +100,10 @@ class SubjectListFragment : Fragment() {
                         } else {
                             activity?.deleteSharedPreferences(SHARED_PREFERENCES_NAME)
                             activity?.runOnUiThread {
-                                Snackbar.make(
-                                    view,
+                                Toast.makeText(
+                                    context,
                                     "Session Expired! Log in again.",
-                                    Snackbar.LENGTH_SHORT
+                                    Toast.LENGTH_SHORT
                                 ).show()
                                 progressBar.visibility = ProgressBar.INVISIBLE
                                 findNavController().navigate(R.id.action_subjectListFragment_to_loginFragment)
