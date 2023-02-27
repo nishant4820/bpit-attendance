@@ -6,15 +6,15 @@
     <string name="log_in">Log In</string>
     <string name="confirm_dialog">Total Students: %d\nPresent Students: %d\nAbsent Students: %d</string>
     <string name="attendance_count">Total Attendance: %d</string>
-    <string name="login_api_url">https://bpit-att.herokuapp.com/api/auth/user/login/</string>
-    <string name="logout_api_url">https://bpit-att.herokuapp.com/api/auth/logout/</string>
-    <string name="profile_api_url">https://bpit-att.herokuapp.com/api/faculty/profile/%d</string>
-    <string name="subject_api_url">https://bpit-att.herokuapp.com/api/faculty/subjects/</string>
-    <string name="forgot_password_api_url">https://bpit-att.herokuapp.com/api/auth/forgot_password/</string>
-    <string name="validate_otp_api_url">https://bpit-att.herokuapp.com/api/auth/validate_otp/</string>
-    <string name="reset_password_api_url">https://bpit-att.herokuapp.com/api/auth/reset_password/</string>
-    <string name="api_host">bpit-att.herokuapp.com</string>
-    <string name="submit_attendance_api_url">https://bpit-att.herokuapp.com/api/student/attendance/submit/</string>
+    <string name="login_api_url">/api/auth/user/login/</string>
+    <string name="logout_api_url">/api/auth/logout/</string>
+    <string name="profile_api_url">/api/faculty/profile/%d</string>
+    <string name="subject_api_url">/api/faculty/subjects/</string>
+    <string name="forgot_password_api_url">/api/auth/forgot_password/</string>
+    <string name="validate_otp_api_url">/api/auth/validate_otp/</string>
+    <string name="reset_password_api_url">/api/auth/reset_password/</string>
+<!--    <string name="api_host">bpit-att.herokuapp.com</string>-->
+    <string name="submit_attendance_api_url">/api/student/attendance/submit/</string>
     <string name="nav_open">Open</string>
     <string name="nav_close">Close</string>
     <string name="hello_blank_fragment">Hello blank fragment</string>
@@ -55,7 +55,7 @@
     <string name="enter_otp">Enter OTP</string>
     <string name="reset">reset</string>
     <string name="fab_content_desc">Floating Action Button</string>
-    <string name="all_subject_api_url">https://bpit-att.herokuapp.com/api/subjects/</string>
+    <string name="all_subject_api_url">/api/subjects/</string>
     <string name="mark_all">Mark All</string>
     <string name="action_spinner">SPINNER</string>
     <string name="no_data">No data available for %s</string>
@@ -64,7 +64,7 @@
     <string name="my_profile">My Profile</string>
     <string name="about">About</string>
     <string name="welcome">Welcome!</string>
-    <string name="update_version_api_url">https://bpit-att.herokuapp.com/api/version/check_updates?platform=android</string>
+    <string name="update_version_api_url">/api/version/check_updates?platform=android</string>
     <string name="check_for_updates">Check for Updates</string>
     <string name="android_developer_name">Nishant Mittal</string>
     <string name="android_developer">Android Developer</string>
@@ -86,6 +86,7 @@
     <string name="ios_developer">iOS Developer</string>
     <string name="react_developer_name">Mohak Sharma</string>
     <string name="react_developer">React Developer</string>
+    <string name="public_api">https://techcse2020.pythonanywhere.com/</string>
     <string-array name="months_array">
         <item>January</item>
         <item>February</item>

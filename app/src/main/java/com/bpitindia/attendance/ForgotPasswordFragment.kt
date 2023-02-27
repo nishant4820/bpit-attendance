@@ -1,6 +1,7 @@
 package com.bpitindia.attendance
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -25,6 +26,8 @@ import org.json.JSONObject
 import java.io.IOException
 
 private const val EMAIL = "email"
+private const val SHARED_PREFERENCES_NAME = "shared_pref"
+
 
 class ForgotPasswordFragment : Fragment() {
     private var email: String? = null
@@ -32,6 +35,7 @@ class ForgotPasswordFragment : Fragment() {
     private lateinit var progressBar: ProgressBar
     private lateinit var inputMethodManager: InputMethodManager
     private lateinit var button: TextView
+    private var sharedPreferences: SharedPreferences? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -85,7 +89,9 @@ class ForgotPasswordFragment : Fragment() {
 
     private fun requestOTP(view: View) {
         inputMethodManager.hideSoftInputFromWindow(resetEmailEditText.windowToken, 0)
-        val url = getString(R.string.forgot_password_api_url)
+        sharedPreferences = activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
+        val tunnelURL: String? = sharedPreferences?.getString("url", null)
+        val url = tunnelURL+getString(R.string.forgot_password_api_url)
         val client = OkHttpClient()
         val mailID: String = resetEmailEditText.text.toString()
         if (mailID.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(mailID).matches()) {

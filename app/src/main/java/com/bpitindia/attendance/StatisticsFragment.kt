@@ -131,9 +131,11 @@ class StatisticsFragment : Fragment() {
         progressBar.visibility = ProgressBar.VISIBLE
         noDataTextView.visibility = TextView.GONE
         Log.d("debug", "stats month $month")
+        sharedPreferences = activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
+        val tunnelURL: String? = sharedPreferences?.getString("url", null)
         val httpUrlBuilder: HttpUrl.Builder = HttpUrl.Builder()
-            .scheme("https")
-            .host(getString(R.string.api_host))
+            .scheme("http")
+            .host(tunnelURL!!.substring(8))
             .addPathSegment("api")
             .addPathSegment("student")
             .addPathSegment("attendance")
@@ -254,21 +256,21 @@ class StatisticsFragment : Fragment() {
         for (i in 0 until studentData.length()) {
             val jsonArray = studentData.getJSONObject(i).getJSONArray("attendance_data")
             val mainRow = FixedHeaderTableRow(context)
-            var cumulativeSum = 0
+            var prev = 0
             for (j in 0 until jsonArray.length()) {
-                val isPresent = jsonArray.getInt(j)
-                cumulativeSum += isPresent
+                val cumulativeSum = jsonArray.getInt(j)
                 val tv = TextView(context)
                 tv.gravity = Gravity.CENTER
                 tv.text = cumulativeSum.toString()
                 tv.setPadding(20, 20, 20, 20)
                 tv.setTypeface(tv.typeface, Typeface.BOLD)
-                if (isPresent == 0) tv.setTextColor(
+                if (cumulativeSum == prev) tv.setTextColor(
                     ContextCompat.getColor(
                         requireContext(),
                         R.color.absent_color
                     )
                 )
+                prev = cumulativeSum
                 mainRow.addView(tv)
             }
             mainTableLayout.addView(mainRow)

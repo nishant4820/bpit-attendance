@@ -109,7 +109,10 @@ class LoginFragment : Fragment() {
 
     private fun logIn(view: View) {
         inputMethodManager.hideSoftInputFromWindow(button.windowToken, 0)
-        val url = getString(R.string.login_api_url)
+        sharedPreferences = activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
+        val tunnelURL: String? = sharedPreferences?.getString("url", null)
+        val url = tunnelURL+getString(R.string.login_api_url)
+        Log.d("debug", url)
         val client = OkHttpClient()
         val mailID: String = emailEditText.text.toString().lowercase()
         val pass: String = passwordEditText.text.toString()
@@ -130,9 +133,10 @@ class LoginFragment : Fragment() {
             val request: Request = Request.Builder().url(url).post(body).build()
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
-                    progressBar.visibility = ProgressBar.INVISIBLE
-                    button.visibility = TextView.VISIBLE
+
                     activity?.runOnUiThread {
+                        progressBar.visibility = ProgressBar.INVISIBLE
+                        button.visibility = TextView.VISIBLE
                         Snackbar.make(view, "Some error occurred", Snackbar.LENGTH_SHORT).show()
                     }
                     Log.d("debug", "login failed")

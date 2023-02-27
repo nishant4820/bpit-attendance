@@ -1,6 +1,7 @@
 package com.bpitindia.attendance
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -27,6 +28,8 @@ import java.io.IOException
 
 private const val EMAIL = "email"
 private const val OTP = "otp"
+private const val SHARED_PREFERENCES_NAME = "shared_pref"
+
 
 class ResetPasswordFragment : Fragment() {
     private var email: String? = null
@@ -36,6 +39,7 @@ class ResetPasswordFragment : Fragment() {
     private lateinit var resetButton: TextView
     private lateinit var progressBar: ProgressBar
     private lateinit var inputMethodManager: InputMethodManager
+    private var sharedPreferences: SharedPreferences? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -104,7 +108,9 @@ class ResetPasswordFragment : Fragment() {
         }
         progressBar.visibility = ProgressBar.VISIBLE
         resetButton.visibility = TextView.INVISIBLE
-        val url = getString(R.string.reset_password_api_url)
+        sharedPreferences = activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
+        val tunnelURL: String? = sharedPreferences?.getString("url", null)
+        val url = tunnelURL+getString(R.string.reset_password_api_url)
         val client = OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val bodyJSONObject = JSONObject()

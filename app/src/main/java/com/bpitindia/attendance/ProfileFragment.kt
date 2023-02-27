@@ -118,7 +118,9 @@ class ProfileFragment : Fragment() {
     }
 
     private fun updateProfile(token: String, id: Int, view: View) {
-        val url = getString(R.string.profile_api_url, id)
+        sharedPreferences = activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
+        val tunnelURL: String? = sharedPreferences?.getString("url", null)
+        val url = tunnelURL+getString(R.string.profile_api_url, id)
         val client = OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val mediaType = "application/json; charset=utf-8".toMediaType()

@@ -139,9 +139,11 @@ class StudentListFragment : Fragment() {
     }
 
     private fun fetchStudents(view: View) {
+        sharedPreferences = activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
+        val tunnelURL: String? = sharedPreferences?.getString("url", null)
         val httpUrlBuilder: HttpUrl.Builder = HttpUrl.Builder()
-            .scheme("https")
-            .host(getString(R.string.api_host))
+            .scheme("http")
+            .host(tunnelURL!!.substring(8))
             .addPathSegment("api")
             .addPathSegment("student")
             .addPathSegment("attendance")
@@ -214,7 +216,9 @@ class StudentListFragment : Fragment() {
             attendanceJSONObject.put("date", currentDateAndTime)
             jsonArray.put(attendanceJSONObject)
         }
-        val url = getString(R.string.submit_attendance_api_url)
+        sharedPreferences = activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
+        val tunnelURL: String? = sharedPreferences?.getString("url", null)
+        val url = tunnelURL+getString(R.string.submit_attendance_api_url)
         val client = OkHttpClient()
 
         lifecycleScope.launch {

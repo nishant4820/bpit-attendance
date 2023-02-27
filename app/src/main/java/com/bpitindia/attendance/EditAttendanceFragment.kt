@@ -125,9 +125,11 @@ class EditAttendanceFragment : Fragment() {
     private fun fetchData(view: View) {
         progressBar.visibility = ProgressBar.VISIBLE
         noDataTextView.visibility = TextView.GONE
+        sharedPreferences = activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
+        val tunnelURL: String? = sharedPreferences?.getString("url", null)
         val httpUrlBuilder = HttpUrl.Builder()
-            .scheme("https")
-            .host(getString(R.string.api_host))
+            .scheme("http")
+            .host(tunnelURL!!.substring(8))
             .addPathSegment("api")
             .addPathSegment("student")
             .addPathSegment("attendance")
@@ -196,7 +198,9 @@ class EditAttendanceFragment : Fragment() {
         obj.put("record", dataSet)
         val mediaType = "application/json; charset=utf-8".toMediaType()
         val body = obj.toString().toRequestBody(mediaType)
-        val url = getString(R.string.submit_attendance_api_url)
+        sharedPreferences = activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
+        val tunnelURL: String? = sharedPreferences?.getString("url", null)
+        val url = tunnelURL+getString(R.string.submit_attendance_api_url)
         val client = OkHttpClient()
         Log.d("debug", "edit attendance upload ${token.toString()}")
 

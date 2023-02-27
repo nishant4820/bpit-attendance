@@ -107,7 +107,9 @@ class ChangePasswordFragment : Fragment() {
         progressBar.visibility = ProgressBar.VISIBLE
         changeButton.visibility = TextView.INVISIBLE
         val editor = sharedPreferences?.edit()
-        val url = getString(R.string.reset_password_api_url)
+        sharedPreferences = activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
+        val tunnelURL: String? = sharedPreferences?.getString("url", null)
+        val url = tunnelURL+getString(R.string.reset_password_api_url)
         val client = OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val bodyJSONObject = JSONObject()

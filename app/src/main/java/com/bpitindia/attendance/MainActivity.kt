@@ -50,7 +50,35 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
         supportActionBar?.setDisplayHomeAsUpEnabled(false)
         setupDrawerContent(navigationView)
         setDrawerLocked()
-        checkForUpdates(1)
+        getUrl()
+//        checkForUpdates(1)
+    }
+
+    private fun getUrl() {
+        sharedPreferences = getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
+        val editor = sharedPreferences?.edit()
+        val url = getString(R.string.public_api)
+        val client = OkHttpClient()
+        lifecycleScope.launch(Dispatchers.IO) {
+            val request =
+                Request.Builder().url(url).get().build()
+            client.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    Log.d("debug", "failed"+e.message)
+
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    val jsonObject = response.body?.string()
+                        ?.let { JSONObject(it) }
+                    val tunnelURL = jsonObject!!.getString("url")
+                    editor?.putString("url", tunnelURL)
+                    editor?.apply()
+                    Log.d("debug", tunnelURL)
+                }
+
+            })
+        }
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -106,7 +134,9 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
             2 -> call from check for update menu item in nav drawer
          */
 
-        val url = getString(R.string.update_version_api_url)
+        sharedPreferences = getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
+        val tunnelURL: String? = sharedPreferences?.getString("url", null)
+        val url = tunnelURL+getString(R.string.update_version_api_url)
         val client = OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val request =
@@ -151,7 +181,8 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
     private fun logout(view: View) {
         sharedPreferences = getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
         val token = sharedPreferences?.getString(SHARED_PREFERENCES_TOKEN_KEY, null)
-        val url = getString(R.string.logout_api_url)
+        val tunnelURL: String? = sharedPreferences?.getString("url", null)
+        val url = tunnelURL+getString(R.string.logout_api_url)
         val client = OkHttpClient()
         Log.d("debug", "logout token $token")
         lifecycleScope.launch(Dispatchers.IO) {
@@ -177,6 +208,7 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                         navController.navigate(R.id.action_subjectListFragment_to_loginFragment)
                     }
                     response.body?.close()
+                    getUrl()
                 }
 
             })
@@ -184,7 +216,9 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
     }
 
     fun fetchProfile(token: String, id: Int) {
-        val url = getString(R.string.profile_api_url, id)
+        sharedPreferences = getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
+        val tunnelURL: String? = sharedPreferences?.getString("url", null)
+        val url = tunnelURL+getString(R.string.profile_api_url, id)
         val client = OkHttpClient()
         Log.d("debug", "profile $token")
         lifecycleScope.launch(Dispatchers.IO) {

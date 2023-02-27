@@ -66,7 +66,9 @@ class SubjectListFragment : Fragment() {
 
     private fun fetchSubjects(view: View) {
         progressBar.visibility = ProgressBar.VISIBLE
-        val url = getString(R.string.subject_api_url)
+        sharedPreferences = activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
+        val tunnelURL: String? = sharedPreferences?.getString("url", null)
+        val url = tunnelURL+getString(R.string.subject_api_url)
         val client = OkHttpClient()
         Log.d("debug", "fetchSub Token $token")
 
