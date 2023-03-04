@@ -39,6 +39,7 @@ private const val AUTHORIZATION = "Authorization"
 private const val IS_LAB = "is_lab"
 private const val GROUP = "group"
 private const val SUBJECT = "subject"
+private const val SEMESTER = "semester"
 private const val SHARED_PREFERENCES_NAME = "shared_pref"
 private const val SHARED_PREFERENCES_TOKEN_KEY = "token"
 
@@ -50,6 +51,7 @@ class StatisticsFragment : Fragment() {
     private var group: String? = null
     private var isLab: Boolean? = null
     private var subject: String? = null
+    private var semester: Int? = null
     private var sharedPreferences: SharedPreferences? = null
     private lateinit var progressBar: ProgressBar
     private lateinit var noDataTextView: TextView
@@ -64,7 +66,7 @@ class StatisticsFragment : Fragment() {
             isLab = it.getBoolean(IS_LAB)
             group = it.getString(GROUP)
             subject = it.getString(SUBJECT)
-
+            semester = it.getInt(SEMESTER)
         }
         sharedPreferences =
             activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
@@ -87,22 +89,25 @@ class StatisticsFragment : Fragment() {
         tableLayout = view.findViewById(R.id.FixedHeaderTableLayout)
         progressBar = view.findViewById(R.id.stats_progress_bar)
         noDataTextView = view.findViewById(R.id.no_data)
-        val sdf = SimpleDateFormat("MM", Locale.getDefault())
-        val currentMonth = sdf.format(Date())
+        val monthFormat = SimpleDateFormat("MM", Locale.getDefault())
+        val currentMonth = monthFormat.format(Date())
+        val yearFormat = SimpleDateFormat("yyyy", Locale.getDefault())
+        val currentYear = yearFormat.format(Date())
         Log.d("debug", "current month $currentMonth")
         val menuHost: MenuHost = requireActivity()
+        val currMonthInt = currentMonth.toInt()
+        val currYearInt = currentYear.toInt()
+        val list = makeListForDropdown(currMonthInt, currYearInt)
+
         menuHost.addMenuProvider(object : MenuProvider {
             override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
                 menuInflater.inflate(R.menu.menu_stats_fragment, menu)
                 val spinner = menu.findItem(R.id.spinner).actionView as Spinner
-                ArrayAdapter.createFromResource(
-                    activity!!,
-                    R.array.months_array,
-                    android.R.layout.simple_spinner_item
-                ).also { adapter ->
-                    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-                    spinner.adapter = adapter
-                }
+                val arrayAdapter: ArrayAdapter<String> = ArrayAdapter<String>(
+                    context!!, android.R.layout.simple_spinner_dropdown_item, list
+                )
+                arrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                spinner.adapter = arrayAdapter
                 spinner.setSelection(Integer.parseInt(currentMonth) - 1)
                 spinner.onItemSelectedListener = (object : AdapterView.OnItemSelectedListener {
                     override fun onItemSelected(
@@ -111,9 +116,9 @@ class StatisticsFragment : Fragment() {
                         position: Int,
                         id: Long
                     ) {
-                        val month: String = parent?.getItemAtPosition(position) as String
+                        val monthYear: String = parent?.getItemAtPosition(position) as String
                         tableLayout.removeAllViews()
-                        fetchData(month, view)
+                        fetchData(monthYear, view)
                     }
 
                     override fun onNothingSelected(parent: AdapterView<*>?) {}
@@ -127,10 +132,27 @@ class StatisticsFragment : Fragment() {
         }, viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
 
-    private fun fetchData(month: String, view: View) {
+    private fun makeListForDropdown(currMonthInt: Int, currYearInt: Int) : List<String>{
+        val list: List<String> = if (semester?.rem(2) == 0) {
+            listOf(
+                "JAN $currYearInt", "FEB $currYearInt", "MAR $currYearInt", "APR $currYearInt",
+                "MAY $currYearInt", "JUN $currYearInt", "JUL $currYearInt", "AUG $currYearInt"
+            )
+        } else {
+            val yearX = if (currMonthInt in 7..12) currYearInt else currYearInt-1
+            val yearY = yearX+1
+            listOf(
+                "AUG $yearX", "SEP $yearX", "OCT $yearX", "NOV $yearX",
+                "DEC $yearX", "JAN $yearY", "FEB $yearY", "MAR $yearY"
+            )
+        }
+        return list
+    }
+
+    private fun fetchData(monthYear: String, view: View) {
         progressBar.visibility = ProgressBar.VISIBLE
         noDataTextView.visibility = TextView.GONE
-        Log.d("debug", "stats month $month")
+        Log.d("debug", "stats month year $monthYear")
         sharedPreferences = activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
         val tunnelURL: String? = sharedPreferences?.getString("url", null)
         val httpUrlBuilder: HttpUrl.Builder = HttpUrl.Builder()
@@ -144,7 +166,8 @@ class StatisticsFragment : Fragment() {
             .addQueryParameter("branch", branch)
             .addQueryParameter("subject", subject)
             .addQueryParameter("section", section)
-            .addQueryParameter("month", findMonth(month))
+            .addQueryParameter("month", findMonth(monthYear))
+            .addQueryParameter("year", findYear(monthYear))
             .addQueryParameter("group", group)
         val httpUrl = httpUrlBuilder.build()
         val client = OkHttpClient()
@@ -175,7 +198,7 @@ class StatisticsFragment : Fragment() {
                         activity?.runOnUiThread {
                             progressBar.visibility = ProgressBar.INVISIBLE
                             if (msg == "No data available") {
-                                noDataTextView.text = getString(R.string.no_data, month)
+                                noDataTextView.text = getString(R.string.no_data, monthYear)
                                 noDataTextView.visibility = TextView.VISIBLE
                                 Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
                                 return@runOnUiThread
@@ -302,8 +325,8 @@ class StatisticsFragment : Fragment() {
     }
 
     private fun String.toDate(
-        dateFormat: String = "dd-MM-yyyy HH:mm",
-        timeZone: TimeZone = TimeZone.getTimeZone("UTC")
+        dateFormat: String = "yyyy-MM-dd'T'HH:mm:ss",
+        timeZone: TimeZone = TimeZone.getTimeZone("Asia/Kolkata")
     ): Date? {
         val parser = SimpleDateFormat(dateFormat, Locale.getDefault())
         parser.timeZone = timeZone
@@ -312,30 +335,34 @@ class StatisticsFragment : Fragment() {
 
     private fun Date.formatTo(
         dateFormat: String,
-        timeZone: TimeZone = TimeZone.getDefault()
+        timeZone: TimeZone = TimeZone.getTimeZone("Asia/Kolkata")
     ): String {
         val formatter = SimpleDateFormat(dateFormat, Locale.getDefault())
         formatter.timeZone = timeZone
         return formatter.format(this)
     }
 
-    private fun findMonth(month: String): String {
-        val mm: String = when (month) {
-            "January" -> "1"
-            "February" -> "2"
-            "March" -> "3"
-            "April" -> "4"
-            "May" -> "5"
-            "June" -> "6"
-            "July" -> "7"
-            "August" -> "8"
-            "September" -> "9"
-            "October" -> "10"
-            "November" -> "11"
-            "December" -> "12"
+    private fun findMonth(monthYear: String): String {
+        val mm: String = when (monthYear.substring(0, 3)) {
+            "JAN" -> "1"
+            "FEB" -> "2"
+            "MAR" -> "3"
+            "APR" -> "4"
+            "MAY" -> "5"
+            "JUN" -> "6"
+            "JUL" -> "7"
+            "AUG" -> "8"
+            "SEP" -> "9"
+            "OCT" -> "10"
+            "NOV" -> "11"
+            "DEC" -> "12"
             else -> "0"
         }
         return mm
+    }
+
+    private fun findYear(monthYear: String): String {
+        return monthYear.substring(4)
     }
 
 }

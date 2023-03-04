@@ -50,8 +50,12 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
         supportActionBar?.setDisplayHomeAsUpEnabled(false)
         setupDrawerContent(navigationView)
         setDrawerLocked()
+        Log.d("debug", "oncreate")
+    }
+
+    override fun onStart() {
+        super.onStart()
         getUrl()
-//        checkForUpdates(1)
     }
 
     private fun getUrl() {
@@ -64,17 +68,28 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                 Request.Builder().url(url).get().build()
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
-                    Log.d("debug", "failed"+e.message)
-
+                    Log.d("debug", "get url from techcse2020 failed "+e.message)
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity, "Please check Internet Connection!", Toast.LENGTH_SHORT).show()
+                    }
                 }
 
                 override fun onResponse(call: Call, response: Response) {
-                    val jsonObject = response.body?.string()
-                        ?.let { JSONObject(it) }
-                    val tunnelURL = jsonObject!!.getString("url")
-                    editor?.putString("url", tunnelURL)
-                    editor?.apply()
-                    Log.d("debug", tunnelURL)
+                    if (response.isSuccessful) {
+                        val jsonObject = response.body?.string()
+                            ?.let { JSONObject(it) }
+                        val tunnelURL = jsonObject!!.getString("url")
+                        editor?.putString("url", tunnelURL)
+                        editor?.apply()
+                        Log.d("debug", "ngrok url fetch successful: $tunnelURL")
+                        checkForUpdates(1)
+                    } else {
+                        runOnUiThread {
+                            Toast.makeText(this@MainActivity, "Something went wrong. Please try again later!", Toast.LENGTH_SHORT).show()
+                        }
+                        Log.d("debug", "get url response unsuccessful")
+                    }
+
                 }
 
             })
@@ -143,34 +158,51 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                 Request.Builder().url(url).get().build()
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
-
+                    Log.d("debug", "check update failed "+e.message)
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity, "Please check Internet Connection!", Toast.LENGTH_SHORT).show()
+                    }
                 }
 
                 override fun onResponse(call: Call, response: Response) {
-                    val jsonObject = response.body?.string()
-                        ?.let { JSONObject(it) }
-                    val newVersion = jsonObject?.getInt("versionCode")
-                    val currentVersion = BuildConfig.VERSION_CODE
-                    Log.d("debug", "$newVersion $currentVersion")
-                    val apkURL = jsonObject?.getString("url")
-                    runOnUiThread {
-                        if (newVersion!! > currentVersion) {
-                            AlertDialog.Builder(this@MainActivity).apply {
-                                setTitle("Update App?")
-                                setMessage("It is recommended that you update to the latest version.")
-                                setPositiveButton("UPDATE") { _, _ ->
-                                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(apkURL)))
-                                }
-                                setNegativeButton("NO, THANKS") { _, _ -> }
-                            }.show()
-                        } else if (callID == 2) {
-                            AlertDialog.Builder(this@MainActivity).apply {
-                                setTitle("No Update Available!")
-                                setMessage("Version: ${BuildConfig.VERSION_NAME}\nContact developer for any bugs.")
-                                setPositiveButton("Continue") { _, _ -> }
-                            }.show()
+                    if (response.isSuccessful) {
+                        val jsonObject = response.body?.string()
+                            ?.let { JSONObject(it) }
+                        val newVersion = jsonObject?.getInt("versionCode")
+                        val currentVersion = BuildConfig.VERSION_CODE
+                        Log.d("debug", "latest version: $newVersion current version: $currentVersion")
+                        val apkURL = jsonObject?.getString("url")
+                        runOnUiThread {
+                            if (newVersion!! > currentVersion) {
+                                AlertDialog.Builder(this@MainActivity).apply {
+                                    setTitle("Update App?")
+                                    setMessage("It is recommended that you update to the latest version.")
+                                    setPositiveButton("UPDATE") { _, _ ->
+                                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(apkURL)))
+                                    }
+                                    setNegativeButton("NO, THANKS") { _, _ -> }
+                                }.show()
+                            } else if (callID == 2) {
+                                AlertDialog.Builder(this@MainActivity).apply {
+                                    setTitle("No Update Available!")
+                                    setMessage("Version: ${BuildConfig.VERSION_NAME}\nContact developer for any bugs.")
+                                    setPositiveButton("Continue") { _, _ -> }
+                                }.show()
+                            }
                         }
+                    } else {
+                        runOnUiThread {
+                            if (response.code == 404) {
+                                Toast.makeText(
+                                    this@MainActivity,
+                                    "Something went wrong. Please try again later!",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                        Log.d("debug", "check update response unsuccessful")
                     }
+
                 }
 
             })

@@ -57,6 +57,7 @@ class SubjectAdapter(private val dataSet: JSONArray) :
         bundle.putBoolean("is_lab", subInfo.getBoolean("is_lab"))
         bundle.putString("group", subInfo.getString("group"))
         bundle.putString("subject", subInfo.getString("subject_code"))
+        bundle.putInt("semester", subInfo.getInt("semester"))
 
         holder.optionMenu.setOnClickListener {
             val popup = PopupMenu(it.context, holder.optionMenu)

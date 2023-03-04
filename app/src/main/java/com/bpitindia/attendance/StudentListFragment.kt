@@ -204,6 +204,12 @@ class StudentListFragment : Fragment() {
     }
 
     private fun markAttendance(view: View) {
+        val progressDialog = android.app.ProgressDialog(context)
+        progressDialog.setTitle("Submitting Attendance")
+        progressDialog.setMessage("Please Wait...")
+        progressDialog.setCanceledOnTouchOutside(false)
+        progressDialog.setCancelable(false)
+        progressDialog.show()
         val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
         val currentDateAndTime = sdf.format(Date())
         val jsonArray = JSONArray()
@@ -231,6 +237,7 @@ class StudentListFragment : Fragment() {
                 Request.Builder().url(url).addHeader("Authorization", token!!).post(body).build()
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
+                    progressDialog.dismiss()
                     activity?.runOnUiThread {
                         Snackbar.make(view, "Some error occurred", Snackbar.LENGTH_SHORT).show()
                     }
@@ -238,6 +245,7 @@ class StudentListFragment : Fragment() {
                 }
 
                 override fun onResponse(call: Call, response: Response) {
+                    progressDialog.dismiss()
                     Log.d("debug response", response.body!!.string())
 
                     activity?.runOnUiThread {
