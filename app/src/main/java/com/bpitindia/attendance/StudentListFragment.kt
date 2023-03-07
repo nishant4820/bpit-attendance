@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.*
 import android.widget.ProgressBar
+import android.widget.Toast
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
@@ -139,11 +140,13 @@ class StudentListFragment : Fragment() {
     }
 
     private fun fetchStudents(view: View) {
-        sharedPreferences = activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
+        sharedPreferences =
+            activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
         val tunnelURL: String? = sharedPreferences?.getString("url", null)
+        val schemeHost = tunnelURL?.split("://")
         val httpUrlBuilder: HttpUrl.Builder = HttpUrl.Builder()
-            .scheme("http")
-            .host(tunnelURL!!.substring(8))
+            .scheme(schemeHost!![0])
+            .host(schemeHost[1])
             .addPathSegment("api")
             .addPathSegment("student")
             .addPathSegment("attendance")
@@ -155,7 +158,6 @@ class StudentListFragment : Fragment() {
         if (isLab == true) httpUrlBuilder.addQueryParameter("group", group)
         val httpUrl = httpUrlBuilder.build()
         val client = OkHttpClient()
-        Log.d("debug", "student fragment token ${token.toString()}")
         lifecycleScope.launch(Dispatchers.IO) {
             val request: Request = Request.Builder()
                 .url(httpUrl)
@@ -164,11 +166,12 @@ class StudentListFragment : Fragment() {
                 .build()
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
+                    Log.d("debug", "fetch student failed")
                     activity?.runOnUiThread {
-                        Snackbar.make(view, "Some error occurred", Snackbar.LENGTH_SHORT).show()
+//                        Snackbar.make(view, "Please check Internet Connection!", Snackbar.LENGTH_SHORT).show()
                         progressBar.visibility = ProgressBar.INVISIBLE
+                        findNavController().popBackStack()
                     }
-                    Log.d("debug", "Some error occurred!!")
                 }
 
                 override fun onResponse(call: Call, response: Response) {
@@ -178,7 +181,7 @@ class StudentListFragment : Fragment() {
                             val student = jsonArray.getJSONObject(i)
                             attendanceMap[student.getString("enrollment_number")] = false
                         }
-                        Log.d("debug", "student json size: ${jsonArray.length()}")
+                        Log.d("debug", "student fetch successful")
                         activity?.runOnUiThread {
                             setRecyclerView(view.findViewById(R.id.studentList))
                             progressBar.visibility = ProgressBar.INVISIBLE
@@ -186,7 +189,8 @@ class StudentListFragment : Fragment() {
                     } else {
                         activity?.runOnUiThread {
                             progressBar.visibility = ProgressBar.INVISIBLE
-                            findNavController().navigate(R.id.action_studentListFragment_to_loginFragment)
+//                            findNavController().navigate(R.id.action_studentListFragment_to_loginFragment)
+                            findNavController().popBackStack()
                         }
                     }
                     response.body?.close()
@@ -204,7 +208,7 @@ class StudentListFragment : Fragment() {
     }
 
     private fun markAttendance(view: View) {
-        val progressDialog = android.app.ProgressDialog(context)
+        val progressDialog = android.app.ProgressDialog(context, R.style.AppCompatAlertDialogStyle)
         progressDialog.setTitle("Submitting Attendance")
         progressDialog.setMessage("Please Wait...")
         progressDialog.setCanceledOnTouchOutside(false)
@@ -222,9 +226,10 @@ class StudentListFragment : Fragment() {
             attendanceJSONObject.put("date", currentDateAndTime)
             jsonArray.put(attendanceJSONObject)
         }
-        sharedPreferences = activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
+        sharedPreferences =
+            activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
         val tunnelURL: String? = sharedPreferences?.getString("url", null)
-        val url = tunnelURL+getString(R.string.submit_attendance_api_url)
+        val url = tunnelURL + getString(R.string.submit_attendance_api_url)
         val client = OkHttpClient()
 
         lifecycleScope.launch {
@@ -232,16 +237,19 @@ class StudentListFragment : Fragment() {
             obj.put("record", jsonArray)
             val mediaType = "application/json; charset=utf-8".toMediaType()
             val body = obj.toString().toRequestBody(mediaType)
-            Log.d("debug", "token student fragment= $token")
             val request: Request =
                 Request.Builder().url(url).addHeader("Authorization", token!!).post(body).build()
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
                     progressDialog.dismiss()
                     activity?.runOnUiThread {
-                        Snackbar.make(view, "Some error occurred", Snackbar.LENGTH_SHORT).show()
+                        Snackbar.make(
+                            view,
+                            "Please check Internet Connection!",
+                            Snackbar.LENGTH_SHORT
+                        ).show()
                     }
-                    Log.d("debug", "upload api failed")
+                    Log.d("debug", "upload attendance failed")
                 }
 
                 override fun onResponse(call: Call, response: Response) {
@@ -254,7 +262,25 @@ class StudentListFragment : Fragment() {
                                 .show()
                             findNavController().popBackStack()
                         } else {
-                            Snackbar.make(view, "Error Occurred!", Snackbar.LENGTH_SHORT).show()
+                            when (response.code) {
+                                401 -> {
+//                                        activity?.deleteSharedPreferences(SHARED_PREFERENCES_NAME)
+                                    Toast.makeText(
+                                        context,
+                                        "Session Expired! Log in again.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    findNavController().popBackStack()
+                                }
+                                else -> {
+                                    Snackbar.make(
+                                        view,
+                                        "Something went wrong. Please try again later!",
+                                        Snackbar.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
+
                         }
                     }
 

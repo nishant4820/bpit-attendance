@@ -93,6 +93,8 @@ class StatisticsFragment : Fragment() {
         val currentMonth = monthFormat.format(Date())
         val yearFormat = SimpleDateFormat("yyyy", Locale.getDefault())
         val currentYear = yearFormat.format(Date())
+        val monthYearFormat = SimpleDateFormat("MMM yyyy", Locale.getDefault())
+        val currentMonthYear = monthYearFormat.format(Date())
         Log.d("debug", "current month $currentMonth")
         val menuHost: MenuHost = requireActivity()
         val currMonthInt = currentMonth.toInt()
@@ -108,7 +110,7 @@ class StatisticsFragment : Fragment() {
                 )
                 arrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
                 spinner.adapter = arrayAdapter
-                spinner.setSelection(Integer.parseInt(currentMonth) - 1)
+                spinner.setSelection(list.indexOf(currentMonthYear.uppercase()))
                 spinner.onItemSelectedListener = (object : AdapterView.OnItemSelectedListener {
                     override fun onItemSelected(
                         parent: AdapterView<*>?,
@@ -155,9 +157,10 @@ class StatisticsFragment : Fragment() {
         Log.d("debug", "stats month year $monthYear")
         sharedPreferences = activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
         val tunnelURL: String? = sharedPreferences?.getString("url", null)
+        val schemeHost = tunnelURL?.split("://")
         val httpUrlBuilder: HttpUrl.Builder = HttpUrl.Builder()
-            .scheme("http")
-            .host(tunnelURL!!.substring(8))
+            .scheme(schemeHost!![0])
+            .host(schemeHost[1])
             .addPathSegment("api")
             .addPathSegment("student")
             .addPathSegment("attendance")
@@ -179,25 +182,26 @@ class StatisticsFragment : Fragment() {
                 .build()
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
+                    Log.d("debug", "fetch stats failed")
                     activity?.runOnUiThread {
-                        Snackbar.make(view, "Some error occurred", Snackbar.LENGTH_SHORT).show()
+//                        Snackbar.make(view, "Some error occurred", Snackbar.LENGTH_SHORT).show()
                         progressBar.visibility = ProgressBar.INVISIBLE
+                        findNavController().popBackStack()
                     }
-                    Log.d("debug", "Some error occurred!!")
                 }
 
                 override fun onResponse(call: Call, response: Response) {
                     if (response.isSuccessful) {
                         val jsonObject = response.body?.string()
                             ?.let { JSONObject(it) }
-                        var msg: String? = ""
+                        var msg: String? = null
                         try {
                             msg = jsonObject?.getString("msg")
                         } catch (_: Exception) {
                         }
                         activity?.runOnUiThread {
                             progressBar.visibility = ProgressBar.INVISIBLE
-                            if (msg == "No data available") {
+                            if (msg != null) {
                                 noDataTextView.text = getString(R.string.no_data, monthYear)
                                 noDataTextView.visibility = TextView.VISIBLE
                                 Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
@@ -208,15 +212,16 @@ class StatisticsFragment : Fragment() {
                             displayData(arrayJSONColumns, studentData)
                         }
                     } else {
-                        activity?.deleteSharedPreferences(SHARED_PREFERENCES_NAME)
+//                        activity?.deleteSharedPreferences(SHARED_PREFERENCES_NAME)
                         activity?.runOnUiThread {
-                            Toast.makeText(
-                                context,
-                                "Session Expired!! Log in again.",
-                                Toast.LENGTH_SHORT
-                            ).show()
+//                            Toast.makeText(
+//                                context,
+//                                "Session Expired!! Log in again.",
+//                                Toast.LENGTH_SHORT
+//                            ).show()
                             progressBar.visibility = ProgressBar.INVISIBLE
-                            findNavController().navigate(R.id.action_statisticsFragment_to_loginFragment)
+                            findNavController().popBackStack()
+//                            findNavController().navigate(R.id.action_statisticsFragment_to_loginFragment)
                         }
                     }
                     response.body?.close()

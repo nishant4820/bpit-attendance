@@ -85,14 +85,19 @@ class ValidateOtpFragment : Fragment() {
     }
 
     private fun verifyOTP(view: View) {
+        val otp: String = pinView.text.toString()
+        if (otp.length != 6) {
+            Snackbar.make(view, "Enter 6 digit OTP", Snackbar.LENGTH_SHORT).show()
+            return
+        }
         progressBar.visibility = ProgressBar.VISIBLE
         button.visibility = TextView.INVISIBLE
         inputMethodManager.hideSoftInputFromWindow(pinView.windowToken, 0)
-        sharedPreferences = activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
+        sharedPreferences =
+            activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
         val tunnelURL: String? = sharedPreferences?.getString("url", null)
-        val url = tunnelURL+getString(R.string.validate_otp_api_url)
+        val url = tunnelURL + getString(R.string.validate_otp_api_url)
         val client = OkHttpClient()
-        val otp: String = pinView.text.toString()
         lifecycleScope.launch(Dispatchers.IO) {
             val body: RequestBody = FormBody.Builder().add("email", email!!).add("otp", otp).build()
             val request: Request = Request.Builder().url(url).post(body).build()
@@ -101,41 +106,44 @@ class ValidateOtpFragment : Fragment() {
                     activity?.runOnUiThread {
                         progressBar.visibility = ProgressBar.INVISIBLE
                         button.visibility = TextView.VISIBLE
-                        Snackbar.make(view, "Some error occurred", Snackbar.LENGTH_SHORT).show()
+                        Snackbar.make(
+                            view,
+                            "Please check Internet Connection!",
+                            Snackbar.LENGTH_SHORT
+                        ).show()
                     }
                     Log.d("debug", "Validate Request Failed")
                 }
 
                 override fun onResponse(call: Call, response: Response) {
-                    val jsonObject: JSONObject? = response.body?.string()?.let { JSONObject(it) }
                     if (response.isSuccessful) {
-                        val msg = jsonObject?.getString("msg")
-                        Log.d("debug", "msg $msg")
                         activity?.runOnUiThread {
                             progressBar.visibility = ProgressBar.INVISIBLE
                             button.visibility = TextView.VISIBLE
-                            if (msg == "200 OK") {
-                                pinView.setText("")
-                                val bundle = Bundle()
-                                bundle.putString("email", email)
-                                bundle.putString("otp", otp)
-                                findNavController().navigate(
-                                    R.id.action_validateOtpFragment_to_resetPasswordFragment,
-                                    bundle
-                                )
-                            }
+                            pinView.setText("")
+                            val bundle = Bundle()
+                            bundle.putString("email", email)
+                            bundle.putString("otp", otp)
+                            findNavController().navigate(
+                                R.id.action_validateOtpFragment_to_resetPasswordFragment,
+                                bundle
+                            )
                         }
                     } else {
-                        val error = jsonObject?.getString("error")
-                        Log.d("debug", "error $error")
                         activity?.runOnUiThread {
-                            progressBar.visibility = ProgressBar.INVISIBLE
-                            button.visibility = TextView.VISIBLE
-                            if (error == "Invalid OTP") {
+                            if (response.code == 401) {
+                                progressBar.visibility = ProgressBar.INVISIBLE
+                                button.visibility = TextView.VISIBLE
                                 pinView.setText("")
                                 Snackbar.make(
                                     view,
                                     "Invalid OTP! Try again.",
+                                    Snackbar.LENGTH_SHORT
+                                ).show()
+                            } else {
+                                Snackbar.make(
+                                    view,
+                                    "Something went wrong. Please try again later!",
                                     Snackbar.LENGTH_SHORT
                                 ).show()
                             }
@@ -143,7 +151,6 @@ class ValidateOtpFragment : Fragment() {
                     }
                     response.body?.close()
                 }
-
             })
         }
     }

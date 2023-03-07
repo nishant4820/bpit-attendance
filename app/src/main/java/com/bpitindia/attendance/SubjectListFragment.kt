@@ -38,7 +38,7 @@ class SubjectListFragment : Fragment() {
         sharedPreferences =
             activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
         token = sharedPreferences?.getString(SHARED_PREFERENCES_TOKEN_KEY, null)
-        Log.d("debug", "subject $token")
+        Log.d("debug", "subject fragment created token:  $token")
         if (token == null) {
             findNavController().navigate(R.id.action_subjectListFragment_to_loginFragment)
         }
@@ -61,16 +61,20 @@ class SubjectListFragment : Fragment() {
         floatingActionButton.setOnClickListener {
             findNavController().navigate(R.id.action_subjectListFragment_to_addSubjectFragment)
         }
-        fetchSubjects(view)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        view?.let { fetchSubjects(it) }
     }
 
     private fun fetchSubjects(view: View) {
         progressBar.visibility = ProgressBar.VISIBLE
-        sharedPreferences = activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
+        sharedPreferences =
+            activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
         val tunnelURL: String? = sharedPreferences?.getString("url", null)
-        val url = tunnelURL+getString(R.string.subject_api_url)
+        val url = tunnelURL + getString(R.string.subject_api_url)
         val client = OkHttpClient()
-        Log.d("debug", "fetchSub Token $token")
 
         lifecycleScope.launch {
             withContext(Dispatchers.IO) {
@@ -82,16 +86,21 @@ class SubjectListFragment : Fragment() {
                 client.newCall(request).enqueue(object : Callback {
                     override fun onFailure(call: Call, e: IOException) {
                         activity?.runOnUiThread {
-                            Snackbar.make(view, "Some error occurred", Snackbar.LENGTH_SHORT).show()
+                            Snackbar.make(
+                                view,
+                                "Please check Internet Connection!",
+                                Snackbar.LENGTH_SHORT
+                            ).show()
                             progressBar.visibility = ProgressBar.INVISIBLE
                         }
+                        Log.d("debug", "subject fetch failed")
                     }
 
                     override fun onResponse(call: Call, response: Response) {
                         if (response.isSuccessful) {
 
                             jsonArray = JSONArray(response.body?.string())
-                            Log.d("debug", "subject json size: ${jsonArray.length()}")
+                            Log.d("debug", "subject fetch successful")
                             activity?.runOnUiThread {
                                 view.findViewById<RecyclerView>(R.id.subjectList).apply {
                                     layoutManager = LinearLayoutManager(activity)
@@ -100,15 +109,26 @@ class SubjectListFragment : Fragment() {
                                 progressBar.visibility = ProgressBar.INVISIBLE
                             }
                         } else {
-                            activity?.deleteSharedPreferences(SHARED_PREFERENCES_NAME)
                             activity?.runOnUiThread {
-                                Toast.makeText(
-                                    context,
-                                    "Session Expired! Log in again.",
-                                    Toast.LENGTH_SHORT
-                                ).show()
                                 progressBar.visibility = ProgressBar.INVISIBLE
-                                findNavController().navigate(R.id.action_subjectListFragment_to_loginFragment)
+                                when (response.code) {
+                                    401 -> {
+                                        activity?.deleteSharedPreferences(SHARED_PREFERENCES_NAME)
+                                        Toast.makeText(
+                                            context,
+                                            "Session Expired! Log in again.",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                        findNavController().navigate(R.id.action_subjectListFragment_to_loginFragment)
+                                    }
+                                    else -> {
+                                        Snackbar.make(
+                                            view,
+                                            "Something went wrong. Please try again later!",
+                                            Snackbar.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                }
                             }
                         }
                         response.body?.close()

@@ -127,9 +127,10 @@ class EditAttendanceFragment : Fragment() {
         noDataTextView.visibility = TextView.GONE
         sharedPreferences = activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
         val tunnelURL: String? = sharedPreferences?.getString("url", null)
+        val schemeHost = tunnelURL?.split("://")
         val httpUrlBuilder = HttpUrl.Builder()
-            .scheme("http")
-            .host(tunnelURL!!.substring(8))
+            .scheme(schemeHost!![0])
+            .host(schemeHost[1])
             .addPathSegment("api")
             .addPathSegment("student")
             .addPathSegment("attendance")
@@ -151,11 +152,12 @@ class EditAttendanceFragment : Fragment() {
                 .build()
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
+                    Log.d("debug", "fetch last attendance failed")
                     activity?.runOnUiThread {
-                        Snackbar.make(view, "Some error occurred", Snackbar.LENGTH_SHORT).show()
+//                        Snackbar.make(view, "Some error occurred", Snackbar.LENGTH_SHORT).show()
                         progressBar.visibility = ProgressBar.GONE
+                        findNavController().popBackStack()
                     }
-                    Log.d("debug", "Some error occurred!!")
                 }
 
                 override fun onResponse(call: Call, response: Response) {
@@ -174,15 +176,16 @@ class EditAttendanceFragment : Fragment() {
                             }
                         }
                     } else {
-                        activity?.deleteSharedPreferences(SHARED_PREFERENCES_NAME)
+//                        activity?.deleteSharedPreferences(SHARED_PREFERENCES_NAME)
                         activity?.runOnUiThread {
-                            Toast.makeText(
-                                context,
-                                "Session Expired!! Log in again.",
-                                Toast.LENGTH_SHORT
-                            ).show()
+//                            Toast.makeText(
+//                                context,
+//                                "Session Expired!! Log in again.",
+//                                Toast.LENGTH_SHORT
+//                            ).show()
                             progressBar.visibility = ProgressBar.INVISIBLE
-                            findNavController().navigate(R.id.action_editAttendanceFragment_to_loginFragment)
+                            findNavController().popBackStack()
+//                            findNavController().navigate(R.id.action_editAttendanceFragment_to_loginFragment)
                         }
                     }
                     response.body?.close()
@@ -193,6 +196,12 @@ class EditAttendanceFragment : Fragment() {
     }
 
     private fun markAttendance(view: View) {
+        val progressDialog = android.app.ProgressDialog(context, R.style.AppCompatAlertDialogStyle)
+        progressDialog.setTitle("Submitting Attendance")
+        progressDialog.setMessage("Please Wait...")
+        progressDialog.setCanceledOnTouchOutside(false)
+        progressDialog.setCancelable(false)
+        progressDialog.show()
         val dataSet = (recyclerView.adapter as EditAttendanceAdapter).dataSet
         val obj = JSONObject()
         obj.put("record", dataSet)
@@ -202,7 +211,6 @@ class EditAttendanceFragment : Fragment() {
         val tunnelURL: String? = sharedPreferences?.getString("url", null)
         val url = tunnelURL+getString(R.string.submit_attendance_api_url)
         val client = OkHttpClient()
-        Log.d("debug", "edit attendance upload ${token.toString()}")
 
         lifecycleScope.launch(Dispatchers.IO) {
             val request: Request = Request.Builder()
@@ -212,13 +220,15 @@ class EditAttendanceFragment : Fragment() {
                 .build()
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
+                    progressDialog.dismiss()
                     activity?.runOnUiThread {
-                        Snackbar.make(view, "Some error occurred", Snackbar.LENGTH_SHORT).show()
+                        Snackbar.make(view, "Please check Internet Connection!", Snackbar.LENGTH_SHORT).show()
                     }
-                    Log.d("debug", "upload api failed")
+                    Log.d("debug", "upload edited attendance failed")
                 }
 
                 override fun onResponse(call: Call, response: Response) {
+                    progressDialog.dismiss()
                     Log.d("debug response", response.body!!.string())
 
                     activity?.runOnUiThread {
@@ -226,14 +236,24 @@ class EditAttendanceFragment : Fragment() {
                             Snackbar.make(view, "Attendance Updated", Snackbar.LENGTH_SHORT).show()
                             findNavController().popBackStack()
                         } else {
-                            activity?.deleteSharedPreferences(SHARED_PREFERENCES_NAME)
-                            Toast.makeText(
-                                context,
-                                "Session Expired!! Log in again.",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            progressBar.visibility = ProgressBar.INVISIBLE
-                            findNavController().navigate(R.id.action_editAttendanceFragment_to_loginFragment)
+                            when (response.code) {
+                                401 -> {
+//                                        activity?.deleteSharedPreferences(SHARED_PREFERENCES_NAME)
+                                    Toast.makeText(
+                                        context,
+                                        "Session Expired! Log in again.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    findNavController().popBackStack()
+                                }
+                                else -> {
+                                    Snackbar.make(
+                                        view,
+                                        "Something went wrong. Please try again later!",
+                                        Snackbar.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
                         }
                     }
 

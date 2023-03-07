@@ -127,7 +127,7 @@ class ChangePasswordFragment : Fragment() {
                     activity?.runOnUiThread {
                         progressBar.visibility = ProgressBar.INVISIBLE
                         changeButton.visibility = TextView.VISIBLE
-                        Snackbar.make(view, "Some error occurred", Snackbar.LENGTH_SHORT).show()
+                        Snackbar.make(view, "Please check Internet Connection!", Snackbar.LENGTH_SHORT).show()
                     }
                     Log.d("debug", "Change Password Request Failed")
                 }
@@ -151,17 +151,26 @@ class ChangePasswordFragment : Fragment() {
                         }
 
                     } else {
-                        val error: String = jsonObject?.getJSONArray("error")?.get(0) as String
-                        Log.d("debug", "error $error")
-                        activity?.runOnUiThread {
-                            progressBar.visibility = ProgressBar.INVISIBLE
-                            changeButton.visibility = TextView.VISIBLE
-                            if (error == "Your current password was entered incorrectly. Please enter it again.") {
-                                currentPasswordEdittext.setText("")
-                            } else if (error == "The two password fields didn't match.") {
-                                confirmNewPasswordEdittext.setText("")
+                        if (response.code == 400) {
+                            val error: String = jsonObject?.getJSONArray("error")?.get(0) as String
+                            Log.d("debug", "error $error")
+                            activity?.runOnUiThread {
+                                progressBar.visibility = ProgressBar.INVISIBLE
+                                changeButton.visibility = TextView.VISIBLE
+                                if (error == "Your current password was entered incorrectly. Please enter it again.") {
+                                    currentPasswordEdittext.setText("")
+                                } else if (error == "The two password fields didn't match.") {
+                                    confirmNewPasswordEdittext.setText("")
+                                } else if (error == "The new password cannot be same as old password.") {
+                                    newPasswordEdittext.setText("")
+                                    confirmNewPasswordEdittext.setText("")
+                                }
+                                Snackbar.make(view, error, Snackbar.LENGTH_LONG).show()
                             }
-                            Snackbar.make(view, error, Snackbar.LENGTH_LONG).show()
+                        } else {
+                            activity?.runOnUiThread {
+                                findNavController().popBackStack()
+                            }
                         }
                     }
                     response.body?.close()

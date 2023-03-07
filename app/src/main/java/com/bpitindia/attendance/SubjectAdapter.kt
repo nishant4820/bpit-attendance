@@ -63,7 +63,6 @@ class SubjectAdapter(private val dataSet: JSONArray) :
             val popup = PopupMenu(it.context, holder.optionMenu)
             popup.inflate(R.menu.menu_subject_options)
             popup.setOnMenuItemClickListener { menuItem ->
-                Log.e(">>", menuItem.toString())
                 when (menuItem.itemId) {
                     R.id.stats_button -> {
                         holder.itemView.findNavController()

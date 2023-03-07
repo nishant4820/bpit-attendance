@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.MenuItem
 import android.view.View
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.ActionBarDrawerToggle
@@ -16,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.Navigation
+import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.snackbar.Snackbar
@@ -50,7 +52,6 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
         supportActionBar?.setDisplayHomeAsUpEnabled(false)
         setupDrawerContent(navigationView)
         setDrawerLocked()
-        Log.d("debug", "oncreate")
     }
 
     override fun onStart() {
@@ -82,7 +83,7 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                         editor?.putString("url", tunnelURL)
                         editor?.apply()
                         Log.d("debug", "ngrok url fetch successful: $tunnelURL")
-                        checkForUpdates(1)
+//                        checkForUpdates(1)
                     } else {
                         runOnUiThread {
                             Toast.makeText(this@MainActivity, "Something went wrong. Please try again later!", Toast.LENGTH_SHORT).show()
@@ -223,24 +224,47 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
                     runOnUiThread {
-                        Snackbar.make(view, "Log Out Failed", Snackbar.LENGTH_SHORT).show()
+                        Snackbar.make(view, "Please check Internet Connection!", Snackbar.LENGTH_SHORT).show()
                     }
                     Log.d("debug", "logout failed")
                 }
 
                 override fun onResponse(call: Call, response: Response) {
-                    Log.d("debug", "logout successful")
-                    deleteSharedPreferences(SHARED_PREFERENCES_NAME)
-                    runOnUiThread {
-                        Snackbar.make(view, "Logout Successful", Snackbar.LENGTH_SHORT).show()
-                        val navController = Navigation.findNavController(
-                            this@MainActivity,
-                            R.id.fragmentContainerView
-                        )
-                        navController.navigate(R.id.action_subjectListFragment_to_loginFragment)
+                    val navController = Navigation.findNavController(
+                        this@MainActivity,
+                        R.id.fragmentContainerView
+                    )
+                    Log.d("debug", "logout response: ${response.code}")
+                    if (response.isSuccessful) {
+                        Log.d("debug", "logout successful")
+                        deleteSharedPreferences(SHARED_PREFERENCES_NAME)
+                        runOnUiThread {
+                            Snackbar.make(view, "Logout Successful", Snackbar.LENGTH_SHORT).show()
+                            navController.navigate(R.id.action_subjectListFragment_to_loginFragment)
+                        }
+                        getUrl()
+                    } else {
+                        runOnUiThread {
+                            if (response.code == 404) {
+                                Toast.makeText(
+                                    this@MainActivity,
+                                    "Something went wrong. Please try again later!",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                getUrl()
+                            } else {
+                                Toast.makeText(
+                                    this@MainActivity,
+                                    "Session Expired! Log in again.",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                navController.navigate(R.id.action_subjectListFragment_to_loginFragment)
+                            }
+                        }
+                        Log.d("debug", "logout response unsuccessful")
                     }
                     response.body?.close()
-                    getUrl()
+
                 }
 
             })
@@ -257,13 +281,13 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
             val request = Request.Builder().url(url).get().addHeader("Authorization", token).build()
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
-                    runOnUiThread {
-                        Toast.makeText(
-                            this@MainActivity,
-                            "Some error occurred!!",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
+//                    runOnUiThread {
+//                        Toast.makeText(
+//                            this@MainActivity,
+//                            "Please check Internet Connection!",
+//                            Toast.LENGTH_SHORT
+//                        ).show()
+//                    }
                     Log.d("debug", "profile load failed")
                 }
 

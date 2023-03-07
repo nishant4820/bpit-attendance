@@ -22,7 +22,6 @@ import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import okhttp3.*
-import org.json.JSONObject
 import java.io.IOException
 
 private const val EMAIL = "email"
@@ -89,9 +88,19 @@ class ForgotPasswordFragment : Fragment() {
 
     private fun requestOTP(view: View) {
         inputMethodManager.hideSoftInputFromWindow(resetEmailEditText.windowToken, 0)
-        sharedPreferences = activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
+        sharedPreferences =
+            activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
         val tunnelURL: String? = sharedPreferences?.getString("url", null)
-        val url = tunnelURL+getString(R.string.forgot_password_api_url)
+        if (tunnelURL == null) {
+            Snackbar.make(
+                view,
+                "Something went wrong. Please try again later!",
+                Snackbar.LENGTH_SHORT
+            )
+                .show()
+            return
+        }
+        val url = tunnelURL + getString(R.string.forgot_password_api_url)
         val client = OkHttpClient()
         val mailID: String = resetEmailEditText.text.toString()
         if (mailID.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(mailID).matches()) {
@@ -108,37 +117,41 @@ class ForgotPasswordFragment : Fragment() {
                     activity?.runOnUiThread {
                         progressBar.visibility = ProgressBar.INVISIBLE
                         button.visibility = TextView.VISIBLE
-                        Snackbar.make(view, "Some error occurred", Snackbar.LENGTH_SHORT).show()
+                        Snackbar.make(
+                            view,
+                            "Please check Internet Connection!",
+                            Snackbar.LENGTH_SHORT
+                        ).show()
                     }
                     Log.d("debug", "OTP Request Failed")
                 }
 
                 override fun onResponse(call: Call, response: Response) {
                     if (response.isSuccessful) {
-                        val msg =
-                            response.body?.string()?.let { JSONObject(it).getString("message") }
-                        Log.d("debug", "msg $msg")
-
                         activity?.runOnUiThread {
                             progressBar.visibility = ProgressBar.INVISIBLE
                             button.visibility = TextView.VISIBLE
-                            if (msg == "Invalid Email") {
-                                Snackbar.make(view, "User not found", Snackbar.LENGTH_SHORT).show()
-                            } else {
-                                val bundle = Bundle()
-                                bundle.putString("email", mailID)
-                                findNavController().navigate(
-                                    R.id.action_forgotPasswordFragment_to_validateOtpFragment,
-                                    bundle
-                                )
-                            }
+                            val bundle = Bundle()
+                            bundle.putString("email", mailID)
+                            findNavController().navigate(
+                                R.id.action_forgotPasswordFragment_to_validateOtpFragment,
+                                bundle
+                            )
                         }
+                        Log.d("debug", "Forget pass successful")
                     } else {
                         activity?.runOnUiThread {
                             progressBar.visibility = ProgressBar.INVISIBLE
                             button.visibility = TextView.VISIBLE
-                            Snackbar.make(view, "Failed to Request OTP", Snackbar.LENGTH_SHORT)
-                                .show()
+                            if (response.code == 401) {
+                                Snackbar.make(view, "User not found", Snackbar.LENGTH_SHORT).show()
+                            } else {
+                                Snackbar.make(
+                                    view,
+                                    "Something went wrong. Please try again later!",
+                                    Snackbar.LENGTH_SHORT
+                                ).show()
+                            }
                         }
                         Log.d("debug", "api unsuccessful")
                     }
