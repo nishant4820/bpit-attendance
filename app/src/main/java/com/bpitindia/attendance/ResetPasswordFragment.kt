@@ -1,6 +1,7 @@
 package com.bpitindia.attendance
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -27,6 +28,8 @@ import java.io.IOException
 
 private const val EMAIL = "email"
 private const val OTP = "otp"
+private const val SHARED_PREFERENCES_NAME = "shared_pref"
+
 
 class ResetPasswordFragment : Fragment() {
     private var email: String? = null
@@ -36,6 +39,7 @@ class ResetPasswordFragment : Fragment() {
     private lateinit var resetButton: TextView
     private lateinit var progressBar: ProgressBar
     private lateinit var inputMethodManager: InputMethodManager
+    private var sharedPreferences: SharedPreferences? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -104,7 +108,10 @@ class ResetPasswordFragment : Fragment() {
         }
         progressBar.visibility = ProgressBar.VISIBLE
         resetButton.visibility = TextView.INVISIBLE
-        val url = getString(R.string.reset_password_api_url)
+        sharedPreferences =
+            activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
+        val tunnelURL: String? = sharedPreferences?.getString("url", null)
+        val url = tunnelURL + getString(R.string.reset_password_api_url)
         val client = OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val bodyJSONObject = JSONObject()
@@ -124,19 +131,26 @@ class ResetPasswordFragment : Fragment() {
                     activity?.runOnUiThread {
                         progressBar.visibility = ProgressBar.INVISIBLE
                         resetButton.visibility = TextView.VISIBLE
-                        Snackbar.make(view, "Some error occurred", Snackbar.LENGTH_SHORT).show()
+                        Snackbar.make(
+                            view,
+                            "Please check Internet Connection!",
+                            Snackbar.LENGTH_SHORT
+                        ).show()
                     }
                     Log.d("debug", "Reset Password Request Failed")
                 }
 
                 override fun onResponse(call: Call, response: Response) {
-                    val jsonObject: JSONObject? = response.body?.string()?.let { JSONObject(it) }
+
                     if (response.isSuccessful) {
-                        val msg = jsonObject?.getString("message")
                         activity?.runOnUiThread {
                             progressBar.visibility = ProgressBar.INVISIBLE
                             resetButton.visibility = TextView.VISIBLE
-                            Snackbar.make(view, msg!!, Snackbar.LENGTH_SHORT).show()
+                            Snackbar.make(
+                                view,
+                                "Password reset successful. Please login.",
+                                Snackbar.LENGTH_SHORT
+                            ).show()
                             val bundle = Bundle()
                             bundle.putString("fromFragment", "reset")
                             findNavController().navigate(
@@ -145,14 +159,24 @@ class ResetPasswordFragment : Fragment() {
                             )
                         }
                     } else {
-                        val error: String = jsonObject?.getJSONArray("error")?.get(0) as String
-                        Log.d("debug", "error $error")
-                        Log.d("debug", "email: $email")
                         activity?.runOnUiThread {
                             progressBar.visibility = ProgressBar.INVISIBLE
                             resetButton.visibility = TextView.VISIBLE
-                            Snackbar.make(view, error, Snackbar.LENGTH_SHORT).show()
+                            if (response.code == 400) {
+                                val jsonObject: JSONObject? =
+                                    response.body?.string()?.let { JSONObject(it) }
+                                val error: String =
+                                    jsonObject?.getJSONArray("error")?.get(0) as String
+                                Snackbar.make(view, error, Snackbar.LENGTH_SHORT).show()
+                            } else {
+                                Snackbar.make(
+                                    view,
+                                    "Something went wrong. Please try again later!",
+                                    Snackbar.LENGTH_SHORT
+                                ).show()
+                            }
                         }
+                        Log.d("debug", "Reset Password Unsuccessful")
                     }
                     response.body?.close()
                 }

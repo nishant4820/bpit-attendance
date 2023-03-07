@@ -57,12 +57,12 @@ class SubjectAdapter(private val dataSet: JSONArray) :
         bundle.putBoolean("is_lab", subInfo.getBoolean("is_lab"))
         bundle.putString("group", subInfo.getString("group"))
         bundle.putString("subject", subInfo.getString("subject_code"))
+        bundle.putInt("semester", subInfo.getInt("semester"))
 
         holder.optionMenu.setOnClickListener {
             val popup = PopupMenu(it.context, holder.optionMenu)
             popup.inflate(R.menu.menu_subject_options)
             popup.setOnMenuItemClickListener { menuItem ->
-                Log.e(">>", menuItem.toString())
                 when (menuItem.itemId) {
                     R.id.stats_button -> {
                         holder.itemView.findNavController()

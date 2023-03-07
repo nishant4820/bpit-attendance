@@ -55,7 +55,9 @@ class AddSubjectFragment : Fragment() {
 
     private fun loadSubjects(view: View) {
         progressBar.visibility = ProgressBar.VISIBLE
-        val url = getString(R.string.all_subject_api_url)
+        sharedPreferences = activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
+        val tunnelURL: String? = sharedPreferences?.getString("url", null)
+        val url = tunnelURL+getString(R.string.all_subject_api_url)
         val client = OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val request: Request = Request.Builder()

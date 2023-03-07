@@ -8,6 +8,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.TextView
@@ -29,6 +30,8 @@ private const val PROFILE = "profile"
 private const val SHARED_PREFERENCES_NAME = "shared_pref"
 private const val SHARED_PREFERENCES_TOKEN_KEY = "token"
 private const val SHARED_PREFERENCES_ID_KEY = "id_key"
+private const val NAME = "Name"
+private const val PHONE_NUMBER = "Phone Number"
 
 
 class ProfileFragment : Fragment() {
@@ -54,10 +57,10 @@ class ProfileFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         view.findViewById<TextView>(R.id.name_profile).setOnClickListener {
-            showAlertDialog("Name", view)
+            showAlertDialog(NAME, view)
         }
         view.findViewById<TextView>(R.id.phone_profile).setOnClickListener {
-            showAlertDialog("Phone Number", view)
+            showAlertDialog(PHONE_NUMBER, view)
         }
         setProfile(view)
     }
@@ -82,43 +85,57 @@ class ProfileFragment : Fragment() {
         val edittext = EditText(context)
         var textview: TextView? = null
         when (field) {
-            "Name" -> textview = view.findViewById(R.id.name_profile)
-            "Phone Number" -> textview = view.findViewById(R.id.phone_profile)
+            NAME -> textview = view.findViewById(R.id.name_profile)
+            PHONE_NUMBER -> textview = view.findViewById(R.id.phone_profile)
         }
         edittext.setText(textview?.text)
         edittext.maxLines = 1
-        if (field == "Name") {
+        if (field == NAME) {
             edittext.filters = arrayOf(InputFilter.LengthFilter(25))
-        } else if (field == "Phone Number") {
+        } else if (field == PHONE_NUMBER) {
             edittext.filters = arrayOf(InputFilter.LengthFilter(10))
         }
         val layout = FrameLayout(requireContext())
         layout.setPaddingRelative(45, 25, 45, 0)
         layout.addView(edittext)
 
-        AlertDialog.Builder(requireContext()).apply {
+        val dialog = AlertDialog.Builder(requireContext()).apply {
             setTitle("Edit $field")
             setView(layout)
-            setPositiveButton("Save") { _, _ ->
+            setPositiveButton("Save", null)
+            setNegativeButton("Discard", null)
+        }.create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 val newValue = edittext.text.toString()
+                if (newValue.isEmpty()) {
+                    Snackbar.make(view, "Field cannot be Empty!", Snackbar.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                if (field == PHONE_NUMBER && newValue.length != 10) {
+                    Snackbar.make(view, "Phone number Invalid", Snackbar.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
                 textview?.text = newValue
                 when (field) {
-                    "Name" -> jsonObject.put("name", newValue)
-                    "Phone Number" -> jsonObject.put("phone_number", newValue)
+                    NAME -> jsonObject.put("name", newValue)
+                    PHONE_NUMBER -> jsonObject.put("phone_number", newValue)
                 }
                 view.findViewById<TextView>(R.id.card_name_profile).text =
                     jsonObject.getString("name")
-                val token = sharedPreferences?.getString(SHARED_PREFERENCES_TOKEN_KEY, null)
-                val id = sharedPreferences?.getInt(SHARED_PREFERENCES_ID_KEY, 0)
-                updateProfile(token!!, id!!, view)
+                updateProfile(view)
+                dialog.dismiss()
             }
-            setNegativeButton("Discard") { _, _ -> }
-
-        }.create().show()
+        }
+        dialog.show()
     }
 
-    private fun updateProfile(token: String, id: Int, view: View) {
-        val url = getString(R.string.profile_api_url, id)
+    private fun updateProfile(view: View) {
+        sharedPreferences = activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
+        val token = sharedPreferences?.getString(SHARED_PREFERENCES_TOKEN_KEY, null)!!
+        val id = sharedPreferences?.getInt(SHARED_PREFERENCES_ID_KEY, 0)!!
+        val tunnelURL: String? = sharedPreferences?.getString("url", null)
+        val url = tunnelURL+getString(R.string.profile_api_url, id)
         val client = OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val mediaType = "application/json; charset=utf-8".toMediaType()
@@ -128,13 +145,12 @@ class ProfileFragment : Fragment() {
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
                     activity?.runOnUiThread {
-                        Snackbar.make(view, "Some error occurred", Snackbar.LENGTH_SHORT).show()
+                        Snackbar.make(view, "Please check Internet Connection!", Snackbar.LENGTH_SHORT).show()
                     }
                     Log.d("debug", "profile update failed")
                 }
 
                 override fun onResponse(call: Call, response: Response) {
-                    Log.d("debug", "profile update response ${response.message}")
                     if (response.isSuccessful) {
                         Log.d("debug", "profile loading successful")
                         (activity as? MainActivity)?.fetchProfile(token, id)

@@ -49,8 +49,6 @@ class LoginFragment : Fragment() {
         val id = sharedPreferences?.getInt(SHARED_PREFERENCES_ID_KEY, 0)
         if (stringObject != null) {
             (activity as MainActivity).fetchProfile(stringObject, id!!)
-//            val bundle = Bundle()
-//            bundle.putString("token", stringObject)
             findNavController().navigate(R.id.action_loginFragment_to_subjectListFragment)
         }
     }
@@ -109,7 +107,15 @@ class LoginFragment : Fragment() {
 
     private fun logIn(view: View) {
         inputMethodManager.hideSoftInputFromWindow(button.windowToken, 0)
-        val url = getString(R.string.login_api_url)
+        sharedPreferences = activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
+        val tunnelURL: String? = sharedPreferences?.getString("url", null)
+        if (tunnelURL==null) {
+            Snackbar.make(view, "Something went wrong. Please try again later!", Snackbar.LENGTH_SHORT)
+                .show()
+            return
+        }
+        val url = tunnelURL+getString(R.string.login_api_url)
+        Log.d("debug", url)
         val client = OkHttpClient()
         val mailID: String = emailEditText.text.toString().lowercase()
         val pass: String = passwordEditText.text.toString()
@@ -130,10 +136,11 @@ class LoginFragment : Fragment() {
             val request: Request = Request.Builder().url(url).post(body).build()
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
-                    progressBar.visibility = ProgressBar.INVISIBLE
-                    button.visibility = TextView.VISIBLE
+
                     activity?.runOnUiThread {
-                        Snackbar.make(view, "Some error occurred", Snackbar.LENGTH_SHORT).show()
+                        progressBar.visibility = ProgressBar.INVISIBLE
+                        button.visibility = TextView.VISIBLE
+                        Snackbar.make(view, "Please check Internet Connection!", Snackbar.LENGTH_SHORT).show()
                     }
                     Log.d("debug", "login failed")
                 }
@@ -149,7 +156,7 @@ class LoginFragment : Fragment() {
                         editor?.putString(SHARED_PREFERENCES_TOKEN_KEY, token)
                         editor?.putInt(SHARED_PREFERENCES_ID_KEY, idKey)
                         editor?.apply()
-                        Log.d("debug", "first token: $token id $idKey")
+                        Log.d("debug", "login successful token: $token id $idKey")
                         (activity as MainActivity).fetchProfile(token, idKey)
                         activity?.runOnUiThread {
                             progressBar.visibility = ProgressBar.INVISIBLE
@@ -170,8 +177,16 @@ class LoginFragment : Fragment() {
                         activity?.runOnUiThread {
                             progressBar.visibility = ProgressBar.INVISIBLE
                             button.visibility = TextView.VISIBLE
-                            Snackbar.make(view, "Invalid Credentials", Snackbar.LENGTH_SHORT).show()
+                            if (response.code == 400 || response.code == 401) {
+                                Snackbar.make(view, "Invalid Credentials", Snackbar.LENGTH_SHORT)
+                                    .show()
+                            }
+                            else if (response.code == 404) {
+                                Snackbar.make(view, "Something went wrong. Please try again later!", Snackbar.LENGTH_SHORT)
+                                    .show()
+                            }
                         }
+                        Log.d("debug", "login unsuccessful code: ${response.code}")
                     }
                     response.body?.close()
                 }
