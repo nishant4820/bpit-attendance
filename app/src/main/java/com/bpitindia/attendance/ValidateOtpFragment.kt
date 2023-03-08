@@ -21,12 +21,9 @@ import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import okhttp3.*
-import org.json.JSONObject
 import java.io.IOException
 
 private const val EMAIL = "email"
-private const val SHARED_PREFERENCES_NAME = "shared_pref"
-
 
 class ValidateOtpFragment : Fragment() {
     private var email: String? = null
@@ -34,7 +31,8 @@ class ValidateOtpFragment : Fragment() {
     private lateinit var pinView: PinView
     private lateinit var progressBar: ProgressBar
     private lateinit var inputMethodManager: InputMethodManager
-    private var sharedPreferences: SharedPreferences? = null
+    private var sharedPrefInterceptor: SharedPreferences? = null
+    private var sharedPrefProfile: SharedPreferences? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -93,9 +91,18 @@ class ValidateOtpFragment : Fragment() {
         progressBar.visibility = ProgressBar.VISIBLE
         button.visibility = TextView.INVISIBLE
         inputMethodManager.hideSoftInputFromWindow(pinView.windowToken, 0)
-        sharedPreferences =
-            activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
-        val tunnelURL: String? = sharedPreferences?.getString("url", null)
+        sharedPrefInterceptor =
+            activity?.getSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR, Context.MODE_PRIVATE)
+        val tunnelURL: String? = sharedPrefInterceptor?.getString(URL_KEY, null)
+        if (tunnelURL == null) {
+            Snackbar.make(
+                view,
+                "Something went wrong. Please try again later!",
+                Snackbar.LENGTH_SHORT
+            ).show()
+            (activity as MainActivity).getUrl()
+            return
+        }
         val url = tunnelURL + getString(R.string.validate_otp_api_url)
         val client = OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {

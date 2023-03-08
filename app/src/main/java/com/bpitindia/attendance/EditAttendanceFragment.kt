@@ -34,20 +34,18 @@ private const val AUTHORIZATION = "Authorization"
 private const val IS_LAB = "is_lab"
 private const val GROUP = "group"
 private const val SUBJECT = "subject"
-private const val SHARED_PREFERENCES_NAME = "shared_pref"
-private const val SHARED_PREFERENCES_TOKEN_KEY = "token"
 
 class EditAttendanceFragment : Fragment() {
     private var batch: String? = null
     private var section: String? = null
     private var branch: String? = null
-    private var token: String? = null
     private var group: String? = null
     private var isLab: Boolean? = null
     private var subject: String? = null
     var jsonArray: JSONArray = JSONArray()
     private var dataPresent: Boolean = true
-    private var sharedPreferences: SharedPreferences? = null
+    private var sharedPrefInterceptor: SharedPreferences? = null
+    private var sharedPrefProfile: SharedPreferences? = null
     private lateinit var recyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
     private lateinit var noDataTextView: TextView
@@ -62,9 +60,9 @@ class EditAttendanceFragment : Fragment() {
             group = it.getString(GROUP)
             subject = it.getString(SUBJECT)
         }
-        sharedPreferences =
-            activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
-        token = sharedPreferences?.getString(SHARED_PREFERENCES_TOKEN_KEY, null)
+        sharedPrefProfile =
+            activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
+        val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
         if (token == null) {
             findNavController().navigate(R.id.action_editAttendanceFragment_to_loginFragment)
         }
@@ -125,11 +123,28 @@ class EditAttendanceFragment : Fragment() {
     private fun fetchData(view: View) {
         progressBar.visibility = ProgressBar.VISIBLE
         noDataTextView.visibility = TextView.GONE
-        sharedPreferences = activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
-        val tunnelURL: String? = sharedPreferences?.getString("url", null)
-        val schemeHost = tunnelURL?.split("://")
+        sharedPrefInterceptor =
+            activity?.getSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR, Context.MODE_PRIVATE)
+        val tunnelURL: String? = sharedPrefInterceptor?.getString(URL_KEY, null)
+        if (tunnelURL == null) {
+            Snackbar.make(
+                view,
+                "Something went wrong. Please try again later!",
+                Snackbar.LENGTH_SHORT
+            ).show()
+            (activity as MainActivity).getUrl()
+            return
+        }
+        sharedPrefProfile =
+            activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
+        val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
+        if (token == null) {
+            findNavController().popBackStack()
+            return
+        }
+        val schemeHost = tunnelURL.split("://")
         val httpUrlBuilder = HttpUrl.Builder()
-            .scheme(schemeHost!![0])
+            .scheme(schemeHost[0])
             .host(schemeHost[1])
             .addPathSegment("api")
             .addPathSegment("student")
@@ -143,7 +158,6 @@ class EditAttendanceFragment : Fragment() {
             .addQueryParameter("group", group)
         val httpUrl = httpUrlBuilder.build()
         val client = OkHttpClient()
-        Log.d("debug", "edit attendance fetch ${token.toString()}")
         lifecycleScope.launch(Dispatchers.IO) {
             val request: Request = Request.Builder()
                 .url(httpUrl)
@@ -207,11 +221,27 @@ class EditAttendanceFragment : Fragment() {
         obj.put("record", dataSet)
         val mediaType = "application/json; charset=utf-8".toMediaType()
         val body = obj.toString().toRequestBody(mediaType)
-        sharedPreferences = activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
-        val tunnelURL: String? = sharedPreferences?.getString("url", null)
-        val url = tunnelURL+getString(R.string.submit_attendance_api_url)
+        sharedPrefInterceptor =
+            activity?.getSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR, Context.MODE_PRIVATE)
+        val tunnelURL: String? = sharedPrefInterceptor?.getString(URL_KEY, null)
+        if (tunnelURL == null) {
+            Snackbar.make(
+                view,
+                "Something went wrong. Please try again later!",
+                Snackbar.LENGTH_SHORT
+            ).show()
+            (activity as MainActivity).getUrl()
+            return
+        }
+        val url = tunnelURL + getString(R.string.submit_attendance_api_url)
         val client = OkHttpClient()
-
+        sharedPrefProfile =
+            activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
+        val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
+        if (token == null) {
+            findNavController().popBackStack()
+            return
+        }
         lifecycleScope.launch(Dispatchers.IO) {
             val request: Request = Request.Builder()
                 .url(url)
@@ -222,7 +252,11 @@ class EditAttendanceFragment : Fragment() {
                 override fun onFailure(call: Call, e: IOException) {
                     progressDialog.dismiss()
                     activity?.runOnUiThread {
-                        Snackbar.make(view, "Please check Internet Connection!", Snackbar.LENGTH_SHORT).show()
+                        Snackbar.make(
+                            view,
+                            "Please check Internet Connection!",
+                            Snackbar.LENGTH_SHORT
+                        ).show()
                     }
                     Log.d("debug", "upload edited attendance failed")
                 }

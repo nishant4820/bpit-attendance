@@ -36,20 +36,20 @@ private const val AUTHORIZATION = "Authorization"
 private const val IS_LAB = "is_lab"
 private const val GROUP = "group"
 private const val SUBJECT = "subject"
-private const val SHARED_PREFERENCES_NAME = "shared_pref"
-private const val SHARED_PREFERENCES_TOKEN_KEY = "token"
 
 class StudentListFragment : Fragment() {
     private var batch: String? = null
     private var section: String? = null
     private var branch: String? = null
-    private var token: String? = null
+
+    //    private var token: String? = null
     private var group: String? = null
     private var isLab: Boolean? = null
     private var subject: String? = null
     private var isMarkedAll: Boolean = false
     var jsonArray: JSONArray = JSONArray()
-    private var sharedPreferences: SharedPreferences? = null
+    private var sharedPrefInterceptor: SharedPreferences? = null
+    private var sharedPrefProfile: SharedPreferences? = null
     private lateinit var progressBar: ProgressBar
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -63,9 +63,9 @@ class StudentListFragment : Fragment() {
             subject = it.getString(SUBJECT)
 
         }
-        sharedPreferences =
-            activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
-        token = sharedPreferences?.getString(SHARED_PREFERENCES_TOKEN_KEY, null)
+        sharedPrefProfile =
+            activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
+        val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
         if (token == null) {
             findNavController().navigate(R.id.action_studentListFragment_to_loginFragment)
         }
@@ -140,12 +140,21 @@ class StudentListFragment : Fragment() {
     }
 
     private fun fetchStudents(view: View) {
-        sharedPreferences =
-            activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
-        val tunnelURL: String? = sharedPreferences?.getString("url", null)
-        val schemeHost = tunnelURL?.split("://")
+        sharedPrefInterceptor =
+            activity?.getSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR, Context.MODE_PRIVATE)
+        val tunnelURL: String? = sharedPrefInterceptor?.getString(URL_KEY, null)
+        if (tunnelURL == null) {
+            Snackbar.make(
+                view,
+                "Something went wrong. Please try again later!",
+                Snackbar.LENGTH_SHORT
+            ).show()
+            (activity as MainActivity).getUrl()
+            return
+        }
+        val schemeHost = tunnelURL.split("://")
         val httpUrlBuilder: HttpUrl.Builder = HttpUrl.Builder()
-            .scheme(schemeHost!![0])
+            .scheme(schemeHost[0])
             .host(schemeHost[1])
             .addPathSegment("api")
             .addPathSegment("student")
@@ -158,6 +167,9 @@ class StudentListFragment : Fragment() {
         if (isLab == true) httpUrlBuilder.addQueryParameter("group", group)
         val httpUrl = httpUrlBuilder.build()
         val client = OkHttpClient()
+        sharedPrefProfile =
+            activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
+        val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
         lifecycleScope.launch(Dispatchers.IO) {
             val request: Request = Request.Builder()
                 .url(httpUrl)
@@ -226,9 +238,22 @@ class StudentListFragment : Fragment() {
             attendanceJSONObject.put("date", currentDateAndTime)
             jsonArray.put(attendanceJSONObject)
         }
-        sharedPreferences =
-            activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
-        val tunnelURL: String? = sharedPreferences?.getString("url", null)
+        sharedPrefProfile =
+            activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
+        val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
+        sharedPrefInterceptor =
+            activity?.getSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR, Context.MODE_PRIVATE)
+        val tunnelURL: String? = sharedPrefInterceptor?.getString(URL_KEY, null)
+        if (tunnelURL == null) {
+            Snackbar.make(
+                view,
+                "Something went wrong. Please try again later!",
+                Snackbar.LENGTH_SHORT
+            ).show()
+            (activity as MainActivity).getUrl()
+            progressDialog.dismiss()
+            return
+        }
         val url = tunnelURL + getString(R.string.submit_attendance_api_url)
         val client = OkHttpClient()
 

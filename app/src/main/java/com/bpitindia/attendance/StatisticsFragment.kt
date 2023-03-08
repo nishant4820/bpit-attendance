@@ -40,19 +40,17 @@ private const val IS_LAB = "is_lab"
 private const val GROUP = "group"
 private const val SUBJECT = "subject"
 private const val SEMESTER = "semester"
-private const val SHARED_PREFERENCES_NAME = "shared_pref"
-private const val SHARED_PREFERENCES_TOKEN_KEY = "token"
 
 class StatisticsFragment : Fragment() {
     private var batch: String? = null
     private var section: String? = null
     private var branch: String? = null
-    private var token: String? = null
     private var group: String? = null
     private var isLab: Boolean? = null
     private var subject: String? = null
     private var semester: Int? = null
-    private var sharedPreferences: SharedPreferences? = null
+    private var sharedPrefInterceptor: SharedPreferences? = null
+    private var sharedPrefProfile: SharedPreferences? = null
     private lateinit var progressBar: ProgressBar
     private lateinit var noDataTextView: TextView
     private lateinit var tableLayout: FixedHeaderTableLayout
@@ -68,9 +66,9 @@ class StatisticsFragment : Fragment() {
             subject = it.getString(SUBJECT)
             semester = it.getInt(SEMESTER)
         }
-        sharedPreferences =
-            activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
-        token = sharedPreferences?.getString(SHARED_PREFERENCES_TOKEN_KEY, null)
+        sharedPrefProfile =
+            activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
+        val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
         if (token == null) {
             findNavController().navigate(R.id.action_statisticsFragment_to_loginFragment)
         }
@@ -134,15 +132,15 @@ class StatisticsFragment : Fragment() {
         }, viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
 
-    private fun makeListForDropdown(currMonthInt: Int, currYearInt: Int) : List<String>{
+    private fun makeListForDropdown(currMonthInt: Int, currYearInt: Int): List<String> {
         val list: List<String> = if (semester?.rem(2) == 0) {
             listOf(
                 "JAN $currYearInt", "FEB $currYearInt", "MAR $currYearInt", "APR $currYearInt",
                 "MAY $currYearInt", "JUN $currYearInt", "JUL $currYearInt", "AUG $currYearInt"
             )
         } else {
-            val yearX = if (currMonthInt in 7..12) currYearInt else currYearInt-1
-            val yearY = yearX+1
+            val yearX = if (currMonthInt in 7..12) currYearInt else currYearInt - 1
+            val yearY = yearX + 1
             listOf(
                 "AUG $yearX", "SEP $yearX", "OCT $yearX", "NOV $yearX",
                 "DEC $yearX", "JAN $yearY", "FEB $yearY", "MAR $yearY"
@@ -155,11 +153,28 @@ class StatisticsFragment : Fragment() {
         progressBar.visibility = ProgressBar.VISIBLE
         noDataTextView.visibility = TextView.GONE
         Log.d("debug", "stats month year $monthYear")
-        sharedPreferences = activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
-        val tunnelURL: String? = sharedPreferences?.getString("url", null)
-        val schemeHost = tunnelURL?.split("://")
+        sharedPrefInterceptor =
+            activity?.getSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR, Context.MODE_PRIVATE)
+        val tunnelURL: String? = sharedPrefInterceptor?.getString(URL_KEY, null)
+        if (tunnelURL == null) {
+            Snackbar.make(
+                view,
+                "Something went wrong. Please try again later!",
+                Snackbar.LENGTH_SHORT
+            ).show()
+            (activity as MainActivity).getUrl()
+            return
+        }
+        val schemeHost = tunnelURL.split("://")
+        sharedPrefProfile =
+            activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
+        val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
+        if (token == null) {
+            findNavController().popBackStack()
+            return
+        }
         val httpUrlBuilder: HttpUrl.Builder = HttpUrl.Builder()
-            .scheme(schemeHost!![0])
+            .scheme(schemeHost[0])
             .host(schemeHost[1])
             .addPathSegment("api")
             .addPathSegment("student")
@@ -177,7 +192,7 @@ class StatisticsFragment : Fragment() {
         lifecycleScope.launch(Dispatchers.IO) {
             val request: Request = Request.Builder()
                 .url(httpUrl)
-                .addHeader(AUTHORIZATION, token!!)
+                .addHeader(AUTHORIZATION, token)
                 .get()
                 .build()
             client.newCall(request).enqueue(object : Callback {

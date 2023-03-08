@@ -8,13 +8,13 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
 import com.google.android.material.snackbar.Snackbar
 import de.hdodenhof.circleimageview.CircleImageView
@@ -27,15 +27,13 @@ import org.json.JSONObject
 import java.io.IOException
 
 private const val PROFILE = "profile"
-private const val SHARED_PREFERENCES_NAME = "shared_pref"
-private const val SHARED_PREFERENCES_TOKEN_KEY = "token"
-private const val SHARED_PREFERENCES_ID_KEY = "id_key"
 private const val NAME = "Name"
 private const val PHONE_NUMBER = "Phone Number"
 
 
 class ProfileFragment : Fragment() {
-    private var sharedPreferences: SharedPreferences? = null
+    private var sharedPrefInterceptor: SharedPreferences? = null
+    private var sharedPrefProfile: SharedPreferences? = null
     private var profile: String? = null
     private lateinit var jsonObject: JSONObject
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,8 +42,6 @@ class ProfileFragment : Fragment() {
             profile = it.getString(PROFILE)
         }
         jsonObject = JSONObject(profile!!)
-        sharedPreferences =
-            activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
     }
 
     override fun onCreateView(
@@ -131,11 +127,27 @@ class ProfileFragment : Fragment() {
     }
 
     private fun updateProfile(view: View) {
-        sharedPreferences = activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
-        val token = sharedPreferences?.getString(SHARED_PREFERENCES_TOKEN_KEY, null)!!
-        val id = sharedPreferences?.getInt(SHARED_PREFERENCES_ID_KEY, 0)!!
-        val tunnelURL: String? = sharedPreferences?.getString("url", null)
-        val url = tunnelURL+getString(R.string.profile_api_url, id)
+        sharedPrefProfile =
+            activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
+        val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
+        if (token == null) {
+            findNavController().popBackStack()
+            return
+        }
+        val id = sharedPrefProfile?.getInt(ID_KEY, 0)!!
+        sharedPrefInterceptor =
+            activity?.getSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR, Context.MODE_PRIVATE)
+        val tunnelURL: String? = sharedPrefInterceptor?.getString(URL_KEY, null)
+        if (tunnelURL == null) {
+            Snackbar.make(
+                view,
+                "Something went wrong. Please try again later!",
+                Snackbar.LENGTH_SHORT
+            ).show()
+            (activity as MainActivity).getUrl()
+            return
+        }
+        val url = tunnelURL + getString(R.string.profile_api_url, id)
         val client = OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val mediaType = "application/json; charset=utf-8".toMediaType()
@@ -145,7 +157,11 @@ class ProfileFragment : Fragment() {
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
                     activity?.runOnUiThread {
-                        Snackbar.make(view, "Please check Internet Connection!", Snackbar.LENGTH_SHORT).show()
+                        Snackbar.make(
+                            view,
+                            "Please check Internet Connection!",
+                            Snackbar.LENGTH_SHORT
+                        ).show()
                     }
                     Log.d("debug", "profile update failed")
                 }

@@ -25,10 +25,6 @@ import okhttp3.*
 import org.json.JSONObject
 import java.io.IOException
 
-private const val SHARED_PREFERENCES_NAME = "shared_pref"
-private const val SHARED_PREFERENCES_TOKEN_KEY = "token"
-private const val SHARED_PREFERENCES_ID_KEY = "id_key"
-
 class LoginFragment : Fragment() {
     private lateinit var button: TextView
     private lateinit var emailEditText: TextInputEditText
@@ -36,19 +32,18 @@ class LoginFragment : Fragment() {
     private lateinit var progressBar: ProgressBar
     private lateinit var forgotPassword: TextView
     private lateinit var inputMethodManager: InputMethodManager
-    private var token: String = ""
-    private var idKey: Int = 0
-    private var sharedPreferences: SharedPreferences? = null
+    private var sharedPrefInterceptor: SharedPreferences? = null
+    private var sharedPrefProfile: SharedPreferences? = null
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        sharedPreferences =
-            activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
-        val stringObject: String? = sharedPreferences?.getString(SHARED_PREFERENCES_TOKEN_KEY, null)
-        val id = sharedPreferences?.getInt(SHARED_PREFERENCES_ID_KEY, 0)
-        if (stringObject != null) {
-            (activity as MainActivity).fetchProfile(stringObject, id!!)
+        sharedPrefProfile =
+            activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
+        val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
+        val id = sharedPrefProfile?.getInt(ID_KEY, 0)
+        if (token != null) {
+            (activity as MainActivity).fetchProfile(token, id!!)
             findNavController().navigate(R.id.action_loginFragment_to_subjectListFragment)
         }
     }
@@ -107,14 +102,19 @@ class LoginFragment : Fragment() {
 
     private fun logIn(view: View) {
         inputMethodManager.hideSoftInputFromWindow(button.windowToken, 0)
-        sharedPreferences = activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
-        val tunnelURL: String? = sharedPreferences?.getString("url", null)
-        if (tunnelURL==null) {
-            Snackbar.make(view, "Something went wrong. Please try again later!", Snackbar.LENGTH_SHORT)
-                .show()
+        sharedPrefInterceptor =
+            activity?.getSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR, Context.MODE_PRIVATE)
+        val tunnelURL = sharedPrefInterceptor?.getString(URL_KEY, null)
+        if (tunnelURL == null) {
+            Snackbar.make(
+                view,
+                "Something went wrong. Please try again later!",
+                Snackbar.LENGTH_SHORT
+            ).show()
+            (activity as MainActivity).getUrl()
             return
         }
-        val url = tunnelURL+getString(R.string.login_api_url)
+        val url = tunnelURL + getString(R.string.login_api_url)
         Log.d("debug", url)
         val client = OkHttpClient()
         val mailID: String = emailEditText.text.toString().lowercase()
@@ -129,7 +129,6 @@ class LoginFragment : Fragment() {
         }
         progressBar.visibility = ProgressBar.VISIBLE
         button.visibility = TextView.INVISIBLE
-        val editor = sharedPreferences?.edit()
         lifecycleScope.launch(Dispatchers.IO) {
             val body: RequestBody =
                 FormBody.Builder().add("email", mailID).add("password", pass).build()
@@ -140,7 +139,11 @@ class LoginFragment : Fragment() {
                     activity?.runOnUiThread {
                         progressBar.visibility = ProgressBar.INVISIBLE
                         button.visibility = TextView.VISIBLE
-                        Snackbar.make(view, "Please check Internet Connection!", Snackbar.LENGTH_SHORT).show()
+                        Snackbar.make(
+                            view,
+                            "Please check Internet Connection!",
+                            Snackbar.LENGTH_SHORT
+                        ).show()
                     }
                     Log.d("debug", "login failed")
                 }
@@ -151,10 +154,15 @@ class LoginFragment : Fragment() {
                         val jsonObject = response.body?.string()?.let { JSONObject(it) }
                         val isFirstLogin = jsonObject?.getBoolean("is_first_login")
                         val key = jsonObject?.getString("token")
-                        token = "Token $key"
-                        idKey = jsonObject?.getInt("id")!!
-                        editor?.putString(SHARED_PREFERENCES_TOKEN_KEY, token)
-                        editor?.putInt(SHARED_PREFERENCES_ID_KEY, idKey)
+                        val token = "Token $key"
+                        val idKey = jsonObject?.getInt("id")!!
+                        sharedPrefProfile = activity?.getSharedPreferences(
+                            SHARED_PREFERENCES_PROFILE,
+                            Context.MODE_PRIVATE
+                        )
+                        val editor = sharedPrefProfile?.edit()
+                        editor?.putString(TOKEN_KEY, token)
+                        editor?.putInt(ID_KEY, idKey)
                         editor?.apply()
                         Log.d("debug", "login successful token: $token id $idKey")
                         (activity as MainActivity).fetchProfile(token, idKey)
@@ -180,9 +188,12 @@ class LoginFragment : Fragment() {
                             if (response.code == 400 || response.code == 401) {
                                 Snackbar.make(view, "Invalid Credentials", Snackbar.LENGTH_SHORT)
                                     .show()
-                            }
-                            else if (response.code == 404) {
-                                Snackbar.make(view, "Something went wrong. Please try again later!", Snackbar.LENGTH_SHORT)
+                            } else if (response.code == 404) {
+                                Snackbar.make(
+                                    view,
+                                    "Something went wrong. Please try again later!",
+                                    Snackbar.LENGTH_SHORT
+                                )
                                     .show()
                             }
                         }
@@ -190,10 +201,7 @@ class LoginFragment : Fragment() {
                     }
                     response.body?.close()
                 }
-
             })
         }
-
     }
-
 }

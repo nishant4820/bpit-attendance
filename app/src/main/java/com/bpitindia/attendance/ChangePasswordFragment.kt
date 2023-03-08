@@ -26,25 +26,16 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.io.IOException
 
-private const val SHARED_PREFERENCES_NAME = "shared_pref"
-private const val SHARED_PREFERENCES_TOKEN_KEY = "token"
-
 class ChangePasswordFragment : Fragment() {
-    private var token: String? = null
-    private var sharedPreferences: SharedPreferences? = null
+    //    private var token: String? = null
+    private var sharedPrefInterceptor: SharedPreferences? = null
+    private var sharedPrefProfile: SharedPreferences? = null
     private lateinit var changeButton: TextView
     private lateinit var currentPasswordEdittext: TextInputEditText
     private lateinit var newPasswordEdittext: TextInputEditText
     private lateinit var confirmNewPasswordEdittext: TextInputEditText
     private lateinit var progressBar: ProgressBar
     private lateinit var inputMethodManager: InputMethodManager
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        sharedPreferences =
-            activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
-        token = sharedPreferences?.getString(SHARED_PREFERENCES_TOKEN_KEY, null)
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -106,10 +97,26 @@ class ChangePasswordFragment : Fragment() {
         }
         progressBar.visibility = ProgressBar.VISIBLE
         changeButton.visibility = TextView.INVISIBLE
-        val editor = sharedPreferences?.edit()
-        sharedPreferences = activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
-        val tunnelURL: String? = sharedPreferences?.getString("url", null)
-        val url = tunnelURL+getString(R.string.reset_password_api_url)
+        sharedPrefInterceptor =
+            activity?.getSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR, Context.MODE_PRIVATE)
+        sharedPrefProfile =
+            activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
+        val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
+        if (token == null) {
+            findNavController().popBackStack()
+            return
+        }
+        val tunnelURL: String? = sharedPrefInterceptor?.getString(URL_KEY, null)
+        if (tunnelURL == null) {
+            Snackbar.make(
+                view,
+                "Something went wrong. Please try again later!",
+                Snackbar.LENGTH_SHORT
+            ).show()
+            (activity as MainActivity).getUrl()
+            return
+        }
+        val url = tunnelURL + getString(R.string.reset_password_api_url)
         val client = OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val bodyJSONObject = JSONObject()
@@ -127,7 +134,11 @@ class ChangePasswordFragment : Fragment() {
                     activity?.runOnUiThread {
                         progressBar.visibility = ProgressBar.INVISIBLE
                         changeButton.visibility = TextView.VISIBLE
-                        Snackbar.make(view, "Please check Internet Connection!", Snackbar.LENGTH_SHORT).show()
+                        Snackbar.make(
+                            view,
+                            "Please check Internet Connection!",
+                            Snackbar.LENGTH_SHORT
+                        ).show()
                     }
                     Log.d("debug", "Change Password Request Failed")
                 }
@@ -137,7 +148,8 @@ class ChangePasswordFragment : Fragment() {
                     if (response.isSuccessful) {
                         val key = jsonObject?.getString("token")
                         val newToken = "Token $key"
-                        editor?.putString(SHARED_PREFERENCES_TOKEN_KEY, newToken)
+                        val editor = sharedPrefProfile?.edit()
+                        editor?.putString(TOKEN_KEY, newToken)
                         editor?.apply()
                         activity?.runOnUiThread {
                             progressBar.visibility = ProgressBar.INVISIBLE

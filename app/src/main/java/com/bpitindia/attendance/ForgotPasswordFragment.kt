@@ -25,7 +25,6 @@ import okhttp3.*
 import java.io.IOException
 
 private const val EMAIL = "email"
-private const val SHARED_PREFERENCES_NAME = "shared_pref"
 
 
 class ForgotPasswordFragment : Fragment() {
@@ -34,7 +33,7 @@ class ForgotPasswordFragment : Fragment() {
     private lateinit var progressBar: ProgressBar
     private lateinit var inputMethodManager: InputMethodManager
     private lateinit var button: TextView
-    private var sharedPreferences: SharedPreferences? = null
+    private var sharedPrefInterceptor: SharedPreferences? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -88,16 +87,16 @@ class ForgotPasswordFragment : Fragment() {
 
     private fun requestOTP(view: View) {
         inputMethodManager.hideSoftInputFromWindow(resetEmailEditText.windowToken, 0)
-        sharedPreferences =
-            activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
-        val tunnelURL: String? = sharedPreferences?.getString("url", null)
+        sharedPrefInterceptor =
+            activity?.getSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR, Context.MODE_PRIVATE)
+        val tunnelURL: String? = sharedPrefInterceptor?.getString(URL_KEY, null)
         if (tunnelURL == null) {
             Snackbar.make(
                 view,
                 "Something went wrong. Please try again later!",
                 Snackbar.LENGTH_SHORT
-            )
-                .show()
+            ).show()
+            (activity as MainActivity).getUrl()
             return
         }
         val url = tunnelURL + getString(R.string.forgot_password_api_url)

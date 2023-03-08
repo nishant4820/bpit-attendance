@@ -23,21 +23,19 @@ import okhttp3.*
 import org.json.JSONArray
 import java.io.IOException
 
-private const val SHARED_PREFERENCES_NAME = "shared_pref"
-private const val SHARED_PREFERENCES_TOKEN_KEY = "token"
-
 class SubjectListFragment : Fragment() {
     private var token: String? = null
     var jsonArray: JSONArray = JSONArray()
-    private var sharedPreferences: SharedPreferences? = null
+    private var sharedPrefInterceptor: SharedPreferences? = null
+    private var sharedPrefProfile: SharedPreferences? = null
     private lateinit var progressBar: ProgressBar
     private lateinit var floatingActionButton: FloatingActionButton
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        sharedPreferences =
-            activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
-        token = sharedPreferences?.getString(SHARED_PREFERENCES_TOKEN_KEY, null)
+        sharedPrefProfile =
+            activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
+        token = sharedPrefProfile?.getString(TOKEN_KEY, null)
         Log.d("debug", "subject fragment created token:  $token")
         if (token == null) {
             findNavController().navigate(R.id.action_subjectListFragment_to_loginFragment)
@@ -70,9 +68,18 @@ class SubjectListFragment : Fragment() {
 
     private fun fetchSubjects(view: View) {
         progressBar.visibility = ProgressBar.VISIBLE
-        sharedPreferences =
-            activity?.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
-        val tunnelURL: String? = sharedPreferences?.getString("url", null)
+        sharedPrefInterceptor =
+            activity?.getSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR, Context.MODE_PRIVATE)
+        val tunnelURL: String? = sharedPrefInterceptor?.getString(URL_KEY, null)
+        if (tunnelURL == null) {
+            Snackbar.make(
+                view,
+                "Something went wrong. Please try again later!",
+                Snackbar.LENGTH_SHORT
+            ).show()
+            (activity as MainActivity).getUrl()
+            return
+        }
         val url = tunnelURL + getString(R.string.subject_api_url)
         val client = OkHttpClient()
 
@@ -113,13 +120,25 @@ class SubjectListFragment : Fragment() {
                                 progressBar.visibility = ProgressBar.INVISIBLE
                                 when (response.code) {
                                     401 -> {
-                                        activity?.deleteSharedPreferences(SHARED_PREFERENCES_NAME)
+                                        activity?.deleteSharedPreferences(SHARED_PREFERENCES_PROFILE)
                                         Toast.makeText(
                                             context,
                                             "Session Expired! Log in again.",
                                             Toast.LENGTH_SHORT
                                         ).show()
                                         findNavController().navigate(R.id.action_subjectListFragment_to_loginFragment)
+                                    }
+                                    404 -> {
+                                        Snackbar.make(
+                                            view,
+                                            "Something went wrong. Please try again later!",
+                                            Snackbar.LENGTH_SHORT
+                                        ).show()
+
+                                        (activity as MainActivity).apply {
+                                            deleteSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR)
+                                            getUrl()
+                                        }
                                     }
                                     else -> {
                                         Snackbar.make(
