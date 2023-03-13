@@ -115,7 +115,6 @@ class LoginFragment : Fragment() {
             return
         }
         val url = tunnelURL + getString(R.string.login_api_url)
-        Log.d("debug", url)
         val client = OkHttpClient()
         val mailID: String = emailEditText.text.toString().lowercase()
         val pass: String = passwordEditText.text.toString()
@@ -195,6 +194,7 @@ class LoginFragment : Fragment() {
                                     Snackbar.LENGTH_SHORT
                                 )
                                     .show()
+                                (activity as MainActivity).getUrl()
                             }
                         }
                         Log.d("debug", "login unsuccessful code: ${response.code}")

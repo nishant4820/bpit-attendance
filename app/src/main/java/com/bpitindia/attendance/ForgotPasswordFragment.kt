@@ -150,6 +150,7 @@ class ForgotPasswordFragment : Fragment() {
                                     "Something went wrong. Please try again later!",
                                     Snackbar.LENGTH_SHORT
                                 ).show()
+                                (activity as MainActivity).getUrl()
                             }
                         }
                         Log.d("debug", "api unsuccessful")

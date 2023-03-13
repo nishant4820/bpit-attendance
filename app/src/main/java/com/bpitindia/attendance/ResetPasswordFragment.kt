@@ -149,8 +149,8 @@ class ResetPasswordFragment : Fragment() {
 
                 override fun onResponse(call: Call, response: Response) {
 
-                    if (response.isSuccessful) {
-                        activity?.runOnUiThread {
+                    activity?.runOnUiThread {
+                        if (response.isSuccessful) {
                             progressBar.visibility = ProgressBar.INVISIBLE
                             resetButton.visibility = TextView.VISIBLE
                             Snackbar.make(
@@ -164,9 +164,8 @@ class ResetPasswordFragment : Fragment() {
                                 R.id.action_resetPasswordFragment_to_resetSuccessfulFragment,
                                 bundle
                             )
-                        }
-                    } else {
-                        activity?.runOnUiThread {
+
+                        } else {
                             progressBar.visibility = ProgressBar.INVISIBLE
                             resetButton.visibility = TextView.VISIBLE
                             if (response.code == 400) {
@@ -181,9 +180,10 @@ class ResetPasswordFragment : Fragment() {
                                     "Something went wrong. Please try again later!",
                                     Snackbar.LENGTH_SHORT
                                 ).show()
+                                (activity as MainActivity).getUrl()
                             }
+                            Log.d("debug", "Reset Password Unsuccessful")
                         }
-                        Log.d("debug", "Reset Password Unsuccessful")
                     }
                     response.body?.close()
                 }

@@ -123,10 +123,10 @@ class ValidateOtpFragment : Fragment() {
                 }
 
                 override fun onResponse(call: Call, response: Response) {
-                    if (response.isSuccessful) {
-                        activity?.runOnUiThread {
-                            progressBar.visibility = ProgressBar.INVISIBLE
-                            button.visibility = TextView.VISIBLE
+                    activity?.runOnUiThread {
+                        progressBar.visibility = ProgressBar.INVISIBLE
+                        button.visibility = TextView.VISIBLE
+                        if (response.isSuccessful) {
                             pinView.setText("")
                             val bundle = Bundle()
                             bundle.putString("email", email)
@@ -135,12 +135,8 @@ class ValidateOtpFragment : Fragment() {
                                 R.id.action_validateOtpFragment_to_resetPasswordFragment,
                                 bundle
                             )
-                        }
-                    } else {
-                        activity?.runOnUiThread {
+                        } else {
                             if (response.code == 401) {
-                                progressBar.visibility = ProgressBar.INVISIBLE
-                                button.visibility = TextView.VISIBLE
                                 pinView.setText("")
                                 Snackbar.make(
                                     view,
@@ -153,6 +149,7 @@ class ValidateOtpFragment : Fragment() {
                                     "Something went wrong. Please try again later!",
                                     Snackbar.LENGTH_SHORT
                                 ).show()
+                                (activity as MainActivity).getUrl()
                             }
                         }
                     }
