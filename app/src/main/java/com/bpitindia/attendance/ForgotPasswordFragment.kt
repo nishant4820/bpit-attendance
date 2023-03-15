@@ -22,6 +22,9 @@ import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 import java.io.IOException
 
 private const val EMAIL = "email"
@@ -109,7 +112,13 @@ class ForgotPasswordFragment : Fragment() {
         progressBar.visibility = ProgressBar.VISIBLE
         button.visibility = TextView.INVISIBLE
         lifecycleScope.launch(Dispatchers.IO) {
-            val body: RequestBody = FormBody.Builder().add("email", mailID).build()
+            val bodyJSONObject = JSONObject()
+            bodyJSONObject.apply {
+                put("email", mailID)
+            }
+            val mediaType = "application/json; charset=utf-8".toMediaType()
+            val body = bodyJSONObject.toString().toRequestBody(mediaType)
+//            val body: RequestBody = FormBody.Builder().add("email", mailID).build()
             val request: Request = Request.Builder().url(url).post(body).build()
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
@@ -137,7 +146,7 @@ class ForgotPasswordFragment : Fragment() {
                                 bundle
                             )
                         }
-                        Log.d("debug", "Forget pass successful")
+                        Log.d("debug", "OTP generated successfully")
                     } else {
                         activity?.runOnUiThread {
                             progressBar.visibility = ProgressBar.INVISIBLE
@@ -153,9 +162,9 @@ class ForgotPasswordFragment : Fragment() {
                                 (activity as MainActivity).getUrl()
                             }
                         }
-                        Log.d("debug", "api unsuccessful")
+                        Log.d("debug", "OTP Request unsuccessful code: ${response.code}")
                     }
-                    response.body?.close()
+                    response.close()
                 }
 
             })

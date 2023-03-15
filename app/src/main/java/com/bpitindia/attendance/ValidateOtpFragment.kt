@@ -21,6 +21,9 @@ import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 import java.io.IOException
 
 private const val EMAIL = "email"
@@ -32,7 +35,6 @@ class ValidateOtpFragment : Fragment() {
     private lateinit var progressBar: ProgressBar
     private lateinit var inputMethodManager: InputMethodManager
     private var sharedPrefInterceptor: SharedPreferences? = null
-    private var sharedPrefProfile: SharedPreferences? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -106,7 +108,14 @@ class ValidateOtpFragment : Fragment() {
         val url = tunnelURL + getString(R.string.validate_otp_api_url)
         val client = OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
-            val body: RequestBody = FormBody.Builder().add("email", email!!).add("otp", otp).build()
+            val bodyJSONObject = JSONObject()
+            bodyJSONObject.apply {
+                put("email", email!!)
+                put("otp", otp)
+            }
+            val mediaType = "application/json; charset=utf-8".toMediaType()
+            val body = bodyJSONObject.toString().toRequestBody(mediaType)
+//            val body: RequestBody = FormBody.Builder().add("email", email!!).add("otp", otp).build()
             val request: Request = Request.Builder().url(url).post(body).build()
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
@@ -119,7 +128,7 @@ class ValidateOtpFragment : Fragment() {
                             Snackbar.LENGTH_SHORT
                         ).show()
                     }
-                    Log.d("debug", "Validate Request Failed")
+                    Log.d("debug", "OTP Validate Request Failed")
                 }
 
                 override fun onResponse(call: Call, response: Response) {
@@ -127,6 +136,7 @@ class ValidateOtpFragment : Fragment() {
                         progressBar.visibility = ProgressBar.INVISIBLE
                         button.visibility = TextView.VISIBLE
                         if (response.isSuccessful) {
+                            Log.d("debug", "OTP Validated")
                             pinView.setText("")
                             val bundle = Bundle()
                             bundle.putString("email", email)
@@ -136,6 +146,7 @@ class ValidateOtpFragment : Fragment() {
                                 bundle
                             )
                         } else {
+                            Log.d("debug", "OTP Validate Unsuccessful code: ${response.code}")
                             if (response.code == 401) {
                                 pinView.setText("")
                                 Snackbar.make(
@@ -153,7 +164,7 @@ class ValidateOtpFragment : Fragment() {
                             }
                         }
                     }
-                    response.body?.close()
+                    response.close()
                 }
             })
         }

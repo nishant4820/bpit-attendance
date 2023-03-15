@@ -130,11 +130,11 @@ class ProfileFragment : Fragment() {
         sharedPrefProfile =
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
-        if (token == null) {
+        val id = sharedPrefProfile?.getInt(ID_KEY, 0)
+        if (token == null || id == null) {
             findNavController().popBackStack()
             return
         }
-        val id = sharedPrefProfile?.getInt(ID_KEY, 0)!!
         sharedPrefInterceptor =
             activity?.getSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR, Context.MODE_PRIVATE)
         val tunnelURL: String? = sharedPrefInterceptor?.getString(URL_KEY, null)
@@ -168,16 +168,16 @@ class ProfileFragment : Fragment() {
 
                 override fun onResponse(call: Call, response: Response) {
                     if (response.isSuccessful) {
-                        Log.d("debug", "profile loading successful")
-                        (activity as? MainActivity)?.fetchProfile(token, id)
+                        Log.d("debug", "profile update successful")
+                        (activity as? MainActivity)?.fetchProfile()
                     } else {
-                        Log.d("debug", "profile update failed ${response.message}")
+                        Log.d("debug", "profile update unsuccessful ${response.code}")
                         activity?.runOnUiThread {
                             Snackbar.make(view, "Profile Update Failed", Snackbar.LENGTH_SHORT)
                                 .show()
                         }
                     }
-                    response.body?.close()
+                    response.close()
                 }
             })
         }

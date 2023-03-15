@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.bpitindia.attendance
 
 import android.app.AlertDialog
@@ -8,7 +10,6 @@ import android.util.Log
 import android.view.*
 import android.widget.ProgressBar
 import android.widget.TextView
-import android.widget.Toast
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
@@ -42,8 +43,6 @@ class EditAttendanceFragment : Fragment() {
     private var group: String? = null
     private var isLab: Boolean? = null
     private var subject: String? = null
-    var jsonArray: JSONArray = JSONArray()
-    private var dataPresent: Boolean = true
     private var sharedPrefInterceptor: SharedPreferences? = null
     private var sharedPrefProfile: SharedPreferences? = null
     private lateinit var recyclerView: RecyclerView
@@ -64,7 +63,7 @@ class EditAttendanceFragment : Fragment() {
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
         if (token == null) {
-            findNavController().navigate(R.id.action_editAttendanceFragment_to_loginFragment)
+            findNavController().popBackStack()
         }
     }
 
@@ -87,37 +86,6 @@ class EditAttendanceFragment : Fragment() {
             setHasFixedSize(true)
         }
         fetchData(view)
-        val menuHost: MenuHost = requireActivity()
-        menuHost.addMenuProvider(object : MenuProvider {
-            override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
-                menuInflater.inflate(R.menu.menu_edit_attendance_fragment, menu)
-            }
-
-            override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
-                if (menuItem.itemId == R.id.upload_edit_attendance) {
-                    if (dataPresent) {
-                        AlertDialog.Builder(context).apply {
-                            setTitle("Submit")
-                            setMessage("Are you sure you want to update attendance?")
-                            setPositiveButton("Confirm") { _, _ ->
-                                markAttendance(view)
-                            }
-                            setNegativeButton("Cancel") { _, _ -> }
-                        }.create().show()
-                    } else {
-                        AlertDialog.Builder(context).apply {
-                            setTitle("Cannot Update")
-                            setMessage("No attendance is taken yet")
-                            setPositiveButton("Continue") { _, _ -> }
-                        }.create().show()
-                    }
-                    return true
-                }
-                return false
-            }
-
-        }, viewLifecycleOwner, Lifecycle.State.RESUMED)
-
     }
 
     private fun fetchData(view: View) {
@@ -133,6 +101,7 @@ class EditAttendanceFragment : Fragment() {
                 Snackbar.LENGTH_SHORT
             ).show()
             (activity as MainActivity).getUrl()
+            findNavController().popBackStack()
             return
         }
         sharedPrefProfile =
@@ -161,14 +130,14 @@ class EditAttendanceFragment : Fragment() {
         lifecycleScope.launch(Dispatchers.IO) {
             val request: Request = Request.Builder()
                 .url(httpUrl)
-                .addHeader(AUTHORIZATION, token!!)
+                .addHeader(AUTHORIZATION, token)
                 .get()
                 .build()
             client.newCall(request).enqueue(object : Callback {
+
                 override fun onFailure(call: Call, e: IOException) {
                     Log.d("debug", "fetch last attendance failed")
                     activity?.runOnUiThread {
-//                        Snackbar.make(view, "Some error occurred", Snackbar.LENGTH_SHORT).show()
                         progressBar.visibility = ProgressBar.GONE
                         findNavController().popBackStack()
                     }
@@ -177,32 +146,30 @@ class EditAttendanceFragment : Fragment() {
                 override fun onResponse(call: Call, response: Response) {
                     if (response.isSuccessful) {
                         try {
-                            jsonArray = JSONArray(response.body?.string())
+                            val jsonArray = JSONArray(response.body?.string())
                             activity?.runOnUiThread {
                                 progressBar.visibility = ProgressBar.GONE
                                 (recyclerView.adapter as EditAttendanceAdapter).dataSet = jsonArray
+                                addMenu(view)
                             }
                         } catch (e: Exception) {
-                            dataPresent = false
                             activity?.runOnUiThread {
                                 noDataTextView.visibility = TextView.VISIBLE
                                 progressBar.visibility = ProgressBar.GONE
                             }
                         }
+                        Log.d("debug", "edit attendance data fetch successful")
                     } else {
-//                        activity?.deleteSharedPreferences(SHARED_PREFERENCES_NAME)
                         activity?.runOnUiThread {
-//                            Toast.makeText(
-//                                context,
-//                                "Session Expired!! Log in again.",
-//                                Toast.LENGTH_SHORT
-//                            ).show()
                             progressBar.visibility = ProgressBar.INVISIBLE
                             findNavController().popBackStack()
-//                            findNavController().navigate(R.id.action_editAttendanceFragment_to_loginFragment)
                         }
+                        Log.d(
+                            "debug",
+                            "edit attendance data fetch unsuccessful code: ${response.code}"
+                        )
                     }
-                    response.body?.close()
+                    response.close()
                 }
 
             })
@@ -245,13 +212,13 @@ class EditAttendanceFragment : Fragment() {
         lifecycleScope.launch(Dispatchers.IO) {
             val request: Request = Request.Builder()
                 .url(url)
-                .addHeader(AUTHORIZATION, token!!)
+                .addHeader(AUTHORIZATION, token)
                 .patch(body)
                 .build()
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
-                    progressDialog.dismiss()
                     activity?.runOnUiThread {
+                        progressDialog.dismiss()
                         Snackbar.make(
                             view,
                             "Please check Internet Connection!",
@@ -262,22 +229,19 @@ class EditAttendanceFragment : Fragment() {
                 }
 
                 override fun onResponse(call: Call, response: Response) {
-                    progressDialog.dismiss()
-                    Log.d("debug response", response.body!!.string())
-
                     activity?.runOnUiThread {
+                        progressDialog.dismiss()
                         if (response.isSuccessful) {
                             Snackbar.make(view, "Attendance Updated", Snackbar.LENGTH_SHORT).show()
+                            Log.d("debug", "Last attendance updated")
                             findNavController().popBackStack()
                         } else {
+                            Log.d(
+                                "debug",
+                                "Last attendance update unsuccessful code: ${response.code}"
+                            )
                             when (response.code) {
                                 401 -> {
-//                                        activity?.deleteSharedPreferences(SHARED_PREFERENCES_NAME)
-                                    Toast.makeText(
-                                        context,
-                                        "Session Expired! Log in again.",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
                                     findNavController().popBackStack()
                                 }
                                 else -> {
@@ -286,16 +250,42 @@ class EditAttendanceFragment : Fragment() {
                                         "Something went wrong. Please try again later!",
                                         Snackbar.LENGTH_SHORT
                                     ).show()
+                                    (activity as MainActivity).getUrl()
                                 }
                             }
                         }
                     }
 
-                    response.body?.close()
+                    response.close()
                 }
 
             })
         }
 
+    }
+
+    private fun addMenu(view: View) {
+        val menuHost: MenuHost = requireActivity()
+        menuHost.addMenuProvider(object : MenuProvider {
+            override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+                menuInflater.inflate(R.menu.menu_edit_attendance_fragment, menu)
+            }
+
+            override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
+                if (menuItem.itemId == R.id.upload_edit_attendance) {
+                    AlertDialog.Builder(context).apply {
+                        setTitle("Submit")
+                        setMessage("Are you sure you want to update attendance?")
+                        setPositiveButton("Confirm") { _, _ ->
+                            markAttendance(view)
+                        }
+                        setNegativeButton("Cancel") { _, _ -> }
+                    }.create().show()
+                    return true
+                }
+                return false
+            }
+
+        }, viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
 }

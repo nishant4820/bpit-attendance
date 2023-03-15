@@ -10,9 +10,9 @@ android {
         applicationId "com.bpitindia.attendance"
         minSdk 26
         targetSdk 33
-        versionCode 3
+        versionCode 1
 //        versionName format: "vYEAR.MM.versionCode"
-        versionName "v2023.01.3"
+        versionName "v2023.03.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

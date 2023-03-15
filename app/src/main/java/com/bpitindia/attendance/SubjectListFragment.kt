@@ -14,7 +14,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -24,19 +23,16 @@ import org.json.JSONArray
 import java.io.IOException
 
 class SubjectListFragment : Fragment() {
-    private var token: String? = null
     var jsonArray: JSONArray = JSONArray()
     private var sharedPrefInterceptor: SharedPreferences? = null
     private var sharedPrefProfile: SharedPreferences? = null
     private lateinit var progressBar: ProgressBar
-    private lateinit var floatingActionButton: FloatingActionButton
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         sharedPrefProfile =
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
-        token = sharedPrefProfile?.getString(TOKEN_KEY, null)
-        Log.d("debug", "subject fragment created token:  $token")
+        val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
         if (token == null) {
             findNavController().navigate(R.id.action_subjectListFragment_to_loginFragment)
         }
@@ -55,10 +51,6 @@ class SubjectListFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         progressBar = view.findViewById(R.id.subject_progress_bar)
-        floatingActionButton = view.findViewById(R.id.floating_action_button)
-        floatingActionButton.setOnClickListener {
-            findNavController().navigate(R.id.action_subjectListFragment_to_addSubjectFragment)
-        }
     }
 
     override fun onStart() {
@@ -81,6 +73,9 @@ class SubjectListFragment : Fragment() {
             return
         }
         val url = tunnelURL + getString(R.string.subject_api_url)
+        sharedPrefProfile =
+            activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
+        val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
         val client = OkHttpClient()
 
         lifecycleScope.launch {
@@ -116,6 +111,7 @@ class SubjectListFragment : Fragment() {
                                 progressBar.visibility = ProgressBar.INVISIBLE
                             }
                         } else {
+                            Log.d("debug", "subject fetch unsuccessful code: ${response.code}")
                             activity?.runOnUiThread {
                                 progressBar.visibility = ProgressBar.INVISIBLE
                                 when (response.code) {
@@ -150,7 +146,7 @@ class SubjectListFragment : Fragment() {
                                 }
                             }
                         }
-                        response.body?.close()
+                        response.close()
                     }
 
                 })

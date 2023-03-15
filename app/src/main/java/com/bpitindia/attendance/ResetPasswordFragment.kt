@@ -126,7 +126,7 @@ class ResetPasswordFragment : Fragment() {
                 put("current_password", "")
                 put("new_password", newPassword)
                 put("new_password_confirm", confirmNewPassword)
-                put("password_otp", otp!!)
+                put("password_otp", otp)
                 put("forget", true)
                 put("email", email)
             }
@@ -150,9 +150,10 @@ class ResetPasswordFragment : Fragment() {
                 override fun onResponse(call: Call, response: Response) {
 
                     activity?.runOnUiThread {
+                        progressBar.visibility = ProgressBar.INVISIBLE
+                        resetButton.visibility = TextView.VISIBLE
                         if (response.isSuccessful) {
-                            progressBar.visibility = ProgressBar.INVISIBLE
-                            resetButton.visibility = TextView.VISIBLE
+                            Log.d("debug", "Password reset successful")
                             Snackbar.make(
                                 view,
                                 "Password reset successful. Please login.",
@@ -166,8 +167,6 @@ class ResetPasswordFragment : Fragment() {
                             )
 
                         } else {
-                            progressBar.visibility = ProgressBar.INVISIBLE
-                            resetButton.visibility = TextView.VISIBLE
                             if (response.code == 400) {
                                 val jsonObject: JSONObject? =
                                     response.body?.string()?.let { JSONObject(it) }
@@ -182,10 +181,10 @@ class ResetPasswordFragment : Fragment() {
                                 ).show()
                                 (activity as MainActivity).getUrl()
                             }
-                            Log.d("debug", "Reset Password Unsuccessful")
+                            Log.d("debug", "Reset Password Unsuccessful code: ${response.code}")
                         }
+                        response.close()
                     }
-                    response.body?.close()
                 }
 
             })
