@@ -58,9 +58,9 @@
     <string name="all_subject_api_url">/api/subjects/</string>
     <string name="mark_all">Mark All</string>
     <string name="action_spinner">SPINNER</string>
-    <string name="no_data">No data available for %s</string>
+    <string name="no_data">No data available for\n%s</string>
     <string name="available_subjects">Available Subjects</string>
-    <string name="no_attendance_taken_yet">No attendance taken yet!!</string>
+    <string name="no_attendance">No attendance records!!</string>
     <string name="my_profile">My Profile</string>
     <string name="about">About</string>
     <string name="welcome">Welcome!</string>

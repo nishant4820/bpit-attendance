@@ -67,13 +67,6 @@
             app:popUpTo="@id/subjectListFragment"
             app:popUpToInclusive="false" />
         <action
-            android:id="@+id/action_subjectListFragment_to_addSubjectFragment"
-            app:destination="@id/addSubjectFragment"
-            app:enterAnim="@anim/nav_default_enter_anim"
-            app:exitAnim="@anim/nav_default_exit_anim"
-            app:popEnterAnim="@anim/nav_default_pop_enter_anim"
-            app:popExitAnim="@anim/nav_default_pop_exit_anim" />
-        <action
             android:id="@+id/action_subjectListFragment_to_statisticsFragment"
             app:destination="@id/statisticsFragment"
             app:enterAnim="@anim/nav_default_enter_anim"
@@ -100,15 +93,6 @@
         android:name="com.bpitindia.attendance.StudentListFragment"
         android:label="fragment_student_list"
         tools:layout="@layout/fragment_student_list">
-        <action
-            android:id="@+id/action_studentListFragment_to_loginFragment"
-            app:destination="@id/loginFragment"
-            app:enterAnim="@anim/nav_default_enter_anim"
-            app:exitAnim="@anim/nav_default_exit_anim"
-            app:popEnterAnim="@anim/nav_default_pop_enter_anim"
-            app:popExitAnim="@anim/nav_default_pop_exit_anim"
-            app:popUpTo="@id/subjectListFragment"
-            app:popUpToInclusive="true" />
     </fragment>
     <fragment
         android:id="@+id/profileFragment"
@@ -196,39 +180,16 @@
             app:popUpToInclusive="true" />
     </fragment>
     <fragment
-        android:id="@+id/addSubjectFragment"
-        android:name="com.bpitindia.attendance.AddSubjectFragment"
-        android:label="fragment_add_subject"
-        tools:layout="@layout/fragment_add_subject" />
-    <fragment
         android:id="@+id/statisticsFragment"
         android:name="com.bpitindia.attendance.StatisticsFragment"
         android:label="fragment_statistics"
         tools:layout="@layout/fragment_statistics">
-        <action
-            android:id="@+id/action_statisticsFragment_to_loginFragment"
-            app:destination="@id/loginFragment"
-            app:enterAnim="@anim/nav_default_enter_anim"
-            app:exitAnim="@anim/nav_default_exit_anim"
-            app:popEnterAnim="@anim/nav_default_pop_enter_anim"
-            app:popExitAnim="@anim/nav_default_pop_exit_anim"
-            app:popUpTo="@id/subjectListFragment"
-            app:popUpToInclusive="true" />
     </fragment>
     <fragment
         android:id="@+id/editAttendanceFragment"
         android:name="com.bpitindia.attendance.EditAttendanceFragment"
         android:label="fragment_edit_attendance"
         tools:layout="@layout/fragment_edit_attendance">
-        <action
-            android:id="@+id/action_editAttendanceFragment_to_loginFragment"
-            app:destination="@id/loginFragment"
-            app:enterAnim="@anim/nav_default_enter_anim"
-            app:exitAnim="@anim/nav_default_exit_anim"
-            app:popEnterAnim="@anim/nav_default_pop_enter_anim"
-            app:popExitAnim="@anim/nav_default_pop_exit_anim"
-            app:popUpTo="@id/subjectListFragment"
-            app:popUpToInclusive="true" />
     </fragment>
     <fragment
         android:id="@+id/aboutFragment"

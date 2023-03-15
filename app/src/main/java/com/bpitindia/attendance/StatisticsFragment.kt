@@ -70,7 +70,7 @@ class StatisticsFragment : Fragment() {
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
         if (token == null) {
-            findNavController().navigate(R.id.action_statisticsFragment_to_loginFragment)
+            findNavController().popBackStack()
         }
     }
 
@@ -104,7 +104,7 @@ class StatisticsFragment : Fragment() {
                 menuInflater.inflate(R.menu.menu_stats_fragment, menu)
                 val spinner = menu.findItem(R.id.spinner).actionView as Spinner
                 val arrayAdapter: ArrayAdapter<String> = ArrayAdapter<String>(
-                    context!!, android.R.layout.simple_spinner_dropdown_item, list
+                    context!!, R.layout.simple_spinner_item, list
                 )
                 arrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
                 spinner.adapter = arrayAdapter
@@ -199,7 +199,6 @@ class StatisticsFragment : Fragment() {
                 override fun onFailure(call: Call, e: IOException) {
                     Log.d("debug", "fetch stats failed")
                     activity?.runOnUiThread {
-//                        Snackbar.make(view, "Some error occurred", Snackbar.LENGTH_SHORT).show()
                         progressBar.visibility = ProgressBar.INVISIBLE
                         findNavController().popBackStack()
                     }
@@ -207,46 +206,35 @@ class StatisticsFragment : Fragment() {
 
                 override fun onResponse(call: Call, response: Response) {
                     if (response.isSuccessful) {
+                        Log.d("debug", "fetch stats successful")
                         val jsonObject = response.body?.string()
                             ?.let { JSONObject(it) }
-                        var msg: String? = null
-                        try {
-                            msg = jsonObject?.getString("msg")
-                        } catch (_: Exception) {
-                        }
                         activity?.runOnUiThread {
                             progressBar.visibility = ProgressBar.INVISIBLE
-                            if (msg != null) {
+                            try {
+                                val arrayJSONColumns = jsonObject?.getJSONArray("columns")
+                                val studentData = jsonObject?.getJSONArray("student_data")
+                                displayData(arrayJSONColumns!!, studentData!!)
+                            } catch (_: Exception) {
                                 noDataTextView.text = getString(R.string.no_data, monthYear)
                                 noDataTextView.visibility = TextView.VISIBLE
-                                Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
-                                return@runOnUiThread
                             }
-                            val arrayJSONColumns = jsonObject?.getJSONArray("columns")
-                            val studentData = jsonObject?.getJSONArray("student_data")
-                            displayData(arrayJSONColumns, studentData)
                         }
                     } else {
-//                        activity?.deleteSharedPreferences(SHARED_PREFERENCES_NAME)
+                        Log.d("debug", "fetch stats unsuccessful code: ${response.code}")
                         activity?.runOnUiThread {
-//                            Toast.makeText(
-//                                context,
-//                                "Session Expired!! Log in again.",
-//                                Toast.LENGTH_SHORT
-//                            ).show()
                             progressBar.visibility = ProgressBar.INVISIBLE
                             findNavController().popBackStack()
-//                            findNavController().navigate(R.id.action_statisticsFragment_to_loginFragment)
                         }
                     }
-                    response.body?.close()
+                    response.close()
                 }
             })
 
         }
     }
 
-    private fun displayData(columns: JSONArray?, studentData: JSONArray?) {
+    private fun displayData(columns: JSONArray, studentData: JSONArray) {
 
         val cornerTableLayout = FixedHeaderSubTableLayout(context)
         val nameTV = TextView(context)
@@ -262,8 +250,8 @@ class StatisticsFragment : Fragment() {
 
         val columnHeaderLayout = FixedHeaderSubTableLayout(context)
         val columnHeader = FixedHeaderTableRow(context)
-        for (i in 0 until columns!!.length()) {
-            val colName = columns.getString(i).toDate()?.formatTo("dd-MM-yy")
+        for (i in 0 until columns.length()) {
+            val colName = columns.getString(i).formatDate("yyyy-MM-dd'T'HH:mm:ss", "dd-MM-yy")
             val tv = TextView(context)
             tv.gravity = Gravity.CENTER
             tv.text = colName
@@ -276,7 +264,7 @@ class StatisticsFragment : Fragment() {
 
         val width = getScreenWidth(requireActivity()) * 2 / 5
         val rowHeaderLayout = FixedHeaderSubTableLayout(context)
-        for (i in 0 until studentData!!.length()) {
+        for (i in 0 until studentData.length()) {
             val jsonObj = studentData.getJSONObject(i)
             val name = "${jsonObj.getString("class_roll_number")}. ${
                 jsonObj.getString("name").uppercase()
@@ -299,7 +287,7 @@ class StatisticsFragment : Fragment() {
         for (i in 0 until studentData.length()) {
             val jsonArray = studentData.getJSONObject(i).getJSONArray("attendance_data")
             val mainRow = FixedHeaderTableRow(context)
-            var prev = 0
+            var prev = -1
             for (j in 0 until jsonArray.length()) {
                 val cumulativeSum = jsonArray.getInt(j)
                 val tv = TextView(context)
@@ -335,31 +323,24 @@ class StatisticsFragment : Fragment() {
                 .getInsetsIgnoringVisibility(WindowInsets.Type.systemBars())
             windowMetrics.bounds.width() - insets.left - insets.right
         } else {
-//            val displayMetrics = DisplayMetrics()
             val wid = context?.resources?.displayMetrics?.widthPixels!!
             Log.d("debug", wid.toString())
             wid
-//            activity.windowManager.defaultDisplay.getMetrics(displayMetrics)
-//            displayMetrics.widthPixels
         }
     }
 
-    private fun String.toDate(
-        dateFormat: String = "yyyy-MM-dd'T'HH:mm:ss",
-        timeZone: TimeZone = TimeZone.getTimeZone("Asia/Kolkata")
-    ): Date? {
-        val parser = SimpleDateFormat(dateFormat, Locale.getDefault())
-        parser.timeZone = timeZone
-        return parser.parse(this)
-    }
-
-    private fun Date.formatTo(
-        dateFormat: String,
+    private fun String.formatDate(
+        fromDateFormat: String,
+        toDateFormat: String,
         timeZone: TimeZone = TimeZone.getTimeZone("Asia/Kolkata")
     ): String {
-        val formatter = SimpleDateFormat(dateFormat, Locale.getDefault())
+        val parser = SimpleDateFormat(fromDateFormat, Locale.getDefault())
+        parser.timeZone = timeZone
+        val date = parser.parse(this)!!
+
+        val formatter = SimpleDateFormat(toDateFormat, Locale.getDefault())
         formatter.timeZone = timeZone
-        return formatter.format(this)
+        return formatter.format(date)
     }
 
     private fun findMonth(monthYear: String): String {

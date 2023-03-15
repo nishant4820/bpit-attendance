@@ -27,7 +27,6 @@ import org.json.JSONObject
 import java.io.IOException
 
 class ChangePasswordFragment : Fragment() {
-    //    private var token: String? = null
     private var sharedPrefInterceptor: SharedPreferences? = null
     private var sharedPrefProfile: SharedPreferences? = null
     private lateinit var changeButton: TextView
@@ -128,7 +127,7 @@ class ChangePasswordFragment : Fragment() {
             val mediaType = "application/json; charset=utf-8".toMediaType()
             val body = bodyJSONObject.toString().toRequestBody(mediaType)
             val request: Request =
-                Request.Builder().url(url).addHeader("Authorization", token!!).put(body).build()
+                Request.Builder().url(url).addHeader(AUTHORIZATION_HEADER, token).put(body).build()
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
                     activity?.runOnUiThread {
@@ -161,21 +160,27 @@ class ChangePasswordFragment : Fragment() {
                                 bundle
                             )
                         }
+                        Log.d("debug", "Password Changed")
 
                     } else {
+                        Log.d("debug", "change password unsuccessful code: ${response.code}")
                         if (response.code == 400) {
                             val error: String = jsonObject?.getJSONArray("error")?.get(0) as String
                             Log.d("debug", "error $error")
                             activity?.runOnUiThread {
                                 progressBar.visibility = ProgressBar.INVISIBLE
                                 changeButton.visibility = TextView.VISIBLE
-                                if (error == "Your current password was entered incorrectly. Please enter it again.") {
-                                    currentPasswordEdittext.setText("")
-                                } else if (error == "The two password fields didn't match.") {
-                                    confirmNewPasswordEdittext.setText("")
-                                } else if (error == "The new password cannot be same as old password.") {
-                                    newPasswordEdittext.setText("")
-                                    confirmNewPasswordEdittext.setText("")
+                                when (error) {
+                                    "Your current password was entered incorrectly. Please enter it again." -> {
+                                        currentPasswordEdittext.setText("")
+                                    }
+                                    "The two password fields didn't match." -> {
+                                        confirmNewPasswordEdittext.setText("")
+                                    }
+                                    "The new password cannot be same as old password." -> {
+                                        newPasswordEdittext.setText("")
+                                        confirmNewPasswordEdittext.setText("")
+                                    }
                                 }
                                 Snackbar.make(view, error, Snackbar.LENGTH_LONG).show()
                             }
@@ -185,7 +190,7 @@ class ChangePasswordFragment : Fragment() {
                             }
                         }
                     }
-                    response.body?.close()
+                    response.close()
                 }
 
             })

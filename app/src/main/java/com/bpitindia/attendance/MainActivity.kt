@@ -33,6 +33,7 @@ const val LAST_UPDATED_KEY = "time"
 const val SHARED_PREFERENCES_PROFILE = "profile_information"
 const val TOKEN_KEY = "token"
 const val ID_KEY = "id_key"
+const val AUTHORIZATION_HEADER = "Authorization"
 
 class MainActivity : AppCompatActivity(), MyDrawerLocker {
     private lateinit var drawerLayout: DrawerLayout
@@ -56,56 +57,6 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
         supportActionBar?.setDisplayHomeAsUpEnabled(false)
         setupDrawerContent(navigationView)
         setDrawerLocked()
-    }
-
-    override fun onStart() {
-        super.onStart()
-        requestUrl()
-    }
-
-    private fun requestUrl() {
-        sharedPrefInterceptor =
-            getSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR, Context.MODE_PRIVATE)
-        val tunnelURL: String? = sharedPrefInterceptor?.getString(URL_KEY, null)
-        if (tunnelURL == null) {
-            getUrl()
-            return
-        }
-        val lastUpdated = sharedPrefInterceptor?.getLong(LAST_UPDATED_KEY, 0)!!
-        val timeNow = Calendar.getInstance(TimeZone.getTimeZone("Asia/Kolkata")).time.time
-        val hours = (timeNow - lastUpdated) / 3600000.0
-        Log.d("debug", "last updated: $lastUpdated, current: $timeNow, hours: $hours")
-        if (hours >= 4) {
-            healthCheck(tunnelURL)
-        }
-    }
-
-    private fun healthCheck(tunnelUrl: String) {
-        val url = "$tunnelUrl/health/"
-        val client = OkHttpClient()
-        lifecycleScope.launch(Dispatchers.IO) {
-            val request = Request.Builder().url(url).get().build()
-            client.newCall(request).enqueue(object : Callback {
-                override fun onFailure(call: Call, e: IOException) {
-                    Log.d("debug", "health check failed " + e.message)
-                    runOnUiThread {
-                        Toast.makeText(
-                            this@MainActivity,
-                            "Please check Internet Connection!",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                }
-
-                override fun onResponse(call: Call, response: Response) {
-                    Log.d("debug", "health response: ${response.code}")
-                    if (response.code == 404) {
-                        getUrl()
-                    }
-                }
-
-            })
-        }
     }
 
     fun getUrl() {
@@ -139,7 +90,6 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                         editor?.putLong(LAST_UPDATED_KEY, timeMilliseconds)
                         editor?.apply()
                         Log.d("debug", "ngrok url fetch successful: $tunnelURL")
-//                        checkForUpdates(1)
                     } else {
                         runOnUiThread {
                             Toast.makeText(
@@ -148,9 +98,9 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                                 Toast.LENGTH_SHORT
                             ).show()
                         }
-                        Log.d("debug", "get url response unsuccessful")
+                        Log.d("debug", "get url response unsuccessful code: ${response.code}")
                     }
-
+                    response.close()
                 }
 
             })
@@ -179,7 +129,6 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
             when (it.itemId) {
                 R.id.my_profile -> {
                     val bundle = Bundle()
-                    Log.d("debug", "profile string $profileJSONString")
                     bundle.putString("profile", profileJSONString)
                     navController.navigate(R.id.profileFragment, bundle)
                 }
@@ -187,7 +136,7 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                     navController.navigate(R.id.action_subjectListFragment_to_changePasswordFragment)
                 }
                 R.id.check_update -> {
-                    checkForUpdates(2)
+                    checkForUpdates()
                 }
                 R.id.about -> {
                     navController.navigate(R.id.action_subjectListFragment_to_aboutFragment)
@@ -202,12 +151,7 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
         }
     }
 
-    private fun checkForUpdates(callID: Int) {
-        /*
-            call id used for detecting from where the function is called.
-            1 -> call made by onCreate activity
-            2 -> call from check for update menu item in nav drawer
-         */
+    private fun checkForUpdates() {
 
         sharedPrefInterceptor =
             getSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR, Context.MODE_PRIVATE)
@@ -254,9 +198,9 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                                     setPositiveButton("UPDATE") { _, _ ->
                                         startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(apkURL)))
                                     }
-                                    setNegativeButton("NO, THANKS") { _, _ -> }
+                                    setNegativeButton("NO, THANKS", null)
                                 }.show()
-                            } else if (callID == 2) {
+                            } else {
                                 AlertDialog.Builder(this@MainActivity).apply {
                                     setTitle("No Update Available!")
                                     setMessage("Version: ${BuildConfig.VERSION_NAME}\nContact developer for any bugs.")
@@ -276,9 +220,9 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                                 getUrl()
                             }
                         }
-                        Log.d("debug", "check update response unsuccessful")
+                        Log.d("debug", "check update response unsuccessful code: ${response.code}")
                     }
-
+                    response.close()
                 }
 
             })
@@ -303,7 +247,6 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
         }
         val url = tunnelURL + getString(R.string.logout_api_url)
         val client = OkHttpClient()
-        Log.d("debug", "logout token $token")
         lifecycleScope.launch(Dispatchers.IO) {
             val request =
                 Request.Builder().url(url).get().addHeader("Authorization", token.toString())
@@ -323,7 +266,6 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                     val navController = Navigation.findNavController(
                         this@MainActivity, R.id.fragmentContainerView
                     )
-                    Log.d("debug", "logout response: ${response.code}")
                     if (response.isSuccessful) {
                         Log.d("debug", "logout successful")
                         deleteSharedPreferences(SHARED_PREFERENCES_PROFILE)
@@ -351,9 +293,9 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                                 navController.navigate(R.id.action_subjectListFragment_to_loginFragment)
                             }
                         }
-                        Log.d("debug", "logout response unsuccessful")
+                        Log.d("debug", "logout response unsuccessful code: ${response.code}")
                     }
-                    response.body?.close()
+                    response.close()
 
                 }
 
@@ -361,13 +303,16 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
         }
     }
 
-    fun fetchProfile(token: String, id: Int) {
+    fun fetchProfile() {
+        sharedPrefProfile =
+            getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
+        val token = sharedPrefProfile?.getString(TOKEN_KEY, null)!!
+        val id = sharedPrefProfile?.getInt(ID_KEY, 0)!!
         sharedPrefInterceptor =
             getSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR, Context.MODE_PRIVATE)
         val tunnelURL: String? = sharedPrefInterceptor?.getString(URL_KEY, null)
         val url = tunnelURL + getString(R.string.profile_api_url, id)
         val client = OkHttpClient()
-        Log.d("debug", "profile $token")
         lifecycleScope.launch(Dispatchers.IO) {
             val request = Request.Builder().url(url).get().addHeader("Authorization", token).build()
             client.newCall(request).enqueue(object : Callback {
@@ -377,7 +322,6 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                 }
 
                 override fun onResponse(call: Call, response: Response) {
-                    Log.d("debug", "profile response ${response.message}")
                     if (response.isSuccessful) {
                         Log.d("debug", "profile loading successful")
                         profileJSONString = response.body?.string().toString()
@@ -398,9 +342,9 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                         }
 
                     } else {
-                        Log.d("debug", "profile loading failed ${response.message}")
+                        Log.d("debug", "profile loading unsuccessful code: ${response.code}")
                     }
-                    response.body?.close()
+                    response.close()
                 }
 
             })

@@ -41,13 +41,10 @@ class StudentListFragment : Fragment() {
     private var batch: String? = null
     private var section: String? = null
     private var branch: String? = null
-
-    //    private var token: String? = null
     private var group: String? = null
     private var isLab: Boolean? = null
     private var subject: String? = null
     private var isMarkedAll: Boolean = false
-    var jsonArray: JSONArray = JSONArray()
     private var sharedPrefInterceptor: SharedPreferences? = null
     private var sharedPrefProfile: SharedPreferences? = null
     private lateinit var progressBar: ProgressBar
@@ -67,7 +64,7 @@ class StudentListFragment : Fragment() {
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
         if (token == null) {
-            findNavController().navigate(R.id.action_studentListFragment_to_loginFragment)
+            findNavController().popBackStack()
         }
     }
 
@@ -85,58 +82,6 @@ class StudentListFragment : Fragment() {
         progressBar.visibility = ProgressBar.VISIBLE
         attendanceMap.clear()
         fetchStudents(view)
-        val menuHost: MenuHost = requireActivity()
-        menuHost.addMenuProvider(object : MenuProvider {
-            override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
-                menuInflater.inflate(R.menu.menu_student_fragment, menu)
-            }
-
-            @SuppressLint("NotifyDataSetChanged")
-            override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
-                if (menuItem.itemId == R.id.upload_attendance) {
-                    var present = 0
-                    var absent = 0
-                    attendanceMap.forEach { (_, value) ->
-                        if (value) present++ else absent++
-                    }
-                    AlertDialog.Builder(context).apply {
-                        setTitle("Submit?")
-                        setMessage(
-                            getString(
-                                R.string.confirm_dialog,
-                                jsonArray.length(),
-                                present,
-                                absent
-                            )
-                        )
-                        setPositiveButton("Confirm") { _, _ ->
-                            markAttendance(view)
-                        }
-                        setNegativeButton("Cancel") { _, _ -> }
-                    }.create().show()
-                    return true
-                }
-                if (menuItem.itemId == R.id.mark_all) {
-                    if (isMarkedAll) {
-                        attendanceMap.forEach { (key, _) ->
-                            attendanceMap[key] = false
-                        }
-                        isMarkedAll = !isMarkedAll
-                        Snackbar.make(view, "Unmarked All", Snackbar.LENGTH_SHORT).show()
-                    } else {
-                        attendanceMap.forEach { (key, _) ->
-                            attendanceMap[key] = true
-                        }
-                        isMarkedAll = !isMarkedAll
-                        Snackbar.make(view, "Marked All", Snackbar.LENGTH_SHORT).show()
-                    }
-                    (view.findViewById<RecyclerView>(R.id.studentList).adapter as StudentAdapter).notifyDataSetChanged()
-                    return true
-                }
-                return false
-            }
-
-        }, viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
 
     private fun fetchStudents(view: View) {
@@ -180,7 +125,6 @@ class StudentListFragment : Fragment() {
                 override fun onFailure(call: Call, e: IOException) {
                     Log.d("debug", "fetch student failed")
                     activity?.runOnUiThread {
-//                        Snackbar.make(view, "Please check Internet Connection!", Snackbar.LENGTH_SHORT).show()
                         progressBar.visibility = ProgressBar.INVISIBLE
                         findNavController().popBackStack()
                     }
@@ -188,37 +132,89 @@ class StudentListFragment : Fragment() {
 
                 override fun onResponse(call: Call, response: Response) {
                     if (response.isSuccessful) {
-                        jsonArray = JSONArray(response.body?.string())
+                        val jsonArray = JSONArray(response.body?.string())
                         for (i in 0 until jsonArray.length()) {
                             val student = jsonArray.getJSONObject(i)
                             attendanceMap[student.getString("enrollment_number")] = false
                         }
                         Log.d("debug", "student fetch successful")
                         activity?.runOnUiThread {
-                            setRecyclerView(view.findViewById(R.id.studentList))
+                            view.findViewById<RecyclerView>(R.id.studentList).apply {
+                                layoutManager = LinearLayoutManager(activity)
+                                adapter = StudentAdapter(jsonArray)
+                            }
                             progressBar.visibility = ProgressBar.INVISIBLE
+                            addMenu(view)
                         }
                     } else {
                         activity?.runOnUiThread {
                             progressBar.visibility = ProgressBar.INVISIBLE
-//                            findNavController().navigate(R.id.action_studentListFragment_to_loginFragment)
                             findNavController().popBackStack()
                         }
                     }
-                    response.body?.close()
+                    response.close()
                 }
             })
         }
 
     }
 
-    private fun setRecyclerView(view: RecyclerView) {
-        view.apply {
-            layoutManager = LinearLayoutManager(activity)
-            adapter = StudentAdapter(jsonArray)
-        }
+    private fun addMenu(view: View) {
+        val menuHost: MenuHost = requireActivity()
+        menuHost.addMenuProvider(object : MenuProvider {
+            override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+                menuInflater.inflate(R.menu.menu_student_fragment, menu)
+            }
+
+            @SuppressLint("NotifyDataSetChanged")
+            override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
+                if (menuItem.itemId == R.id.upload_attendance) {
+                    var present = 0
+                    var absent = 0
+                    attendanceMap.forEach { (_, value) ->
+                        if (value) present++ else absent++
+                    }
+                    AlertDialog.Builder(context).apply {
+                        setTitle("Submit?")
+                        setMessage(
+                            getString(
+                                R.string.confirm_dialog,
+                                attendanceMap.size,
+                                present,
+                                absent
+                            )
+                        )
+                        setPositiveButton("Confirm") { _, _ ->
+                            markAttendance(view)
+                        }
+                        setNegativeButton("Cancel") { _, _ -> }
+                    }.create().show()
+                    return true
+                }
+                if (menuItem.itemId == R.id.mark_all) {
+                    if (isMarkedAll) {
+                        attendanceMap.forEach { (key, _) ->
+                            attendanceMap[key] = false
+                        }
+                        isMarkedAll = !isMarkedAll
+                        Snackbar.make(view, "Unmarked All", Snackbar.LENGTH_SHORT).show()
+                    } else {
+                        attendanceMap.forEach { (key, _) ->
+                            attendanceMap[key] = true
+                        }
+                        isMarkedAll = !isMarkedAll
+                        Snackbar.make(view, "Marked All", Snackbar.LENGTH_SHORT).show()
+                    }
+                    (view.findViewById<RecyclerView>(R.id.studentList).adapter as StudentAdapter).notifyDataSetChanged()
+                    return true
+                }
+                return false
+            }
+
+        }, viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
 
+    @Suppress("DEPRECATION")
     private fun markAttendance(view: View) {
         val progressDialog = android.app.ProgressDialog(context, R.style.AppCompatAlertDialogStyle)
         progressDialog.setTitle("Submitting Attendance")
@@ -309,7 +305,7 @@ class StudentListFragment : Fragment() {
                         }
                     }
 
-                    response.body?.close()
+                    response.close()
                 }
 
             })
