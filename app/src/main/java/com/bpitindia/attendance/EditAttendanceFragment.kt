@@ -43,7 +43,6 @@ class EditAttendanceFragment : Fragment() {
     private var group: String? = null
     private var isLab: Boolean? = null
     private var subject: String? = null
-    private var sharedPrefInterceptor: SharedPreferences? = null
     private var sharedPrefProfile: SharedPreferences? = null
     private lateinit var recyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
@@ -91,19 +90,6 @@ class EditAttendanceFragment : Fragment() {
     private fun fetchData(view: View) {
         progressBar.visibility = ProgressBar.VISIBLE
         noDataTextView.visibility = TextView.GONE
-        sharedPrefInterceptor =
-            activity?.getSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR, Context.MODE_PRIVATE)
-        val tunnelURL: String? = sharedPrefInterceptor?.getString(URL_KEY, null)
-        if (tunnelURL == null) {
-            Snackbar.make(
-                view,
-                "Something went wrong. Please try again later!",
-                Snackbar.LENGTH_SHORT
-            ).show()
-            (activity as MainActivity).getUrl()
-            findNavController().popBackStack()
-            return
-        }
         sharedPrefProfile =
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
@@ -111,10 +97,10 @@ class EditAttendanceFragment : Fragment() {
             findNavController().popBackStack()
             return
         }
-        val schemeHost = tunnelURL.split("://")
         val httpUrlBuilder = HttpUrl.Builder()
-            .scheme(schemeHost[0])
-            .host(schemeHost[1])
+            .scheme(getString(R.string.url_scheme))
+            .host(getString(R.string.url_host))
+            .port(getString(R.string.url_port).toInt())
             .addPathSegment("api")
             .addPathSegment("student")
             .addPathSegment("attendance")
@@ -188,19 +174,7 @@ class EditAttendanceFragment : Fragment() {
         obj.put("record", dataSet)
         val mediaType = "application/json; charset=utf-8".toMediaType()
         val body = obj.toString().toRequestBody(mediaType)
-        sharedPrefInterceptor =
-            activity?.getSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR, Context.MODE_PRIVATE)
-        val tunnelURL: String? = sharedPrefInterceptor?.getString(URL_KEY, null)
-        if (tunnelURL == null) {
-            Snackbar.make(
-                view,
-                "Something went wrong. Please try again later!",
-                Snackbar.LENGTH_SHORT
-            ).show()
-            (activity as MainActivity).getUrl()
-            return
-        }
-        val url = tunnelURL + getString(R.string.submit_attendance_api_url)
+        val url = getString(R.string.url_subdomain) + getString(R.string.submit_attendance_api_url)
         val client = OkHttpClient()
         sharedPrefProfile =
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
@@ -250,7 +224,6 @@ class EditAttendanceFragment : Fragment() {
                                         "Something went wrong. Please try again later!",
                                         Snackbar.LENGTH_SHORT
                                     ).show()
-                                    (activity as MainActivity).getUrl()
                                 }
                             }
                         }

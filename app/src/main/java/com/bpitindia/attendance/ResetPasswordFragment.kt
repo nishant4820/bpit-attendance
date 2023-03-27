@@ -1,7 +1,6 @@
 package com.bpitindia.attendance
 
 import android.content.Context
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -37,7 +36,6 @@ class ResetPasswordFragment : Fragment() {
     private lateinit var resetButton: TextView
     private lateinit var progressBar: ProgressBar
     private lateinit var inputMethodManager: InputMethodManager
-    private var sharedPrefInterceptor: SharedPreferences? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -106,19 +104,7 @@ class ResetPasswordFragment : Fragment() {
         }
         progressBar.visibility = ProgressBar.VISIBLE
         resetButton.visibility = TextView.INVISIBLE
-        sharedPrefInterceptor =
-            activity?.getSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR, Context.MODE_PRIVATE)
-        val tunnelURL: String? = sharedPrefInterceptor?.getString(URL_KEY, null)
-        if (tunnelURL == null) {
-            Snackbar.make(
-                view,
-                "Something went wrong. Please try again later!",
-                Snackbar.LENGTH_SHORT
-            ).show()
-            (activity as MainActivity).getUrl()
-            return
-        }
-        val url = tunnelURL + getString(R.string.reset_password_api_url)
+        val url = getString(R.string.url_subdomain) + getString(R.string.reset_password_api_url)
         val client = OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val bodyJSONObject = JSONObject()
@@ -179,7 +165,6 @@ class ResetPasswordFragment : Fragment() {
                                     "Something went wrong. Please try again later!",
                                     Snackbar.LENGTH_SHORT
                                 ).show()
-                                (activity as MainActivity).getUrl()
                             }
                             Log.d("debug", "Reset Password Unsuccessful code: ${response.code}")
                         }

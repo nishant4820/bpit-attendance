@@ -24,7 +24,6 @@ import java.io.IOException
 
 class SubjectListFragment : Fragment() {
     var jsonArray: JSONArray = JSONArray()
-    private var sharedPrefInterceptor: SharedPreferences? = null
     private var sharedPrefProfile: SharedPreferences? = null
     private lateinit var progressBar: ProgressBar
 
@@ -60,19 +59,7 @@ class SubjectListFragment : Fragment() {
 
     private fun fetchSubjects(view: View) {
         progressBar.visibility = ProgressBar.VISIBLE
-        sharedPrefInterceptor =
-            activity?.getSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR, Context.MODE_PRIVATE)
-        val tunnelURL: String? = sharedPrefInterceptor?.getString(URL_KEY, null)
-        if (tunnelURL == null) {
-            Snackbar.make(
-                view,
-                "Something went wrong. Please try again later!",
-                Snackbar.LENGTH_SHORT
-            ).show()
-            (activity as MainActivity).getUrl()
-            return
-        }
-        val url = tunnelURL + getString(R.string.subject_api_url)
+        val url = getString(R.string.url_subdomain) + getString(R.string.subject_api_url)
         sharedPrefProfile =
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
@@ -132,8 +119,6 @@ class SubjectListFragment : Fragment() {
                                         ).show()
 
                                         (activity as MainActivity).apply {
-                                            deleteSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR)
-                                            getUrl()
                                         }
                                     }
                                     else -> {

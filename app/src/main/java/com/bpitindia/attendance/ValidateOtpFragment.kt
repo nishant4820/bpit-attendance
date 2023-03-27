@@ -1,7 +1,6 @@
 package com.bpitindia.attendance
 
 import android.content.Context
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -34,7 +33,6 @@ class ValidateOtpFragment : Fragment() {
     private lateinit var pinView: PinView
     private lateinit var progressBar: ProgressBar
     private lateinit var inputMethodManager: InputMethodManager
-    private var sharedPrefInterceptor: SharedPreferences? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -93,19 +91,7 @@ class ValidateOtpFragment : Fragment() {
         progressBar.visibility = ProgressBar.VISIBLE
         button.visibility = TextView.INVISIBLE
         inputMethodManager.hideSoftInputFromWindow(pinView.windowToken, 0)
-        sharedPrefInterceptor =
-            activity?.getSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR, Context.MODE_PRIVATE)
-        val tunnelURL: String? = sharedPrefInterceptor?.getString(URL_KEY, null)
-        if (tunnelURL == null) {
-            Snackbar.make(
-                view,
-                "Something went wrong. Please try again later!",
-                Snackbar.LENGTH_SHORT
-            ).show()
-            (activity as MainActivity).getUrl()
-            return
-        }
-        val url = tunnelURL + getString(R.string.validate_otp_api_url)
+        val url = getString(R.string.url_subdomain) + getString(R.string.validate_otp_api_url)
         val client = OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val bodyJSONObject = JSONObject()
@@ -160,7 +146,6 @@ class ValidateOtpFragment : Fragment() {
                                     "Something went wrong. Please try again later!",
                                     Snackbar.LENGTH_SHORT
                                 ).show()
-                                (activity as MainActivity).getUrl()
                             }
                         }
                     }

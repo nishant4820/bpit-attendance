@@ -45,7 +45,6 @@ class StudentListFragment : Fragment() {
     private var isLab: Boolean? = null
     private var subject: String? = null
     private var isMarkedAll: Boolean = false
-    private var sharedPrefInterceptor: SharedPreferences? = null
     private var sharedPrefProfile: SharedPreferences? = null
     private lateinit var progressBar: ProgressBar
 
@@ -85,22 +84,10 @@ class StudentListFragment : Fragment() {
     }
 
     private fun fetchStudents(view: View) {
-        sharedPrefInterceptor =
-            activity?.getSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR, Context.MODE_PRIVATE)
-        val tunnelURL: String? = sharedPrefInterceptor?.getString(URL_KEY, null)
-        if (tunnelURL == null) {
-            Snackbar.make(
-                view,
-                "Something went wrong. Please try again later!",
-                Snackbar.LENGTH_SHORT
-            ).show()
-            (activity as MainActivity).getUrl()
-            return
-        }
-        val schemeHost = tunnelURL.split("://")
         val httpUrlBuilder: HttpUrl.Builder = HttpUrl.Builder()
-            .scheme(schemeHost[0])
-            .host(schemeHost[1])
+            .scheme(getString(R.string.url_scheme))
+            .host(getString(R.string.url_host))
+            .port(getString(R.string.url_port).toInt())
             .addPathSegment("api")
             .addPathSegment("student")
             .addPathSegment("attendance")
@@ -237,20 +224,7 @@ class StudentListFragment : Fragment() {
         sharedPrefProfile =
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
-        sharedPrefInterceptor =
-            activity?.getSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR, Context.MODE_PRIVATE)
-        val tunnelURL: String? = sharedPrefInterceptor?.getString(URL_KEY, null)
-        if (tunnelURL == null) {
-            Snackbar.make(
-                view,
-                "Something went wrong. Please try again later!",
-                Snackbar.LENGTH_SHORT
-            ).show()
-            (activity as MainActivity).getUrl()
-            progressDialog.dismiss()
-            return
-        }
-        val url = tunnelURL + getString(R.string.submit_attendance_api_url)
+        val url = getString(R.string.url_subdomain) + getString(R.string.submit_attendance_api_url)
         val client = OkHttpClient()
 
         lifecycleScope.launch {
@@ -275,8 +249,6 @@ class StudentListFragment : Fragment() {
 
                 override fun onResponse(call: Call, response: Response) {
                     progressDialog.dismiss()
-                    Log.d("debug response", response.body!!.string())
-
                     activity?.runOnUiThread {
                         if (response.isSuccessful) {
                             Snackbar.make(view, "Attendance Submitted", Snackbar.LENGTH_SHORT)

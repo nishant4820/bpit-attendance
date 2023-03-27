@@ -32,7 +32,6 @@ private const val PHONE_NUMBER = "Phone Number"
 
 
 class ProfileFragment : Fragment() {
-    private var sharedPrefInterceptor: SharedPreferences? = null
     private var sharedPrefProfile: SharedPreferences? = null
     private var profile: String? = null
     private lateinit var jsonObject: JSONObject
@@ -135,19 +134,7 @@ class ProfileFragment : Fragment() {
             findNavController().popBackStack()
             return
         }
-        sharedPrefInterceptor =
-            activity?.getSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR, Context.MODE_PRIVATE)
-        val tunnelURL: String? = sharedPrefInterceptor?.getString(URL_KEY, null)
-        if (tunnelURL == null) {
-            Snackbar.make(
-                view,
-                "Something went wrong. Please try again later!",
-                Snackbar.LENGTH_SHORT
-            ).show()
-            (activity as MainActivity).getUrl()
-            return
-        }
-        val url = tunnelURL + getString(R.string.profile_api_url, id)
+        val url = getString(R.string.url_subdomain) + getString(R.string.profile_api_url, id)
         val client = OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val mediaType = "application/json; charset=utf-8".toMediaType()

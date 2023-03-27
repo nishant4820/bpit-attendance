@@ -25,11 +25,7 @@ import kotlinx.coroutines.launch
 import okhttp3.*
 import org.json.JSONObject
 import java.io.IOException
-import java.util.*
 
-const val SHARED_PREFERENCES_INTERCEPTOR = "interceptor_url"
-const val URL_KEY = "url"
-const val LAST_UPDATED_KEY = "time"
 const val SHARED_PREFERENCES_PROFILE = "profile_information"
 const val TOKEN_KEY = "token"
 const val ID_KEY = "id_key"
@@ -39,7 +35,6 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
     private lateinit var drawerLayout: DrawerLayout
     lateinit var navigationView: NavigationView
     private lateinit var actionBarDrawerToggle: ActionBarDrawerToggle
-    private var sharedPrefInterceptor: SharedPreferences? = null
     private var sharedPrefProfile: SharedPreferences? = null
     var profileJSONString: String? = null
 
@@ -57,54 +52,6 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
         supportActionBar?.setDisplayHomeAsUpEnabled(false)
         setupDrawerContent(navigationView)
         setDrawerLocked()
-    }
-
-    fun getUrl() {
-        sharedPrefInterceptor =
-            getSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR, Context.MODE_PRIVATE)
-        val editor = sharedPrefInterceptor?.edit()
-        val url = getString(R.string.public_api)
-        val client = OkHttpClient()
-        lifecycleScope.launch(Dispatchers.IO) {
-            val request = Request.Builder().url(url).get().build()
-            client.newCall(request).enqueue(object : Callback {
-                override fun onFailure(call: Call, e: IOException) {
-                    Log.d("debug", "get url from interceptor failed " + e.message)
-                    runOnUiThread {
-                        Toast.makeText(
-                            this@MainActivity,
-                            "Please check Internet Connection!",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                }
-
-                override fun onResponse(call: Call, response: Response) {
-                    if (response.isSuccessful) {
-                        val jsonObject = response.body?.string()?.let { JSONObject(it) }
-                        val tunnelURL = jsonObject!!.getString(URL_KEY)
-                        // Sets the number of milliseconds since January 1, 1970, 00:00:00 GMT represented by this Date object.
-                        val timeMilliseconds =
-                            Calendar.getInstance(TimeZone.getTimeZone("Asia/Kolkata")).time.time
-                        editor?.putString(URL_KEY, tunnelURL)
-                        editor?.putLong(LAST_UPDATED_KEY, timeMilliseconds)
-                        editor?.apply()
-                        Log.d("debug", "ngrok url fetch successful: $tunnelURL")
-                    } else {
-                        runOnUiThread {
-                            Toast.makeText(
-                                this@MainActivity,
-                                "Something went wrong. Please try again later!",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                        Log.d("debug", "get url response unsuccessful code: ${response.code}")
-                    }
-                    response.close()
-                }
-
-            })
-        }
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -153,19 +100,7 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
 
     private fun checkForUpdates() {
 
-        sharedPrefInterceptor =
-            getSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR, Context.MODE_PRIVATE)
-        val tunnelURL: String? = sharedPrefInterceptor?.getString(URL_KEY, null)
-        if (tunnelURL == null) {
-            Toast.makeText(
-                this,
-                "Something went wrong. Please try again later!",
-                Toast.LENGTH_SHORT
-            ).show()
-            getUrl()
-            return
-        }
-        val url = tunnelURL + getString(R.string.update_version_api_url)
+        val url = getString(R.string.url_subdomain) + getString(R.string.update_version_api_url)
         val client = OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val request = Request.Builder().url(url).get().build()
@@ -216,8 +151,6 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                                     "Something went wrong. Please try again later!",
                                     Toast.LENGTH_SHORT
                                 ).show()
-                                deleteSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR)
-                                getUrl()
                             }
                         }
                         Log.d("debug", "check update response unsuccessful code: ${response.code}")
@@ -231,21 +164,9 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
     }
 
     private fun logout(view: View) {
-        sharedPrefInterceptor =
-            getSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR, Context.MODE_PRIVATE)
         sharedPrefProfile = getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
-        val tunnelURL: String? = sharedPrefInterceptor?.getString(URL_KEY, null)
-        if (tunnelURL == null) {
-            Snackbar.make(
-                view,
-                "Something went wrong. Please try again later!",
-                Snackbar.LENGTH_SHORT
-            ).show()
-            getUrl()
-            return
-        }
-        val url = tunnelURL + getString(R.string.logout_api_url)
+        val url = getString(R.string.url_subdomain) + getString(R.string.logout_api_url)
         val client = OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val request =
@@ -281,8 +202,6 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                                     "Something went wrong. Please try again later!",
                                     Toast.LENGTH_SHORT
                                 ).show()
-                                deleteSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR)
-                                getUrl()
                             } else {
                                 Toast.makeText(
                                     this@MainActivity,
@@ -308,10 +227,7 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
             getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)!!
         val id = sharedPrefProfile?.getInt(ID_KEY, 0)!!
-        sharedPrefInterceptor =
-            getSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR, Context.MODE_PRIVATE)
-        val tunnelURL: String? = sharedPrefInterceptor?.getString(URL_KEY, null)
-        val url = tunnelURL + getString(R.string.profile_api_url, id)
+        val url = getString(R.string.url_subdomain) + getString(R.string.profile_api_url, id)
         val client = OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val request = Request.Builder().url(url).get().addHeader("Authorization", token).build()

@@ -21,7 +21,6 @@ import androidx.navigation.fragment.findNavController
 import com.github.zardozz.FixedHeaderTableLayout.FixedHeaderSubTableLayout
 import com.github.zardozz.FixedHeaderTableLayout.FixedHeaderTableLayout
 import com.github.zardozz.FixedHeaderTableLayout.FixedHeaderTableRow
-import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import okhttp3.*
@@ -49,7 +48,6 @@ class StatisticsFragment : Fragment() {
     private var isLab: Boolean? = null
     private var subject: String? = null
     private var semester: Int? = null
-    private var sharedPrefInterceptor: SharedPreferences? = null
     private var sharedPrefProfile: SharedPreferences? = null
     private lateinit var progressBar: ProgressBar
     private lateinit var noDataTextView: TextView
@@ -118,7 +116,7 @@ class StatisticsFragment : Fragment() {
                     ) {
                         val monthYear: String = parent?.getItemAtPosition(position) as String
                         tableLayout.removeAllViews()
-                        fetchData(monthYear, view)
+                        fetchData(monthYear)
                     }
 
                     override fun onNothingSelected(parent: AdapterView<*>?) {}
@@ -149,23 +147,10 @@ class StatisticsFragment : Fragment() {
         return list
     }
 
-    private fun fetchData(monthYear: String, view: View) {
+    private fun fetchData(monthYear: String) {
         progressBar.visibility = ProgressBar.VISIBLE
         noDataTextView.visibility = TextView.GONE
         Log.d("debug", "stats month year $monthYear")
-        sharedPrefInterceptor =
-            activity?.getSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR, Context.MODE_PRIVATE)
-        val tunnelURL: String? = sharedPrefInterceptor?.getString(URL_KEY, null)
-        if (tunnelURL == null) {
-            Snackbar.make(
-                view,
-                "Something went wrong. Please try again later!",
-                Snackbar.LENGTH_SHORT
-            ).show()
-            (activity as MainActivity).getUrl()
-            return
-        }
-        val schemeHost = tunnelURL.split("://")
         sharedPrefProfile =
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
@@ -174,8 +159,9 @@ class StatisticsFragment : Fragment() {
             return
         }
         val httpUrlBuilder: HttpUrl.Builder = HttpUrl.Builder()
-            .scheme(schemeHost[0])
-            .host(schemeHost[1])
+            .scheme(getString(R.string.url_scheme))
+            .host(getString(R.string.url_host))
+            .port(getString(R.string.url_port).toInt())
             .addPathSegment("api")
             .addPathSegment("student")
             .addPathSegment("attendance")

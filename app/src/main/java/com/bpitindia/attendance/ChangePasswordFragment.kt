@@ -27,7 +27,6 @@ import org.json.JSONObject
 import java.io.IOException
 
 class ChangePasswordFragment : Fragment() {
-    private var sharedPrefInterceptor: SharedPreferences? = null
     private var sharedPrefProfile: SharedPreferences? = null
     private lateinit var changeButton: TextView
     private lateinit var currentPasswordEdittext: TextInputEditText
@@ -96,8 +95,6 @@ class ChangePasswordFragment : Fragment() {
         }
         progressBar.visibility = ProgressBar.VISIBLE
         changeButton.visibility = TextView.INVISIBLE
-        sharedPrefInterceptor =
-            activity?.getSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR, Context.MODE_PRIVATE)
         sharedPrefProfile =
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
@@ -105,17 +102,7 @@ class ChangePasswordFragment : Fragment() {
             findNavController().popBackStack()
             return
         }
-        val tunnelURL: String? = sharedPrefInterceptor?.getString(URL_KEY, null)
-        if (tunnelURL == null) {
-            Snackbar.make(
-                view,
-                "Something went wrong. Please try again later!",
-                Snackbar.LENGTH_SHORT
-            ).show()
-            (activity as MainActivity).getUrl()
-            return
-        }
-        val url = tunnelURL + getString(R.string.reset_password_api_url)
+        val url = getString(R.string.url_subdomain) + getString(R.string.reset_password_api_url)
         val client = OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val bodyJSONObject = JSONObject()

@@ -1,7 +1,6 @@
 package com.bpitindia.attendance
 
 import android.content.Context
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -36,7 +35,6 @@ class ForgotPasswordFragment : Fragment() {
     private lateinit var progressBar: ProgressBar
     private lateinit var inputMethodManager: InputMethodManager
     private lateinit var button: TextView
-    private var sharedPrefInterceptor: SharedPreferences? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -90,19 +88,7 @@ class ForgotPasswordFragment : Fragment() {
 
     private fun requestOTP(view: View) {
         inputMethodManager.hideSoftInputFromWindow(resetEmailEditText.windowToken, 0)
-        sharedPrefInterceptor =
-            activity?.getSharedPreferences(SHARED_PREFERENCES_INTERCEPTOR, Context.MODE_PRIVATE)
-        val tunnelURL: String? = sharedPrefInterceptor?.getString(URL_KEY, null)
-        if (tunnelURL == null) {
-            Snackbar.make(
-                view,
-                "Something went wrong. Please try again later!",
-                Snackbar.LENGTH_SHORT
-            ).show()
-            (activity as MainActivity).getUrl()
-            return
-        }
-        val url = tunnelURL + getString(R.string.forgot_password_api_url)
+        val url = getString(R.string.url_subdomain) + getString(R.string.forgot_password_api_url)
         val client = OkHttpClient()
         val mailID: String = resetEmailEditText.text.toString()
         if (mailID.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(mailID).matches()) {
@@ -159,7 +145,6 @@ class ForgotPasswordFragment : Fragment() {
                                     "Something went wrong. Please try again later!",
                                     Snackbar.LENGTH_SHORT
                                 ).show()
-                                (activity as MainActivity).getUrl()
                             }
                         }
                         Log.d("debug", "OTP Request unsuccessful code: ${response.code}")
