@@ -8,12 +8,14 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -26,6 +28,8 @@ class SubjectListFragment : Fragment() {
     var jsonArray: JSONArray = JSONArray()
     private var sharedPrefProfile: SharedPreferences? = null
     private lateinit var progressBar: ProgressBar
+    private lateinit var floatingActionButton: FloatingActionButton
+    private lateinit var noSubjectTextView: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,6 +54,11 @@ class SubjectListFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         progressBar = view.findViewById(R.id.subject_progress_bar)
+        floatingActionButton = view.findViewById(R.id.floating_action_button)
+        floatingActionButton.setOnClickListener {
+            findNavController().navigate(R.id.action_subjectListFragment_to_addSubjectFragment)
+        }
+        noSubjectTextView = view.findViewById(R.id.no_subject)
     }
 
     override fun onStart() {
@@ -59,7 +68,8 @@ class SubjectListFragment : Fragment() {
 
     private fun fetchSubjects(view: View) {
         progressBar.visibility = ProgressBar.VISIBLE
-        val url = getString(R.string.url_subdomain) + getString(R.string.subject_api_url)
+        noSubjectTextView.visibility = TextView.INVISIBLE
+        val url = getString(R.string.url_complete) + getString(R.string.assigned_subjects_api_path)
         sharedPrefProfile =
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
@@ -75,11 +85,10 @@ class SubjectListFragment : Fragment() {
                 client.newCall(request).enqueue(object : Callback {
                     override fun onFailure(call: Call, e: IOException) {
                         activity?.runOnUiThread {
-                            Snackbar.make(
-                                view,
-                                "Please check Internet Connection!",
-                                Snackbar.LENGTH_SHORT
-                            ).show()
+                            val msg = if (e.message.toString()
+                                    .startsWith(getString(R.string.error_prefix))
+                            ) getString(R.string.internet_message) else getString(R.string.server_error_message)
+                            Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
                             progressBar.visibility = ProgressBar.INVISIBLE
                         }
                         Log.d("debug", "subject fetch failed")
@@ -91,6 +100,9 @@ class SubjectListFragment : Fragment() {
                             jsonArray = JSONArray(response.body?.string())
                             Log.d("debug", "subject fetch successful")
                             activity?.runOnUiThread {
+                                if (jsonArray.length() == 0) {
+                                    noSubjectTextView.visibility = TextView.VISIBLE
+                                }
                                 view.findViewById<RecyclerView>(R.id.subjectList).apply {
                                     layoutManager = LinearLayoutManager(activity)
                                     adapter = SubjectAdapter(jsonArray)
@@ -111,20 +123,10 @@ class SubjectListFragment : Fragment() {
                                         ).show()
                                         findNavController().navigate(R.id.action_subjectListFragment_to_loginFragment)
                                     }
-                                    404 -> {
-                                        Snackbar.make(
-                                            view,
-                                            "Something went wrong. Please try again later!",
-                                            Snackbar.LENGTH_SHORT
-                                        ).show()
-
-                                        (activity as MainActivity).apply {
-                                        }
-                                    }
                                     else -> {
                                         Snackbar.make(
                                             view,
-                                            "Something went wrong. Please try again later!",
+                                            getString(R.string.server_error_message),
                                             Snackbar.LENGTH_SHORT
                                         ).show()
                                     }

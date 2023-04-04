@@ -18,6 +18,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import okhttp3.*
@@ -29,6 +30,8 @@ import java.io.IOException
 class ChangePasswordFragment : Fragment() {
     private var sharedPrefProfile: SharedPreferences? = null
     private lateinit var changeButton: TextView
+    private lateinit var newPasswordLayout: TextInputLayout
+    private lateinit var confirmNewPasswordLayout: TextInputLayout
     private lateinit var currentPasswordEdittext: TextInputEditText
     private lateinit var newPasswordEdittext: TextInputEditText
     private lateinit var confirmNewPasswordEdittext: TextInputEditText
@@ -48,6 +51,8 @@ class ChangePasswordFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         changeButton = view.findViewById(R.id.change_button)
+        newPasswordLayout = view.findViewById(R.id.change_new_password)
+        confirmNewPasswordLayout = view.findViewById(R.id.change_confirm_new_password)
         currentPasswordEdittext = view.findViewById(R.id.current_password_edittext)
         newPasswordEdittext = view.findViewById(R.id.change_new_password_edittext)
         confirmNewPasswordEdittext = view.findViewById(R.id.change_confirm_new_password_edittext)
@@ -62,13 +67,27 @@ class ChangePasswordFragment : Fragment() {
 
                 val length = s.toString().length
                 if (length < 8) {
-                    newPasswordEdittext.error = "Minimum Length should be 8"
+                    newPasswordLayout.error = "Minimum Length should be 8"
                 } else {
-                    newPasswordEdittext.error = null
+                    newPasswordLayout.error = null
                 }
             }
-
             override fun afterTextChanged(s: Editable?) {}
+        })
+        confirmNewPasswordEdittext.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+            }
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                val newPass = newPasswordEdittext.text.toString()
+                if (s.toString().equals(newPass, false) || s.toString().isEmpty()) {
+                    confirmNewPasswordLayout.error = null
+                } else confirmNewPasswordLayout.error = "Passwords do not match."
+            }
+
+            override fun afterTextChanged(s: Editable?) {
+            }
+
         })
 
         confirmNewPasswordEdittext.setOnEditorActionListener { _, actionId, _ ->
@@ -102,7 +121,7 @@ class ChangePasswordFragment : Fragment() {
             findNavController().popBackStack()
             return
         }
-        val url = getString(R.string.url_subdomain) + getString(R.string.reset_password_api_url)
+        val url = getString(R.string.url_complete) + getString(R.string.reset_password_api_path)
         val client = OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val bodyJSONObject = JSONObject()
@@ -120,11 +139,10 @@ class ChangePasswordFragment : Fragment() {
                     activity?.runOnUiThread {
                         progressBar.visibility = ProgressBar.INVISIBLE
                         changeButton.visibility = TextView.VISIBLE
-                        Snackbar.make(
-                            view,
-                            "Please check Internet Connection!",
-                            Snackbar.LENGTH_SHORT
-                        ).show()
+                        val msg = if (e.message.toString()
+                                .startsWith(getString(R.string.error_prefix))
+                        ) getString(R.string.internet_message) else getString(R.string.server_error_message)
+                        Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
                     }
                     Log.d("debug", "Change Password Request Failed")
                 }

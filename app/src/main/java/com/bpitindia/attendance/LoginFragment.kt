@@ -23,6 +23,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -33,6 +34,8 @@ import java.util.*
 
 class LoginFragment : Fragment() {
     private lateinit var button: TextView
+    private lateinit var emailLayout: TextInputLayout
+    private lateinit var passwordLayout: TextInputLayout
     private lateinit var emailEditText: TextInputEditText
     private lateinit var passwordEditText: TextInputEditText
     private lateinit var progressBar: ProgressBar
@@ -51,6 +54,8 @@ class LoginFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         button = view.findViewById(R.id.login)
+        emailLayout = view.findViewById(R.id.email)
+        passwordLayout = view.findViewById(R.id.password)
         emailEditText = view.findViewById(R.id.email_edit_text)
         passwordEditText = view.findViewById(R.id.password_edit_text)
         forgotPassword = view.findViewById(R.id.forgotPasswordText)
@@ -81,9 +86,9 @@ class LoginFragment : Fragment() {
 
             override fun afterTextChanged(s: Editable?) {
                 if (s.isNullOrEmpty() || Patterns.EMAIL_ADDRESS.matcher(s).matches()) {
-                    emailEditText.error = null
+                    emailLayout.error = null
                 } else {
-                    emailEditText.error = "Invalid Email ID"
+                    emailLayout.error = "Invalid Email ID"
                 }
 
             }
@@ -93,7 +98,7 @@ class LoginFragment : Fragment() {
 
     private fun logIn(view: View) {
         inputMethodManager.hideSoftInputFromWindow(button.windowToken, 0)
-        val url = getString(R.string.url_subdomain) + getString(R.string.login_api_url)
+        val url = getString(R.string.url_complete) + getString(R.string.login_api_path)
         val client = OkHttpClient()
         val mailID: String = emailEditText.text.toString().lowercase()
         val pass: String = passwordEditText.text.toString()
@@ -117,11 +122,10 @@ class LoginFragment : Fragment() {
                     activity?.runOnUiThread {
                         progressBar.visibility = ProgressBar.INVISIBLE
                         button.visibility = TextView.VISIBLE
-                        Snackbar.make(
-                            view,
-                            "Please check Internet Connection!",
-                            Snackbar.LENGTH_SHORT
-                        ).show()
+                        val msg = if (e.message.toString()
+                                .startsWith(getString(R.string.error_prefix))
+                        ) getString(R.string.internet_message) else getString(R.string.server_error_message)
+                        Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
                     }
                     Log.d("debug", "login failed")
                 }
@@ -169,7 +173,7 @@ class LoginFragment : Fragment() {
                             } else if (response.code == 404) {
                                 Snackbar.make(
                                     view,
-                                    "Something went wrong. Please try again later!",
+                                    getString(R.string.server_error_message),
                                     Snackbar.LENGTH_SHORT
                                 ).show()
                             }
@@ -197,27 +201,29 @@ class LoginFragment : Fragment() {
             progressDialog.setCancelable(false)
             progressDialog.show()
             Log.d("debug", "checking health of url")
-            healthCheck()
-            progressDialog.dismiss()
+            val serverHealth = healthCheck()
             sharedPrefProfile =
                 activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
             val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
             val id = sharedPrefProfile?.getInt(ID_KEY, 0)
-            if (token != null && id != null) {
+            progressDialog.dismiss()
+            if (serverHealth && token != null && id != null) {
                 (activity as MainActivity).fetchProfile()
                 findNavController().navigate(R.id.action_loginFragment_to_subjectListFragment)
             }
         }
     }
 
-    private suspend fun healthCheck() {
-        val url = getString(R.string.url_subdomain) + getString(R.string.health_url)
+    private suspend fun healthCheck(): Boolean {
+        val url = getString(R.string.url_complete) + getString(R.string.health_url)
         val client = OkHttpClient()
         val request = Request.Builder().url(url).get().build()
+        var healthSuccessful = false
         withContext(Dispatchers.IO) {
             try {
                 val response = client.newCall(request).execute()
                 if (response.isSuccessful) {
+                    healthSuccessful = true
                     Log.d("debug", "health response successful")
                 } else {
                     Log.d(
@@ -225,18 +231,21 @@ class LoginFragment : Fragment() {
                         "cannot connect to server. Response code: ${response.code}"
                     )
                     activity?.runOnUiThread {
-                        Toast.makeText(context, "Something went wrong. Please try again later!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, getString(R.string.server_error_message), Toast.LENGTH_SHORT).show()
                     }
                 }
                 response.close()
             } catch (e: IOException) {
                 activity?.runOnUiThread {
-                    Toast.makeText(context, "Please check Internet Connection!", Toast.LENGTH_SHORT)
-                        .show()
+                    val msg = if (e.message.toString()
+                            .startsWith(getString(R.string.error_prefix))
+                    ) getString(R.string.internet_message) else getString(R.string.server_error_message)
+                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                 }
                 Log.d("debug", "health check failed in login fragment")
             }
         }
+        return healthSuccessful
     }
 
 }

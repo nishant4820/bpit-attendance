@@ -16,6 +16,19 @@
         tools:context=".StudentListFragment"
         tools:listitem="@layout/student_list_item" />
 
+    <TextView
+        android:id="@+id/no_student"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="32sp"
+        android:textAlignment="center"
+        android:textColor="@color/black"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:layout_gravity="center"
+        android:visibility="gone"
+        android:text="@string/student_data_not_available" />
+
     <ProgressBar
         android:id="@+id/student_progress_bar"
         android:layout_width="wrap_content"

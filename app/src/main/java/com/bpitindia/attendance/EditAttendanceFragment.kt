@@ -79,11 +79,6 @@ class EditAttendanceFragment : Fragment() {
         progressBar = view.findViewById(R.id.edit_attendance_progress_bar)
         recyclerView = view.findViewById(R.id.edit_attendance_recycler_view)
         noDataTextView = view.findViewById(R.id.no_data_edit)
-        recyclerView.apply {
-            layoutManager = LinearLayoutManager(activity)
-            adapter = EditAttendanceAdapter()
-            setHasFixedSize(true)
-        }
         fetchData(view)
     }
 
@@ -135,7 +130,11 @@ class EditAttendanceFragment : Fragment() {
                             val jsonArray = JSONArray(response.body?.string())
                             activity?.runOnUiThread {
                                 progressBar.visibility = ProgressBar.GONE
-                                (recyclerView.adapter as EditAttendanceAdapter).dataSet = jsonArray
+                                recyclerView.apply {
+                                    layoutManager = LinearLayoutManager(activity)
+                                    adapter = EditAttendanceAdapter(jsonArray)
+                                    setHasFixedSize(true)
+                                }
                                 addMenu(view)
                             }
                         } catch (e: Exception) {
@@ -174,7 +173,7 @@ class EditAttendanceFragment : Fragment() {
         obj.put("record", dataSet)
         val mediaType = "application/json; charset=utf-8".toMediaType()
         val body = obj.toString().toRequestBody(mediaType)
-        val url = getString(R.string.url_subdomain) + getString(R.string.submit_attendance_api_url)
+        val url = getString(R.string.url_complete) + getString(R.string.submit_attendance_api_path)
         val client = OkHttpClient()
         sharedPrefProfile =
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
@@ -193,11 +192,10 @@ class EditAttendanceFragment : Fragment() {
                 override fun onFailure(call: Call, e: IOException) {
                     activity?.runOnUiThread {
                         progressDialog.dismiss()
-                        Snackbar.make(
-                            view,
-                            "Please check Internet Connection!",
-                            Snackbar.LENGTH_SHORT
-                        ).show()
+                        val msg = if (e.message.toString()
+                                .startsWith(getString(R.string.error_prefix))
+                        ) getString(R.string.internet_message) else getString(R.string.server_error_message)
+                        Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
                     }
                     Log.d("debug", "upload edited attendance failed")
                 }
@@ -221,7 +219,7 @@ class EditAttendanceFragment : Fragment() {
                                 else -> {
                                     Snackbar.make(
                                         view,
-                                        "Something went wrong. Please try again later!",
+                                        getString(R.string.server_error_message),
                                         Snackbar.LENGTH_SHORT
                                     ).show()
                                 }

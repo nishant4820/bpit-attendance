@@ -43,6 +43,7 @@
         android:layout_marginTop="64dp"
         android:layout_marginEnd="24dp"
         android:hint="@string/prompt_email"
+        app:errorEnabled="true"
         app:boxBackgroundColor="@color/inputEditTextBackground"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

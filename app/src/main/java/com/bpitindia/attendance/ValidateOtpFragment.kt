@@ -91,7 +91,7 @@ class ValidateOtpFragment : Fragment() {
         progressBar.visibility = ProgressBar.VISIBLE
         button.visibility = TextView.INVISIBLE
         inputMethodManager.hideSoftInputFromWindow(pinView.windowToken, 0)
-        val url = getString(R.string.url_subdomain) + getString(R.string.validate_otp_api_url)
+        val url = getString(R.string.url_complete) + getString(R.string.validate_otp_api_path)
         val client = OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val bodyJSONObject = JSONObject()
@@ -101,18 +101,16 @@ class ValidateOtpFragment : Fragment() {
             }
             val mediaType = "application/json; charset=utf-8".toMediaType()
             val body = bodyJSONObject.toString().toRequestBody(mediaType)
-//            val body: RequestBody = FormBody.Builder().add("email", email!!).add("otp", otp).build()
             val request: Request = Request.Builder().url(url).post(body).build()
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
                     activity?.runOnUiThread {
                         progressBar.visibility = ProgressBar.INVISIBLE
                         button.visibility = TextView.VISIBLE
-                        Snackbar.make(
-                            view,
-                            "Please check Internet Connection!",
-                            Snackbar.LENGTH_SHORT
-                        ).show()
+                        val msg = if (e.message.toString()
+                                .startsWith(getString(R.string.error_prefix))
+                        ) getString(R.string.internet_message) else getString(R.string.server_error_message)
+                        Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
                     }
                     Log.d("debug", "OTP Validate Request Failed")
                 }
@@ -143,7 +141,7 @@ class ValidateOtpFragment : Fragment() {
                             } else {
                                 Snackbar.make(
                                     view,
-                                    "Something went wrong. Please try again later!",
+                                    getString(R.string.server_error_message),
                                     Snackbar.LENGTH_SHORT
                                 ).show()
                             }

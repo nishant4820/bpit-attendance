@@ -104,7 +104,7 @@ class ResetPasswordFragment : Fragment() {
         }
         progressBar.visibility = ProgressBar.VISIBLE
         resetButton.visibility = TextView.INVISIBLE
-        val url = getString(R.string.url_subdomain) + getString(R.string.reset_password_api_url)
+        val url = getString(R.string.url_complete) + getString(R.string.reset_password_api_path)
         val client = OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val bodyJSONObject = JSONObject()
@@ -124,11 +124,10 @@ class ResetPasswordFragment : Fragment() {
                     activity?.runOnUiThread {
                         progressBar.visibility = ProgressBar.INVISIBLE
                         resetButton.visibility = TextView.VISIBLE
-                        Snackbar.make(
-                            view,
-                            "Please check Internet Connection!",
-                            Snackbar.LENGTH_SHORT
-                        ).show()
+                        val msg = if (e.message.toString()
+                                .startsWith(getString(R.string.error_prefix))
+                        ) getString(R.string.internet_message) else getString(R.string.server_error_message)
+                        Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
                     }
                     Log.d("debug", "Reset Password Request Failed")
                 }
@@ -162,7 +161,7 @@ class ResetPasswordFragment : Fragment() {
                             } else {
                                 Snackbar.make(
                                     view,
-                                    "Something went wrong. Please try again later!",
+                                    getString(R.string.server_error_message),
                                     Snackbar.LENGTH_SHORT
                                 ).show()
                             }

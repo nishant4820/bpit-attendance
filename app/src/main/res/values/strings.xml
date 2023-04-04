@@ -1,4 +1,27 @@
 <resources>
+
+    <!--    String related to Server-->
+    <string name="url_complete">http://api.bpitindia.ac.in:8000</string>
+    <string name="url_scheme">http</string>
+    <string name="url_host">api.bpitindia.ac.in</string>
+    <string name="url_port">8000</string>
+    <string name="login_api_path">/api/auth/user/login/</string>
+    <string name="logout_api_path">/api/auth/logout/</string>
+    <string name="faculty_profile_api_path">/api/faculty/profile/%d</string>
+    <string name="assigned_subjects_api_path">/api/faculty/subjects/</string>
+    <string name="forgot_password_api_path">/api/auth/forgot_password/</string>
+    <string name="validate_otp_api_path">/api/auth/validate_otp/</string>
+    <string name="reset_password_api_path">/api/auth/reset_password/</string>
+    <string name="submit_attendance_api_path">/api/student/attendance/submit/</string>
+    <string name="update_version_api_path">/api/version/check_updates?platform=android</string>
+    <string name="get_branches_api_path">/api/branch/</string>
+    <string name="get_all_subjects_api_path">/api/subjects/</string>
+    <string name="health_url">/health/</string>
+    <string name="server_error_message">Something went wrong. Please try again later!</string>
+    <string name="internet_message">Please check Internet Connection!</string>
+    <string name="error_prefix">Unable to resolve host</string>
+
+    <!--    App related Strings-->
     <string name="app_name">Attendance</string>
     <string name="year">Batch: %d</string>
     <string name="prompt_email">Email</string>
@@ -69,25 +92,40 @@
     <string name="my">My</string>
     <string name="tick_logo">Tick Logo</string>
     <string name="password_changed">Password Changed!</string>
-    <string name="ios_developer_name">Rajat Verma</string>
-    <string name="ios_developer">iOS Developer</string>
-    <string name="react_developer_name">Mohak Sharma</string>
-    <string name="react_developer">React Developer</string>
-
-<!--    String related to Server-->
-    <string name="url_subdomain">http://api.bpitindia.ac.in:8000</string>
-    <string name="url_scheme">http</string>
-    <string name="url_host">api.bpitindia.ac.in</string>
-    <string name="url_port">8000</string>
-    <string name="login_api_url">/api/auth/user/login/</string>
-    <string name="logout_api_url">/api/auth/logout/</string>
-    <string name="profile_api_url">/api/faculty/profile/%d</string>
-    <string name="subject_api_url">/api/faculty/subjects/</string>
-    <string name="forgot_password_api_url">/api/auth/forgot_password/</string>
-    <string name="validate_otp_api_url">/api/auth/validate_otp/</string>
-    <string name="reset_password_api_url">/api/auth/reset_password/</string>
-    <string name="submit_attendance_api_url">/api/student/attendance/submit/</string>
-    <string name="update_version_api_url">/api/version/check_updates?platform=android</string>
-    <string name="health_url">/health/</string>
+    <string name="fab_content_desc">Floating Button</string>
+    <string name="add_subject">Add Subject</string>
+    <string name="student_data_not_available">Student Data not Available</string>
+    <string name="no_subject_assigned">No Subject Assigned!!\nStart by Adding a Subject</string>
+    <string name="made_by">Made with ❤ by BPITians</string>
+    <string name="required">Required</string>
+    <string name="subject_code">Subject Code</string>
+    <string name="section">Section</string>
+    <string name="branch">Branch</string>
+    <string name="batch">Batch</string>
+    <string name="semester">Semester</string>
+    <string name="theory">Theory</string>
+    <string name="lab">Lab</string>
+    <string name="group">Group</string>
+    <string-array name="section_array">
+        <item>A</item>
+        <item>B</item>
+        <item>C</item>
+        <item>D</item>
+    </string-array>
+    <string-array name="semester_array">
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+        <item>7</item>
+        <item>8</item>
+    </string-array>
+    <string-array name="group_array">
+        <item>G1</item>
+        <item>G2</item>
+        <item>G3</item>
+    </string-array>
 
 </resources>

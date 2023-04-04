@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -9,8 +10,8 @@
         android:name="com.bpitindia.attendance.SubjectListFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginLeft="16dp"
-        android:layout_marginRight="16dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="24dp"
         tools:context=".SubjectListFragment"
         tools:listitem="@layout/subject_list_item" />
 
@@ -21,5 +22,29 @@
         android:layout_gravity="center"
         android:indeterminateTint="@color/loaderColor"
         android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/no_subject"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:paddingHorizontal="32sp"
+        android:text="@string/no_subject_assigned"
+        android:textAlignment="center"
+        android:textColor="@color/black"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/floating_action_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/fab_margin"
+        android:contentDescription="@string/fab_content_desc"
+        app:backgroundTint="@color/cardAboutColor"
+        app:srcCompat="@drawable/baseline_add_24"
+        app:tint="@android:color/white" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

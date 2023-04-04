@@ -28,7 +28,7 @@ class SubjectAdapter(private val dataSet: JSONArray) :
             subjectName.text = subInfo.getString("subject_name")
             year.text = findYear(subInfo.getInt("semester"))
             val branchSection =
-                "${findBranch(subInfo.getString("branch_code"))}-${subInfo.getString("section")}"
+                "${subInfo.getString("branch_slug")}-${subInfo.getString("section")}"
             branchSec.text = branchSection
             val isLab: String = if (subInfo.getBoolean("is_lab")) "Lab" else "Theory"
             theoryOrLab.text = isLab
@@ -104,19 +104,6 @@ class SubjectAdapter(private val dataSet: JSONArray) :
             else -> "Invalid Year"
         }
         return year
-    }
-
-    private fun findBranch(branch: String): String {
-        val br: String = when (branch) {
-            "027" -> "CSE"
-            "031" -> "IT"
-            "028" -> "ECE"
-            "049" -> "EEE"
-            "039" -> "MBA"
-            "017" -> "BBA"
-            else -> "Invalid Branch"
-        }
-        return br
     }
 
 }

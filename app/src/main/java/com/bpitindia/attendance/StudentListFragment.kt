@@ -15,6 +15,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import android.widget.TextView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
@@ -47,6 +48,7 @@ class StudentListFragment : Fragment() {
     private var isMarkedAll: Boolean = false
     private var sharedPrefProfile: SharedPreferences? = null
     private lateinit var progressBar: ProgressBar
+    private lateinit var noStudentTextView: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -79,6 +81,7 @@ class StudentListFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         progressBar = view.findViewById(R.id.student_progress_bar)
         progressBar.visibility = ProgressBar.VISIBLE
+        noStudentTextView = view.findViewById(R.id.no_student)
         attendanceMap.clear()
         fetchStudents(view)
     }
@@ -126,6 +129,9 @@ class StudentListFragment : Fragment() {
                         }
                         Log.d("debug", "student fetch successful")
                         activity?.runOnUiThread {
+                            if (jsonArray.length() == 0) {
+                                noStudentTextView.visibility = TextView.VISIBLE
+                            }
                             view.findViewById<RecyclerView>(R.id.studentList).apply {
                                 layoutManager = LinearLayoutManager(activity)
                                 adapter = StudentAdapter(jsonArray)
@@ -224,7 +230,7 @@ class StudentListFragment : Fragment() {
         sharedPrefProfile =
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
-        val url = getString(R.string.url_subdomain) + getString(R.string.submit_attendance_api_url)
+        val url = getString(R.string.url_complete) + getString(R.string.submit_attendance_api_path)
         val client = OkHttpClient()
 
         lifecycleScope.launch {
@@ -238,11 +244,10 @@ class StudentListFragment : Fragment() {
                 override fun onFailure(call: Call, e: IOException) {
                     progressDialog.dismiss()
                     activity?.runOnUiThread {
-                        Snackbar.make(
-                            view,
-                            "Please check Internet Connection!",
-                            Snackbar.LENGTH_SHORT
-                        ).show()
+                        val msg = if (e.message.toString()
+                                .startsWith(getString(R.string.error_prefix))
+                        ) getString(R.string.internet_message) else getString(R.string.server_error_message)
+                        Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
                     }
                     Log.d("debug", "upload attendance failed")
                 }
@@ -257,7 +262,6 @@ class StudentListFragment : Fragment() {
                         } else {
                             when (response.code) {
                                 401 -> {
-//                                        activity?.deleteSharedPreferences(SHARED_PREFERENCES_NAME)
                                     Toast.makeText(
                                         context,
                                         "Session Expired! Log in again.",
@@ -268,7 +272,7 @@ class StudentListFragment : Fragment() {
                                 else -> {
                                     Snackbar.make(
                                         view,
-                                        "Something went wrong. Please try again later!",
+                                        getString(R.string.server_error_message),
                                         Snackbar.LENGTH_SHORT
                                     ).show()
                                 }

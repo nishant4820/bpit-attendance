@@ -100,7 +100,7 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
 
     private fun checkForUpdates() {
 
-        val url = getString(R.string.url_subdomain) + getString(R.string.update_version_api_url)
+        val url = getString(R.string.url_complete) + getString(R.string.update_version_api_path)
         val client = OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val request = Request.Builder().url(url).get().build()
@@ -108,11 +108,10 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                 override fun onFailure(call: Call, e: IOException) {
                     Log.d("debug", "check update failed " + e.message)
                     runOnUiThread {
-                        Toast.makeText(
-                            this@MainActivity,
-                            "Please check Internet Connection!",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        val msg = if (e.message.toString()
+                                .startsWith(getString(R.string.error_prefix))
+                        ) getString(R.string.internet_message) else getString(R.string.server_error_message)
+                        Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
                     }
                 }
 
@@ -139,7 +138,24 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                                 AlertDialog.Builder(this@MainActivity).apply {
                                     setTitle("No Update Available!")
                                     setMessage("Version: ${BuildConfig.VERSION_NAME}\nContact developer for any bugs.")
-                                    setPositiveButton("Continue") { _, _ -> }
+                                    setPositiveButton("Continue", null)
+                                    setNeutralButton("Contact") { _, _ ->
+                                        val intent = Intent(Intent.ACTION_SENDTO)
+                                        intent.data = Uri.parse("mailto:")
+                                        intent.putExtra(
+                                            Intent.EXTRA_EMAIL,
+                                            arrayOf("nishant88cseb20@bpitindia.edu.in","shubhamjindal@bpitindia.com")
+                                        )
+                                        intent.putExtra(
+                                            Intent.EXTRA_SUBJECT,
+                                            "Issue in Attendance Application"
+                                        )
+                                        intent.putExtra(
+                                            Intent.EXTRA_TEXT,
+                                            "<Describe your issue here>\n\n"
+                                        )
+                                        startActivity(Intent.createChooser(intent, "Send Email using:"))
+                                    }
                                 }.show()
                             }
                         }
@@ -148,7 +164,7 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                             if (response.code == 404) {
                                 Toast.makeText(
                                     this@MainActivity,
-                                    "Something went wrong. Please try again later!",
+                                    getString(R.string.server_error_message),
                                     Toast.LENGTH_SHORT
                                 ).show()
                             }
@@ -166,7 +182,7 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
     private fun logout(view: View) {
         sharedPrefProfile = getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
-        val url = getString(R.string.url_subdomain) + getString(R.string.logout_api_url)
+        val url = getString(R.string.url_complete) + getString(R.string.logout_api_path)
         val client = OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val request =
@@ -176,9 +192,10 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
 
                 override fun onFailure(call: Call, e: IOException) {
                     runOnUiThread {
-                        Snackbar.make(
-                            view, "Please check Internet Connection!", Snackbar.LENGTH_SHORT
-                        ).show()
+                        val msg = if (e.message.toString()
+                                .startsWith(getString(R.string.error_prefix))
+                        ) getString(R.string.internet_message) else getString(R.string.server_error_message)
+                        Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
                     }
                     Log.d("debug", "logout failed")
                 }
@@ -199,7 +216,7 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                             if (response.code == 404) {
                                 Toast.makeText(
                                     this@MainActivity,
-                                    "Something went wrong. Please try again later!",
+                                    getString(R.string.server_error_message),
                                     Toast.LENGTH_SHORT
                                 ).show()
                             } else {
@@ -227,7 +244,7 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
             getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)!!
         val id = sharedPrefProfile?.getInt(ID_KEY, 0)!!
-        val url = getString(R.string.url_subdomain) + getString(R.string.profile_api_url, id)
+        val url = getString(R.string.url_complete) + getString(R.string.faculty_profile_api_path, id)
         val client = OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val request = Request.Builder().url(url).get().addHeader("Authorization", token).build()

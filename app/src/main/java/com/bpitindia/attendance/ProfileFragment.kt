@@ -73,7 +73,8 @@ class ProfileFragment : Fragment() {
             jsonObject.getString("designation")
         view.findViewById<TextView>(R.id.designation_profile).text =
             jsonObject.getString("designation")
-        view.findViewById<TextView>(R.id.doj_profile).text = jsonObject.getString("date_joined")
+        val dateJoined = jsonObject.getString("date_joined")
+        view.findViewById<TextView>(R.id.doj_profile).text = if (dateJoined.equals("null")) "Not Available" else dateJoined
     }
 
     private fun showAlertDialog(field: String, view: View) {
@@ -134,7 +135,7 @@ class ProfileFragment : Fragment() {
             findNavController().popBackStack()
             return
         }
-        val url = getString(R.string.url_subdomain) + getString(R.string.profile_api_url, id)
+        val url = getString(R.string.url_complete) + getString(R.string.faculty_profile_api_path, id)
         val client = OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val mediaType = "application/json; charset=utf-8".toMediaType()
@@ -144,11 +145,10 @@ class ProfileFragment : Fragment() {
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
                     activity?.runOnUiThread {
-                        Snackbar.make(
-                            view,
-                            "Please check Internet Connection!",
-                            Snackbar.LENGTH_SHORT
-                        ).show()
+                        val msg = if (e.message.toString()
+                                .startsWith(getString(R.string.error_prefix))
+                        ) getString(R.string.internet_message) else getString(R.string.server_error_message)
+                        Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
                     }
                     Log.d("debug", "profile update failed")
                 }

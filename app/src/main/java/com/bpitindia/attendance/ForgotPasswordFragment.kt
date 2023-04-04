@@ -88,7 +88,7 @@ class ForgotPasswordFragment : Fragment() {
 
     private fun requestOTP(view: View) {
         inputMethodManager.hideSoftInputFromWindow(resetEmailEditText.windowToken, 0)
-        val url = getString(R.string.url_subdomain) + getString(R.string.forgot_password_api_url)
+        val url = getString(R.string.url_complete) + getString(R.string.forgot_password_api_path)
         val client = OkHttpClient()
         val mailID: String = resetEmailEditText.text.toString()
         if (mailID.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(mailID).matches()) {
@@ -111,11 +111,10 @@ class ForgotPasswordFragment : Fragment() {
                     activity?.runOnUiThread {
                         progressBar.visibility = ProgressBar.INVISIBLE
                         button.visibility = TextView.VISIBLE
-                        Snackbar.make(
-                            view,
-                            "Please check Internet Connection!",
-                            Snackbar.LENGTH_SHORT
-                        ).show()
+                        val msg = if (e.message.toString()
+                                .startsWith(getString(R.string.error_prefix))
+                        ) getString(R.string.internet_message) else getString(R.string.server_error_message)
+                        Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
                     }
                     Log.d("debug", "OTP Request Failed")
                 }
@@ -140,11 +139,7 @@ class ForgotPasswordFragment : Fragment() {
                             if (response.code == 401) {
                                 Snackbar.make(view, "User not found", Snackbar.LENGTH_SHORT).show()
                             } else {
-                                Snackbar.make(
-                                    view,
-                                    "Something went wrong. Please try again later!",
-                                    Snackbar.LENGTH_SHORT
-                                ).show()
+                                Snackbar.make(view, getString(R.string.server_error_message), Snackbar.LENGTH_SHORT).show()
                             }
                         }
                         Log.d("debug", "OTP Request unsuccessful code: ${response.code}")

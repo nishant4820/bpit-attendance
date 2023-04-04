@@ -1,6 +1,5 @@
 package com.bpitindia.attendance
 
-import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,14 +9,9 @@ import androidx.recyclerview.widget.RecyclerView
 import org.json.JSONArray
 import org.json.JSONObject
 
-class EditAttendanceAdapter : RecyclerView.Adapter<EditAttendanceAdapter.MyViewHolder>() {
-
-    var dataSet = JSONArray()
-        @SuppressLint("NotifyDataSetChanged")
-        set(value) {
-            field = value
-            notifyDataSetChanged()
-        }
+class EditAttendanceAdapter(
+    internal val dataSet: JSONArray
+) : RecyclerView.Adapter<EditAttendanceAdapter.MyViewHolder>() {
 
     inner class MyViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         private val rollNumber: TextView = view.findViewById(R.id.edit_roll_no)
