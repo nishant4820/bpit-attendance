@@ -37,6 +37,15 @@ class ChangePasswordFragment : Fragment() {
     private lateinit var confirmNewPasswordEdittext: TextInputEditText
     private lateinit var progressBar: ProgressBar
     private lateinit var inputMethodManager: InputMethodManager
+    private var methodProvider: MyActivityMethodProvider? = null
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        try {
+            methodProvider = context as MyActivityMethodProvider
+        } catch (_: ClassCastException) {
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -72,6 +81,7 @@ class ChangePasswordFragment : Fragment() {
                     newPasswordLayout.error = null
                 }
             }
+
             override fun afterTextChanged(s: Editable?) {}
         })
         confirmNewPasswordEdittext.addTextChangedListener(object : TextWatcher {
@@ -122,7 +132,7 @@ class ChangePasswordFragment : Fragment() {
             return
         }
         val url = getString(R.string.url_complete) + getString(R.string.reset_password_api_path)
-        val client = OkHttpClient()
+        val client = methodProvider?.getOkHttpClient() ?: OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val bodyJSONObject = JSONObject()
             bodyJSONObject.apply {
@@ -155,6 +165,7 @@ class ChangePasswordFragment : Fragment() {
                         val editor = sharedPrefProfile?.edit()
                         editor?.putString(TOKEN_KEY, newToken)
                         editor?.apply()
+                        response.close()
                         activity?.runOnUiThread {
                             progressBar.visibility = ProgressBar.INVISIBLE
                             changeButton.visibility = TextView.VISIBLE
@@ -172,6 +183,7 @@ class ChangePasswordFragment : Fragment() {
                         if (response.code == 400) {
                             val error: String = jsonObject?.getJSONArray("error")?.get(0) as String
                             Log.d("debug", "error $error")
+                            response.close()
                             activity?.runOnUiThread {
                                 progressBar.visibility = ProgressBar.INVISIBLE
                                 changeButton.visibility = TextView.VISIBLE
@@ -190,12 +202,12 @@ class ChangePasswordFragment : Fragment() {
                                 Snackbar.make(view, error, Snackbar.LENGTH_LONG).show()
                             }
                         } else {
+                            response.close()
                             activity?.runOnUiThread {
                                 findNavController().popBackStack()
                             }
                         }
                     }
-                    response.close()
                 }
 
             })

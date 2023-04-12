@@ -49,6 +49,15 @@ class StudentListFragment : Fragment() {
     private var sharedPrefProfile: SharedPreferences? = null
     private lateinit var progressBar: ProgressBar
     private lateinit var noStudentTextView: TextView
+    private var methodProvider: MyActivityMethodProvider? = null
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        try {
+            methodProvider = context as MyActivityMethodProvider
+        } catch (_: ClassCastException) {
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -90,7 +99,7 @@ class StudentListFragment : Fragment() {
         val httpUrlBuilder: HttpUrl.Builder = HttpUrl.Builder()
             .scheme(getString(R.string.url_scheme))
             .host(getString(R.string.url_host))
-            .port(getString(R.string.url_port).toInt())
+            .addPathSegment(getString(R.string.api_gateway))
             .addPathSegment("api")
             .addPathSegment("student")
             .addPathSegment("attendance")
@@ -101,7 +110,7 @@ class StudentListFragment : Fragment() {
             .addQueryParameter("section", section)
         if (isLab == true) httpUrlBuilder.addQueryParameter("group", group)
         val httpUrl = httpUrlBuilder.build()
-        val client = OkHttpClient()
+        val client = methodProvider?.getOkHttpClient() ?: OkHttpClient()
         sharedPrefProfile =
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
@@ -123,6 +132,7 @@ class StudentListFragment : Fragment() {
                 override fun onResponse(call: Call, response: Response) {
                     if (response.isSuccessful) {
                         val jsonArray = JSONArray(response.body?.string())
+                        response.close()
                         for (i in 0 until jsonArray.length()) {
                             val student = jsonArray.getJSONObject(i)
                             attendanceMap[student.getString("enrollment_number")] = false
@@ -140,12 +150,12 @@ class StudentListFragment : Fragment() {
                             addMenu(view)
                         }
                     } else {
+                        response.close()
                         activity?.runOnUiThread {
                             progressBar.visibility = ProgressBar.INVISIBLE
                             findNavController().popBackStack()
                         }
                     }
-                    response.close()
                 }
             })
         }
@@ -231,7 +241,7 @@ class StudentListFragment : Fragment() {
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
         val url = getString(R.string.url_complete) + getString(R.string.submit_attendance_api_path)
-        val client = OkHttpClient()
+        val client = methodProvider?.getOkHttpClient() ?: OkHttpClient()
 
         lifecycleScope.launch {
             val obj = JSONObject()
@@ -256,12 +266,14 @@ class StudentListFragment : Fragment() {
                     progressDialog.dismiss()
                     activity?.runOnUiThread {
                         if (response.isSuccessful) {
+                            response.close()
                             Snackbar.make(view, "Attendance Submitted", Snackbar.LENGTH_SHORT)
                                 .show()
                             findNavController().popBackStack()
                         } else {
                             when (response.code) {
                                 401 -> {
+                                    response.close()
                                     Toast.makeText(
                                         context,
                                         "Session Expired! Log in again.",
@@ -270,6 +282,7 @@ class StudentListFragment : Fragment() {
                                     findNavController().popBackStack()
                                 }
                                 else -> {
+                                    response.close()
                                     Snackbar.make(
                                         view,
                                         getString(R.string.server_error_message),
@@ -280,8 +293,6 @@ class StudentListFragment : Fragment() {
 
                         }
                     }
-
-                    response.close()
                 }
 
             })

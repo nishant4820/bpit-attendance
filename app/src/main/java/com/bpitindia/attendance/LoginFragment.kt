@@ -28,6 +28,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.io.IOException
 import java.util.*
@@ -42,6 +44,15 @@ class LoginFragment : Fragment() {
     private lateinit var forgotPassword: TextView
     private lateinit var inputMethodManager: InputMethodManager
     private var sharedPrefProfile: SharedPreferences? = null
+    private var methodProvider: MyActivityMethodProvider? = null
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        try {
+            methodProvider = context as MyActivityMethodProvider
+        } catch (_: ClassCastException) {
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -78,20 +89,17 @@ class LoginFragment : Fragment() {
             )
         }
         emailEditText.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
-            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-            }
-
-            override fun afterTextChanged(s: Editable?) {
                 if (s.isNullOrEmpty() || Patterns.EMAIL_ADDRESS.matcher(s).matches()) {
                     emailLayout.error = null
                 } else {
                     emailLayout.error = "Invalid Email ID"
                 }
-
             }
+
+            override fun afterTextChanged(s: Editable?) {}
         })
 
     }
@@ -99,7 +107,7 @@ class LoginFragment : Fragment() {
     private fun logIn(view: View) {
         inputMethodManager.hideSoftInputFromWindow(button.windowToken, 0)
         val url = getString(R.string.url_complete) + getString(R.string.login_api_path)
-        val client = OkHttpClient()
+        val client = methodProvider?.getOkHttpClient() ?: OkHttpClient()
         val mailID: String = emailEditText.text.toString().lowercase()
         val pass: String = passwordEditText.text.toString()
 
@@ -113,8 +121,11 @@ class LoginFragment : Fragment() {
         progressBar.visibility = ProgressBar.VISIBLE
         button.visibility = TextView.INVISIBLE
         lifecycleScope.launch(Dispatchers.IO) {
-            val body: RequestBody =
-                FormBody.Builder().add("email", mailID).add("password", pass).build()
+            val mediaType = "application/json; charset=utf-8".toMediaType()
+            val jsonObjectBody = JSONObject()
+            jsonObjectBody.put("email", mailID)
+            jsonObjectBody.put("password", pass)
+            val body = jsonObjectBody.toString().toRequestBody(mediaType)
             val request: Request = Request.Builder().url(url).post(body).build()
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
@@ -134,6 +145,7 @@ class LoginFragment : Fragment() {
 
                     if (response.isSuccessful) {
                         val jsonObject = response.body?.string()?.let { JSONObject(it) }
+                        response.close()
                         val isFirstLogin = jsonObject?.getBoolean("is_first_login")
                         val key = jsonObject?.getString("token")
                         val token = "Token $key"
@@ -147,7 +159,6 @@ class LoginFragment : Fragment() {
                         editor?.putInt(ID_KEY, idKey)
                         editor?.apply()
                         Log.d("debug", "login successful")
-                        (activity as MainActivity).fetchProfile()
                         activity?.runOnUiThread {
                             progressBar.visibility = ProgressBar.INVISIBLE
                             button.visibility = TextView.VISIBLE
@@ -179,8 +190,8 @@ class LoginFragment : Fragment() {
                             }
                         }
                         Log.d("debug", "login unsuccessful code: ${response.code}")
+                        response.close()
                     }
-                    response.close()
                 }
             })
         }
@@ -208,15 +219,14 @@ class LoginFragment : Fragment() {
             val id = sharedPrefProfile?.getInt(ID_KEY, 0)
             progressDialog.dismiss()
             if (serverHealth && token != null && id != null) {
-                (activity as MainActivity).fetchProfile()
                 findNavController().navigate(R.id.action_loginFragment_to_subjectListFragment)
             }
         }
     }
 
     private suspend fun healthCheck(): Boolean {
-        val url = getString(R.string.url_complete) + getString(R.string.health_url)
-        val client = OkHttpClient()
+        val url = getString(R.string.url_complete) + getString(R.string.health_api_path)
+        val client = methodProvider?.getOkHttpClient() ?: OkHttpClient()
         val request = Request.Builder().url(url).get().build()
         var healthSuccessful = false
         withContext(Dispatchers.IO) {
@@ -231,7 +241,11 @@ class LoginFragment : Fragment() {
                         "cannot connect to server. Response code: ${response.code}"
                     )
                     activity?.runOnUiThread {
-                        Toast.makeText(context, getString(R.string.server_error_message), Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            context,
+                            getString(R.string.server_error_message),
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 }
                 response.close()

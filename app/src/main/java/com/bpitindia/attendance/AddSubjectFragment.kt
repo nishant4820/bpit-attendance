@@ -57,6 +57,15 @@ class AddSubjectFragment : Fragment() {
     private var branchArray: JSONArray = JSONArray()
     private var subjectCodeList: List<String> = listOf()
     private var branchSlugList: List<String> = listOf()
+    private var methodProvider: MyActivityMethodProvider? = null
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        try {
+            methodProvider = context as MyActivityMethodProvider
+        } catch (_: ClassCastException) {
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -196,7 +205,7 @@ class AddSubjectFragment : Fragment() {
             findNavController().popBackStack()
             return false
         }
-        val client = OkHttpClient()
+        val client = methodProvider?.getOkHttpClient() ?: OkHttpClient()
         val urlBranch = getString(R.string.url_complete) + getString(R.string.get_branches_api_path)
         val urlSubject =
             getString(R.string.url_complete) + getString(R.string.get_all_subjects_api_path)
@@ -269,7 +278,7 @@ class AddSubjectFragment : Fragment() {
         }
         progressBar.visibility = ProgressBar.VISIBLE
         addSubjectButton.visibility = TextView.INVISIBLE
-        val client = OkHttpClient()
+        val client = methodProvider?.getOkHttpClient() ?: OkHttpClient()
         val url = getString(R.string.url_complete) + getString(R.string.assigned_subjects_api_path)
         sharedPrefProfile =
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
@@ -293,7 +302,6 @@ class AddSubjectFragment : Fragment() {
         jsonArray.put(newSubject)
         val jsonBody = JSONObject()
         jsonBody.put("subjects", jsonArray)
-        Log.d("debug", jsonBody.toString())
         val mediaType = "application/json; charset=utf-8".toMediaType()
         val body = jsonBody.toString().toRequestBody(mediaType)
         val request: Request =

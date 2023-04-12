@@ -22,6 +22,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.*
 import org.json.JSONArray
+import org.json.JSONException
+import org.json.JSONObject
 import java.io.IOException
 
 class SubjectListFragment : Fragment() {
@@ -30,9 +32,19 @@ class SubjectListFragment : Fragment() {
     private lateinit var progressBar: ProgressBar
     private lateinit var floatingActionButton: FloatingActionButton
     private lateinit var noSubjectTextView: TextView
+    private var methodProvider: MyActivityMethodProvider? = null
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        try {
+            methodProvider = context as MyActivityMethodProvider
+        } catch (_: ClassCastException) {
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        methodProvider?.fetchProfile()
         sharedPrefProfile =
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
@@ -59,6 +71,7 @@ class SubjectListFragment : Fragment() {
             findNavController().navigate(R.id.action_subjectListFragment_to_addSubjectFragment)
         }
         noSubjectTextView = view.findViewById(R.id.no_subject)
+        fetchSettings()
     }
 
     override fun onStart() {
@@ -73,7 +86,7 @@ class SubjectListFragment : Fragment() {
         sharedPrefProfile =
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
-        val client = OkHttpClient()
+        val client = methodProvider?.getOkHttpClient() ?: OkHttpClient()
 
         lifecycleScope.launch {
             withContext(Dispatchers.IO) {
@@ -96,8 +109,8 @@ class SubjectListFragment : Fragment() {
 
                     override fun onResponse(call: Call, response: Response) {
                         if (response.isSuccessful) {
-
                             jsonArray = JSONArray(response.body?.string())
+                            response.close()
                             Log.d("debug", "subject fetch successful")
                             activity?.runOnUiThread {
                                 if (jsonArray.length() == 0) {
@@ -115,6 +128,7 @@ class SubjectListFragment : Fragment() {
                                 progressBar.visibility = ProgressBar.INVISIBLE
                                 when (response.code) {
                                     401 -> {
+                                        response.close()
                                         activity?.deleteSharedPreferences(SHARED_PREFERENCES_PROFILE)
                                         Toast.makeText(
                                             context,
@@ -124,6 +138,7 @@ class SubjectListFragment : Fragment() {
                                         findNavController().navigate(R.id.action_subjectListFragment_to_loginFragment)
                                     }
                                     else -> {
+                                        response.close()
                                         Snackbar.make(
                                             view,
                                             getString(R.string.server_error_message),
@@ -133,11 +148,52 @@ class SubjectListFragment : Fragment() {
                                 }
                             }
                         }
-                        response.close()
                     }
 
                 })
             }
+        }
+    }
+
+    private fun fetchSettings() {
+        sharedPrefProfile =
+            activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
+        val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
+        if (token == null) {
+            findNavController().popBackStack()
+            return
+        }
+        val client = methodProvider?.getOkHttpClient() ?: OkHttpClient()
+        val url = getString(R.string.url_complete) + getString(R.string.settings_api_path)
+        val request =
+            Request.Builder().url(url).addHeader("Authorization", token).get().build()
+        lifecycleScope.launch(Dispatchers.IO) {
+            client.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    Log.d("debug", "settings fetch failed")
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    if (response.isSuccessful) {
+                        try {
+                            val jsonObject = JSONObject(response.body!!.string())
+                            val subjectAssignment = jsonObject.getBoolean("SUBJECTS_ASSIGNMENT")
+                            if (subjectAssignment) {
+                                activity?.runOnUiThread {
+                                    floatingActionButton.visibility = FloatingActionButton.VISIBLE
+                                }
+                            }
+                            Log.d("debug", "settings fetch successful")
+                        } catch (e: JSONException) {
+                            Log.d("debug", "SUBJECTS_ASSIGNMENT value doesn't exist")
+                        }
+                    } else {
+                        Log.d("debug", "settings fetch unsuccessful code: ${response.code}")
+                    }
+                    response.close()
+                }
+
+            })
         }
     }
 

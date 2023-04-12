@@ -35,6 +35,16 @@ class ProfileFragment : Fragment() {
     private var sharedPrefProfile: SharedPreferences? = null
     private var profile: String? = null
     private lateinit var jsonObject: JSONObject
+    private var methodProvider: MyActivityMethodProvider? = null
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        try {
+            methodProvider = context as MyActivityMethodProvider
+        } catch (_: ClassCastException) {
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
@@ -74,7 +84,8 @@ class ProfileFragment : Fragment() {
         view.findViewById<TextView>(R.id.designation_profile).text =
             jsonObject.getString("designation")
         val dateJoined = jsonObject.getString("date_joined")
-        view.findViewById<TextView>(R.id.doj_profile).text = if (dateJoined.equals("null")) "Not Available" else dateJoined
+        view.findViewById<TextView>(R.id.doj_profile).text =
+            if (dateJoined.equals("null")) "Not Available" else dateJoined
     }
 
     private fun showAlertDialog(field: String, view: View) {
@@ -135,8 +146,9 @@ class ProfileFragment : Fragment() {
             findNavController().popBackStack()
             return
         }
-        val url = getString(R.string.url_complete) + getString(R.string.faculty_profile_api_path, id)
-        val client = OkHttpClient()
+        val url =
+            getString(R.string.url_complete) + getString(R.string.faculty_profile_api_path, id)
+        val client = methodProvider?.getOkHttpClient() ?: OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val mediaType = "application/json; charset=utf-8".toMediaType()
             val body = jsonObject.toString().toRequestBody(mediaType)

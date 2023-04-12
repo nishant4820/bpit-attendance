@@ -1,10 +1,10 @@
 <resources>
 
     <!--    String related to Server-->
-    <string name="url_complete">http://api.bpitindia.ac.in:8000</string>
+    <string name="url_complete">http://api.bpitindia.ac.in/attendance_service</string>
     <string name="url_scheme">http</string>
     <string name="url_host">api.bpitindia.ac.in</string>
-    <string name="url_port">8000</string>
+    <string name="api_gateway">attendance_service</string>
     <string name="login_api_path">/api/auth/user/login/</string>
     <string name="logout_api_path">/api/auth/logout/</string>
     <string name="faculty_profile_api_path">/api/faculty/profile/%d</string>
@@ -16,7 +16,8 @@
     <string name="update_version_api_path">/api/version/check_updates?platform=android</string>
     <string name="get_branches_api_path">/api/branch/</string>
     <string name="get_all_subjects_api_path">/api/subjects/</string>
-    <string name="health_url">/health/</string>
+    <string name="health_api_path">/health/</string>
+    <string name="settings_api_path">/api/settings/</string>
     <string name="server_error_message">Something went wrong. Please try again later!</string>
     <string name="internet_message">Please check Internet Connection!</string>
     <string name="error_prefix">Unable to resolve host</string>
@@ -52,7 +53,7 @@
     <string name="edit_attendance_button">edit attendance button</string>
     <string name="upload">Upload</string>
     <string name="log_out">Log Out</string>
-    <string name="forgot_password">Forgotten Password?</string>
+    <string name="forgot_password">Forgot Password?</string>
     <string name="reset_message">Enter the email associated with your account and we\'ll send an email with instructions to reset your password.</string>
     <string name="reset_password">Reset password</string>
     <string name="request_otp">Request OTP</string>
@@ -95,7 +96,7 @@
     <string name="fab_content_desc">Floating Button</string>
     <string name="add_subject">Add Subject</string>
     <string name="student_data_not_available">Student Data not Available</string>
-    <string name="no_subject_assigned">No Subject Assigned!!\nStart by Adding a Subject</string>
+    <string name="no_subject_assigned">No Subject Assigned!!</string>
     <string name="made_by">Made with ❤ by BPITians</string>
     <string name="required">Required</string>
     <string name="subject_code">Subject Code</string>

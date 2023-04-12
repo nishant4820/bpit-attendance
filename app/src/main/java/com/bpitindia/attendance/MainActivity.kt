@@ -31,12 +31,13 @@ const val TOKEN_KEY = "token"
 const val ID_KEY = "id_key"
 const val AUTHORIZATION_HEADER = "Authorization"
 
-class MainActivity : AppCompatActivity(), MyDrawerLocker {
+class MainActivity : AppCompatActivity(), MyDrawerLocker, MyActivityMethodProvider {
     private lateinit var drawerLayout: DrawerLayout
     lateinit var navigationView: NavigationView
     private lateinit var actionBarDrawerToggle: ActionBarDrawerToggle
     private var sharedPrefProfile: SharedPreferences? = null
     var profileJSONString: String? = null
+    private val okHttpClient = OkHttpClient()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -101,7 +102,7 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
     private fun checkForUpdates() {
 
         val url = getString(R.string.url_complete) + getString(R.string.update_version_api_path)
-        val client = OkHttpClient()
+        val client = getOkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val request = Request.Builder().url(url).get().build()
             client.newCall(request).enqueue(object : Callback {
@@ -118,6 +119,7 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                 override fun onResponse(call: Call, response: Response) {
                     if (response.isSuccessful) {
                         val jsonObject = response.body?.string()?.let { JSONObject(it) }
+                        response.close()
                         val newVersion = jsonObject?.getInt("versionCode")
                         val currentVersion = BuildConfig.VERSION_CODE
                         Log.d(
@@ -144,7 +146,11 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                                         intent.data = Uri.parse("mailto:")
                                         intent.putExtra(
                                             Intent.EXTRA_EMAIL,
-                                            arrayOf("nishant88cseb20@bpitindia.edu.in","shubhamjindal@bpitindia.com")
+                                            arrayOf(
+                                                "nishant88cseb20@bpitindia.edu.in",
+                                                "shubhamjindal@bpitindia.com",
+                                                "achalkaushik@bpitindia.com"
+                                            )
                                         )
                                         intent.putExtra(
                                             Intent.EXTRA_SUBJECT,
@@ -154,7 +160,12 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                                             Intent.EXTRA_TEXT,
                                             "<Describe your issue here>\n\n"
                                         )
-                                        startActivity(Intent.createChooser(intent, "Send Email using:"))
+                                        startActivity(
+                                            Intent.createChooser(
+                                                intent,
+                                                "Send Email using:"
+                                            )
+                                        )
                                     }
                                 }.show()
                             }
@@ -170,8 +181,8 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                             }
                         }
                         Log.d("debug", "check update response unsuccessful code: ${response.code}")
+                        response.close()
                     }
-                    response.close()
                 }
 
             })
@@ -183,7 +194,7 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
         sharedPrefProfile = getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
         val url = getString(R.string.url_complete) + getString(R.string.logout_api_path)
-        val client = OkHttpClient()
+        val client = getOkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val request =
                 Request.Builder().url(url).get().addHeader("Authorization", token.toString())
@@ -205,6 +216,7 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                         this@MainActivity, R.id.fragmentContainerView
                     )
                     if (response.isSuccessful) {
+                        response.close()
                         Log.d("debug", "logout successful")
                         deleteSharedPreferences(SHARED_PREFERENCES_PROFILE)
                         runOnUiThread {
@@ -212,14 +224,17 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                             navController.navigate(R.id.action_subjectListFragment_to_loginFragment)
                         }
                     } else {
+                        Log.d("debug", "logout response unsuccessful code: ${response.code}")
                         runOnUiThread {
                             if (response.code == 404) {
+                                response.close()
                                 Toast.makeText(
                                     this@MainActivity,
                                     getString(R.string.server_error_message),
                                     Toast.LENGTH_SHORT
                                 ).show()
                             } else {
+                                response.close()
                                 Toast.makeText(
                                     this@MainActivity,
                                     "Session Expired! Log in again.",
@@ -229,23 +244,21 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
                                 navController.navigate(R.id.action_subjectListFragment_to_loginFragment)
                             }
                         }
-                        Log.d("debug", "logout response unsuccessful code: ${response.code}")
                     }
-                    response.close()
-
                 }
 
             })
         }
     }
 
-    fun fetchProfile() {
+    override fun fetchProfile() {
         sharedPrefProfile =
             getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)!!
         val id = sharedPrefProfile?.getInt(ID_KEY, 0)!!
-        val url = getString(R.string.url_complete) + getString(R.string.faculty_profile_api_path, id)
-        val client = OkHttpClient()
+        val url =
+            getString(R.string.url_complete) + getString(R.string.faculty_profile_api_path, id)
+        val client = getOkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val request = Request.Builder().url(url).get().addHeader("Authorization", token).build()
             client.newCall(request).enqueue(object : Callback {
@@ -292,6 +305,10 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker {
     override fun setDrawerUnlocked() {
         drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
         Log.d("debug", "drawer unlocked")
+    }
+
+    override fun getOkHttpClient(): OkHttpClient {
+        return okHttpClient
     }
 
 }

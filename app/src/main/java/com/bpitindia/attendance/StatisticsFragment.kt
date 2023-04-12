@@ -52,6 +52,15 @@ class StatisticsFragment : Fragment() {
     private lateinit var progressBar: ProgressBar
     private lateinit var noDataTextView: TextView
     private lateinit var tableLayout: FixedHeaderTableLayout
+    private var methodProvider: MyActivityMethodProvider? = null
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        try {
+            methodProvider = context as MyActivityMethodProvider
+        } catch (_: ClassCastException) {
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -161,7 +170,7 @@ class StatisticsFragment : Fragment() {
         val httpUrlBuilder: HttpUrl.Builder = HttpUrl.Builder()
             .scheme(getString(R.string.url_scheme))
             .host(getString(R.string.url_host))
-            .port(getString(R.string.url_port).toInt())
+            .addPathSegment(getString(R.string.api_gateway))
             .addPathSegment("api")
             .addPathSegment("student")
             .addPathSegment("attendance")
@@ -174,7 +183,7 @@ class StatisticsFragment : Fragment() {
             .addQueryParameter("year", findYear(monthYear))
             .addQueryParameter("group", group)
         val httpUrl = httpUrlBuilder.build()
-        val client = OkHttpClient()
+        val client = methodProvider?.getOkHttpClient() ?: OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val request: Request = Request.Builder()
                 .url(httpUrl)
@@ -195,6 +204,7 @@ class StatisticsFragment : Fragment() {
                         Log.d("debug", "fetch stats successful")
                         val jsonObject = response.body?.string()
                             ?.let { JSONObject(it) }
+                        response.close()
                         activity?.runOnUiThread {
                             progressBar.visibility = ProgressBar.INVISIBLE
                             try {
@@ -208,12 +218,12 @@ class StatisticsFragment : Fragment() {
                         }
                     } else {
                         Log.d("debug", "fetch stats unsuccessful code: ${response.code}")
+                        response.close()
                         activity?.runOnUiThread {
                             progressBar.visibility = ProgressBar.INVISIBLE
                             findNavController().popBackStack()
                         }
                     }
-                    response.close()
                 }
             })
 
@@ -309,8 +319,7 @@ class StatisticsFragment : Fragment() {
                 .getInsetsIgnoringVisibility(WindowInsets.Type.systemBars())
             windowMetrics.bounds.width() - insets.left - insets.right
         } else {
-            val wid = context?.resources?.displayMetrics?.widthPixels!!
-            Log.d("debug", wid.toString())
+            val wid = requireContext().resources.displayMetrics.widthPixels
             wid
         }
     }

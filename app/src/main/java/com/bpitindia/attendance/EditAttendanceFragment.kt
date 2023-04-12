@@ -47,6 +47,15 @@ class EditAttendanceFragment : Fragment() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
     private lateinit var noDataTextView: TextView
+    private var methodProvider: MyActivityMethodProvider? = null
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        try {
+            methodProvider = context as MyActivityMethodProvider
+        } catch (_: ClassCastException) {
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -95,7 +104,7 @@ class EditAttendanceFragment : Fragment() {
         val httpUrlBuilder = HttpUrl.Builder()
             .scheme(getString(R.string.url_scheme))
             .host(getString(R.string.url_host))
-            .port(getString(R.string.url_port).toInt())
+            .addPathSegment(getString(R.string.api_gateway))
             .addPathSegment("api")
             .addPathSegment("student")
             .addPathSegment("attendance")
@@ -107,7 +116,7 @@ class EditAttendanceFragment : Fragment() {
             .addQueryParameter("section", section)
             .addQueryParameter("group", group)
         val httpUrl = httpUrlBuilder.build()
-        val client = OkHttpClient()
+        val client = methodProvider?.getOkHttpClient() ?: OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val request: Request = Request.Builder()
                 .url(httpUrl)
@@ -143,18 +152,19 @@ class EditAttendanceFragment : Fragment() {
                                 progressBar.visibility = ProgressBar.GONE
                             }
                         }
+                        response.close()
                         Log.d("debug", "edit attendance data fetch successful")
                     } else {
-                        activity?.runOnUiThread {
-                            progressBar.visibility = ProgressBar.INVISIBLE
-                            findNavController().popBackStack()
-                        }
                         Log.d(
                             "debug",
                             "edit attendance data fetch unsuccessful code: ${response.code}"
                         )
+                        response.close()
+                        activity?.runOnUiThread {
+                            progressBar.visibility = ProgressBar.INVISIBLE
+                            findNavController().popBackStack()
+                        }
                     }
-                    response.close()
                 }
 
             })
@@ -174,7 +184,7 @@ class EditAttendanceFragment : Fragment() {
         val mediaType = "application/json; charset=utf-8".toMediaType()
         val body = obj.toString().toRequestBody(mediaType)
         val url = getString(R.string.url_complete) + getString(R.string.submit_attendance_api_path)
-        val client = OkHttpClient()
+        val client = methodProvider?.getOkHttpClient() ?: OkHttpClient()
         sharedPrefProfile =
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
@@ -204,6 +214,7 @@ class EditAttendanceFragment : Fragment() {
                     activity?.runOnUiThread {
                         progressDialog.dismiss()
                         if (response.isSuccessful) {
+                            response.close()
                             Snackbar.make(view, "Attendance Updated", Snackbar.LENGTH_SHORT).show()
                             Log.d("debug", "Last attendance updated")
                             findNavController().popBackStack()
@@ -214,9 +225,11 @@ class EditAttendanceFragment : Fragment() {
                             )
                             when (response.code) {
                                 401 -> {
+                                    response.close()
                                     findNavController().popBackStack()
                                 }
                                 else -> {
+                                    response.close()
                                     Snackbar.make(
                                         view,
                                         getString(R.string.server_error_message),
@@ -226,8 +239,6 @@ class EditAttendanceFragment : Fragment() {
                             }
                         }
                     }
-
-                    response.close()
                 }
 
             })

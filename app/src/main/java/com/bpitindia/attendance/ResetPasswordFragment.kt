@@ -36,6 +36,15 @@ class ResetPasswordFragment : Fragment() {
     private lateinit var resetButton: TextView
     private lateinit var progressBar: ProgressBar
     private lateinit var inputMethodManager: InputMethodManager
+    private var methodProvider: MyActivityMethodProvider? = null
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        try {
+            methodProvider = context as MyActivityMethodProvider
+        } catch (_: ClassCastException) {
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -105,7 +114,7 @@ class ResetPasswordFragment : Fragment() {
         progressBar.visibility = ProgressBar.VISIBLE
         resetButton.visibility = TextView.INVISIBLE
         val url = getString(R.string.url_complete) + getString(R.string.reset_password_api_path)
-        val client = OkHttpClient()
+        val client = methodProvider?.getOkHttpClient() ?: OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val bodyJSONObject = JSONObject()
             bodyJSONObject.apply {
@@ -138,6 +147,7 @@ class ResetPasswordFragment : Fragment() {
                         progressBar.visibility = ProgressBar.INVISIBLE
                         resetButton.visibility = TextView.VISIBLE
                         if (response.isSuccessful) {
+                            response.close()
                             Log.d("debug", "Password reset successful")
                             Snackbar.make(
                                 view,
@@ -166,8 +176,8 @@ class ResetPasswordFragment : Fragment() {
                                 ).show()
                             }
                             Log.d("debug", "Reset Password Unsuccessful code: ${response.code}")
+                            response.close()
                         }
-                        response.close()
                     }
                 }
 

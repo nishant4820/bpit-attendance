@@ -33,6 +33,15 @@ class ValidateOtpFragment : Fragment() {
     private lateinit var pinView: PinView
     private lateinit var progressBar: ProgressBar
     private lateinit var inputMethodManager: InputMethodManager
+    private var methodProvider: MyActivityMethodProvider? = null
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        try {
+            methodProvider = context as MyActivityMethodProvider
+        } catch (_: ClassCastException) {
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -92,7 +101,7 @@ class ValidateOtpFragment : Fragment() {
         button.visibility = TextView.INVISIBLE
         inputMethodManager.hideSoftInputFromWindow(pinView.windowToken, 0)
         val url = getString(R.string.url_complete) + getString(R.string.validate_otp_api_path)
-        val client = OkHttpClient()
+        val client = methodProvider?.getOkHttpClient() ?: OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val bodyJSONObject = JSONObject()
             bodyJSONObject.apply {
@@ -120,6 +129,7 @@ class ValidateOtpFragment : Fragment() {
                         progressBar.visibility = ProgressBar.INVISIBLE
                         button.visibility = TextView.VISIBLE
                         if (response.isSuccessful) {
+                            response.close()
                             Log.d("debug", "OTP Validated")
                             pinView.setText("")
                             val bundle = Bundle()
@@ -132,6 +142,7 @@ class ValidateOtpFragment : Fragment() {
                         } else {
                             Log.d("debug", "OTP Validate Unsuccessful code: ${response.code}")
                             if (response.code == 401) {
+                                response.close()
                                 pinView.setText("")
                                 Snackbar.make(
                                     view,
@@ -139,6 +150,7 @@ class ValidateOtpFragment : Fragment() {
                                     Snackbar.LENGTH_SHORT
                                 ).show()
                             } else {
+                                response.close()
                                 Snackbar.make(
                                     view,
                                     getString(R.string.server_error_message),
@@ -147,7 +159,6 @@ class ValidateOtpFragment : Fragment() {
                             }
                         }
                     }
-                    response.close()
                 }
             })
         }
