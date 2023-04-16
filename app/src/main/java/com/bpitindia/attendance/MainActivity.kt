@@ -84,7 +84,7 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker, MyActivityMethodProvid
                     navController.navigate(R.id.action_subjectListFragment_to_changePasswordFragment)
                 }
                 R.id.check_update -> {
-                    checkForUpdates()
+                    checkForUpdates(true)
                 }
                 R.id.about -> {
                     navController.navigate(R.id.action_subjectListFragment_to_aboutFragment)
@@ -99,7 +99,7 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker, MyActivityMethodProvid
         }
     }
 
-    private fun checkForUpdates() {
+    override fun checkForUpdates(callFromNavigationView: Boolean) {
 
         val url = getString(R.string.url_complete) + getString(R.string.update_version_api_path)
         val client = getOkHttpClient()
@@ -136,7 +136,7 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker, MyActivityMethodProvid
                                     }
                                     setNegativeButton("NO, THANKS", null)
                                 }.show()
-                            } else {
+                            } else if (callFromNavigationView) {
                                 AlertDialog.Builder(this@MainActivity).apply {
                                     setTitle("No Update Available!")
                                     setMessage("Version: ${BuildConfig.VERSION_NAME}\nContact developer for any bugs.")

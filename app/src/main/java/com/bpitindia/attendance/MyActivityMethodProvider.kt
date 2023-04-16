@@ -8,4 +8,6 @@ interface MyActivityMethodProvider {
 
     fun fetchProfile()
 
+    fun checkForUpdates(callFromNavigationView: Boolean)
+
 }

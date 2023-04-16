@@ -213,6 +213,9 @@ class LoginFragment : Fragment() {
             progressDialog.show()
             Log.d("debug", "checking health of url")
             val serverHealth = healthCheck()
+            if (serverHealth) {
+                methodProvider?.checkForUpdates(false)
+            }
             sharedPrefProfile =
                 activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
             val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
