@@ -89,6 +89,7 @@
     <string name="view_statistics">View Statistics</string>
     <string name="edit_last_attendance">Edit Last Attendance</string>
     <string name="optionIcon">⋮</string>
+    <string name="start_typing">Start typing to search</string>
     <string name="profile">Profile</string>
     <string name="my">My</string>
     <string name="tick_logo">Tick Logo</string>

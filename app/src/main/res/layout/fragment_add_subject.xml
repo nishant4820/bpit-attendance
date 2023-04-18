@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".AddSubjectFragment">
+    tools:context=".addsubject.AddSubjectFragment">
 
 
     <TextView
@@ -36,6 +36,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="24dp"
                 app:boxBackgroundColor="@color/inputEditTextBackground"
+                app:helperText="@string/start_typing"
+                app:helperTextEnabled="true"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"

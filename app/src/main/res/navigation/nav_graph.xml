@@ -205,7 +205,7 @@
         tools:layout="@layout/fragment_about" />
     <fragment
         android:id="@+id/addSubjectFragment"
-        android:name="com.bpitindia.attendance.AddSubjectFragment"
+        android:name="com.bpitindia.attendance.addsubject.AddSubjectFragment"
         android:label="fragment_add_subject"
         tools:layout="@layout/fragment_add_subject" />
 </navigation>

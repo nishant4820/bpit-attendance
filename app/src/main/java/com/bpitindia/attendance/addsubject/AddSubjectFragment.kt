@@ -1,6 +1,6 @@
 @file:Suppress("DEPRECATION")
 
-package com.bpitindia.attendance
+package com.bpitindia.attendance.addsubject
 
 import android.app.ProgressDialog
 import android.content.Context
@@ -17,6 +17,7 @@ import android.widget.*
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import com.bpitindia.attendance.*
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.Dispatchers
@@ -30,8 +31,6 @@ import org.json.JSONObject
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
-import java.util.stream.Collectors
-import java.util.stream.IntStream
 
 
 class AddSubjectFragment : Fragment() {
@@ -55,8 +54,11 @@ class AddSubjectFragment : Fragment() {
     private var sharedPrefProfile: SharedPreferences? = null
     private var subjectArray: JSONArray = JSONArray()
     private var branchArray: JSONArray = JSONArray()
-    private var subjectCodeList: List<String> = listOf()
-    private var branchSlugList: List<String> = listOf()
+    private var selectedSubject: String? = null
+    private var selectedBranch: String? = null
+    private var subjectList: List<SubjectItem> = listOf()
+    private var branchList: List<BranchItem> = listOf()
+    private var subjectStringList: List<String> = listOf()
     private var methodProvider: MyActivityMethodProvider? = null
 
     override fun onAttach(context: Context) {
@@ -109,16 +111,24 @@ class AddSubjectFragment : Fragment() {
                 findNavController().popBackStack()
             }
 
-            val subjectAdapter = ArrayAdapter(
-                requireContext(), android.R.layout.simple_dropdown_item_1line, subjectCodeList
-            )
+            val subjectAdapter =
+                SubjectAutoCompleteAdapter(
+                    requireContext(),
+                    subjectList
+                )
             subjectTextView.setAdapter(subjectAdapter)
             subjectTextView.validator = object : AutoCompleteTextView.Validator {
                 override fun isValid(text: CharSequence?): Boolean {
-                    return subjectCodeList.contains(text.toString())
+                    return subjectStringList.contains(text.toString())
                 }
 
                 override fun fixText(invalidText: CharSequence?): CharSequence {
+                    Snackbar.make(
+                        requireContext(),
+                        view,
+                        "Select Subject from List only",
+                        Snackbar.LENGTH_SHORT
+                    ).show()
                     return ""
                 }
             }
@@ -127,9 +137,11 @@ class AddSubjectFragment : Fragment() {
                     inputMethodManager.hideSoftInputFromWindow(subjectTextView.windowToken, 0)
                 }
             }
-            subjectTextView.setOnItemClickListener { _, _, _, _ ->
+            subjectTextView.setOnItemClickListener { parent, _, position, _ ->
                 inputMethodManager.hideSoftInputFromWindow(subjectTextView.windowToken, 0)
                 subjectLayout.error = null
+                val selectedItem = parent.adapter.getItem(position) as SubjectItem
+                selectedSubject = selectedItem.subject_code
             }
             subjectTextView.setOnEditorActionListener { _, actionId, event ->
                 if ((event != null && (event.keyCode == KeyEvent.KEYCODE_ENTER)) || (actionId == EditorInfo.IME_ACTION_DONE)) {
@@ -147,10 +159,14 @@ class AddSubjectFragment : Fragment() {
             sectionTextView.setOnItemClickListener { _, _, _, _ -> sectionLayout.error = null }
 
             val branchAdapter = ArrayAdapter(
-                requireContext(), android.R.layout.simple_dropdown_item_1line, branchSlugList
+                requireContext(), android.R.layout.simple_dropdown_item_1line, branchList
             )
             branchTextView.setAdapter(branchAdapter)
-            branchTextView.setOnItemClickListener { _, _, _, _ -> branchLayout.error = null }
+            branchTextView.setOnItemClickListener { parent, _, position, _ ->
+                branchLayout.error = null
+                val selectedItem = parent.adapter.getItem(position) as BranchItem
+                selectedBranch = selectedItem.branch_code
+            }
 
             val currYear = SimpleDateFormat("yyyy", Locale.getDefault()).format(Date()).toInt()
             val batchAdapter = ArrayAdapter(
@@ -219,9 +235,9 @@ class AddSubjectFragment : Fragment() {
                 val responseSubject = client.newCall(requestSubjects).execute()
                 if (responseBranch.isSuccessful && responseSubject.isSuccessful) {
                     branchArray = JSONArray(responseBranch.body?.string())
-                    branchSlugList = getValuesForGivenKey(branchArray, "branch_slug")
+                    branchList = createBranchItemList(branchArray)
                     subjectArray = JSONArray(responseSubject.body?.string())
-                    subjectCodeList = getValuesForGivenKey(subjectArray, "subject_code")
+                    subjectList = createSubjectItemList(subjectArray)
                     responseBranch.close()
                     responseSubject.close()
                     true
@@ -252,7 +268,7 @@ class AddSubjectFragment : Fragment() {
         val isLab = labButton.isChecked
         val group = if (isLab) groupTextView.text.toString() else "null"
 
-        if (subjectCode.isEmpty()) {
+        if (subjectCode.isEmpty() || selectedSubject.isNullOrEmpty()) {
             subjectLayout.error = getString(R.string.required)
             return
         }
@@ -260,7 +276,7 @@ class AddSubjectFragment : Fragment() {
             sectionLayout.error = getString(R.string.required)
             return
         }
-        if (branchCode.isEmpty()) {
+        if (branchCode.isEmpty() || selectedBranch.isNullOrEmpty()) {
             branchLayout.error = getString(R.string.required)
             return
         }
@@ -291,11 +307,11 @@ class AddSubjectFragment : Fragment() {
         val newSubject = JSONObject()
         newSubject.apply {
             put("batch", batch)
-            put("branch_code", findBranchCode(branchCode))
+            put("branch_code", selectedBranch)
             put("group", group)
             put("is_lab", isLab)
             put("section", section)
-            put("subject_code", subjectCode)
+            put("subject_code", selectedSubject)
             put("semester", semester)
         }
         val jsonArray = JSONArray()
@@ -376,18 +392,33 @@ class AddSubjectFragment : Fragment() {
         )
     }
 
-    private fun findBranchCode(branch_slug: String): String {
-        for (i in 0 until branchArray.length()) {
-            val branch = branchArray.getJSONObject(i)
-            if (branch.getString("branch_slug").equals(branch_slug))
-                return branch.getString("branch_code")
+    private fun createBranchItemList(jsonArray: JSONArray): List<BranchItem> {
+        val list = mutableListOf<BranchItem>()
+        for (i in 0 until jsonArray.length()) {
+            val jsonObject = jsonArray.getJSONObject(i)
+            val branchItem = BranchItem(
+                jsonObject.getString("branch_code"),
+                jsonObject.getString("branch_name"),
+                jsonObject.getString("branch_slug")
+            )
+            list.add(branchItem)
         }
-        return "000"
+        return list.toList()
     }
 
-    private fun getValuesForGivenKey(jsonArray: JSONArray, key: String?): List<String> {
-        return IntStream.range(0, jsonArray.length())
-            .mapToObj { index -> (jsonArray[index] as JSONObject).optString(key) }
-            .collect(Collectors.toList())
+    private fun createSubjectItemList(jsonArray: JSONArray): List<SubjectItem> {
+        val list = mutableListOf<SubjectItem>()
+        val stringList = mutableListOf<String>()
+        for (i in 0 until jsonArray.length()) {
+            val jsonObject = jsonArray.getJSONObject(i)
+            val subjectItem = SubjectItem(
+                jsonObject.getString("subject_code"),
+                jsonObject.getString("subject_name")
+            )
+            list.add(subjectItem)
+            stringList.add(subjectItem.toString())
+        }
+        subjectStringList = stringList
+        return list.toList()
     }
 }
