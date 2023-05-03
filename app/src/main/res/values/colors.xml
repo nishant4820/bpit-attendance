@@ -27,4 +27,5 @@
     <color name="versionColor">#3F51B5</color>
     <color name="profileItemHeadingColor">#303F9F</color>
     <color name="aboutBG">#3949AB</color>
+    <color name="shimmerBackground">#283593</color>
 </resources>

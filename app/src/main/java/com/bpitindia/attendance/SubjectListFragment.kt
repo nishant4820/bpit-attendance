@@ -7,7 +7,6 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
@@ -15,6 +14,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.facebook.shimmer.ShimmerFrameLayout
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.Dispatchers
@@ -29,9 +29,9 @@ import java.io.IOException
 class SubjectListFragment : Fragment() {
     var jsonArray: JSONArray = JSONArray()
     private var sharedPrefProfile: SharedPreferences? = null
-    private lateinit var progressBar: ProgressBar
     private lateinit var floatingActionButton: FloatingActionButton
     private lateinit var noSubjectTextView: TextView
+    private lateinit var shimmerFrameLayout: ShimmerFrameLayout
     private var methodProvider: MyActivityMethodProvider? = null
 
     override fun onAttach(context: Context) {
@@ -65,12 +65,12 @@ class SubjectListFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        progressBar = view.findViewById(R.id.subject_progress_bar)
         floatingActionButton = view.findViewById(R.id.floating_action_button)
         floatingActionButton.setOnClickListener {
             findNavController().navigate(R.id.action_subjectListFragment_to_addSubjectFragment)
         }
         noSubjectTextView = view.findViewById(R.id.no_subject)
+        shimmerFrameLayout = view.findViewById(R.id.shimmer_view_container)
         fetchSettings()
     }
 
@@ -80,7 +80,8 @@ class SubjectListFragment : Fragment() {
     }
 
     private fun fetchSubjects(view: View) {
-        progressBar.visibility = ProgressBar.VISIBLE
+        shimmerFrameLayout.visibility = ShimmerFrameLayout.VISIBLE
+        shimmerFrameLayout.startShimmer()
         noSubjectTextView.visibility = TextView.INVISIBLE
         val url = getString(R.string.url_complete) + getString(R.string.assigned_subjects_api_path)
         sharedPrefProfile =
@@ -102,7 +103,8 @@ class SubjectListFragment : Fragment() {
                                     .startsWith(getString(R.string.error_prefix))
                             ) getString(R.string.internet_message) else getString(R.string.server_error_message)
                             Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
-                            progressBar.visibility = ProgressBar.INVISIBLE
+                            shimmerFrameLayout.stopShimmer()
+                            shimmerFrameLayout.visibility = ShimmerFrameLayout.INVISIBLE
                         }
                         Log.d("debug", "subject fetch failed")
                     }
@@ -120,12 +122,14 @@ class SubjectListFragment : Fragment() {
                                     layoutManager = LinearLayoutManager(activity)
                                     adapter = SubjectAdapter(jsonArray)
                                 }
-                                progressBar.visibility = ProgressBar.INVISIBLE
+                                shimmerFrameLayout.stopShimmer()
+                                shimmerFrameLayout.visibility = ShimmerFrameLayout.INVISIBLE
                             }
                         } else {
                             Log.d("debug", "subject fetch unsuccessful code: ${response.code}")
                             activity?.runOnUiThread {
-                                progressBar.visibility = ProgressBar.INVISIBLE
+                                shimmerFrameLayout.stopShimmer()
+                                shimmerFrameLayout.visibility = ShimmerFrameLayout.INVISIBLE
                                 when (response.code) {
                                     401 -> {
                                         response.close()
