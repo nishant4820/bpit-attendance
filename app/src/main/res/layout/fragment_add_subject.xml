@@ -164,18 +164,26 @@
                     android:text="@string/lab" />
             </RadioGroup>
 
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/elective_switch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="24dp"
+                android:text="@string/elective"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/theory_lab_radio_group" />
+
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/group_box"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="24dp"
-                android:layout_marginTop="10dp"
-                android:visibility="gone"
+                android:visibility="visible"
                 app:boxBackgroundColor="@color/inputEditTextBackground"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/theory_lab_radio_group"
+                app:layout_constraintTop_toBottomOf="@id/elective_switch"
                 app:startIconDrawable="@drawable/baseline_book_24">
 
                 <AutoCompleteTextView

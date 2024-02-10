@@ -107,6 +107,7 @@
     <string name="semester">Semester</string>
     <string name="theory">Theory</string>
     <string name="lab">Lab</string>
+    <string name="elective">Elective Subject</string>
     <string name="group">Group</string>
     <string-array name="section_array">
         <item>A</item>

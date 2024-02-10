@@ -13,24 +13,41 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
-import android.widget.*
+import android.widget.ArrayAdapter
+import android.widget.AutoCompleteTextView
+import android.widget.ProgressBar
+import android.widget.RadioButton
+import android.widget.RadioGroup
+import android.widget.TextView
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
-import com.bpitindia.attendance.*
+import com.bpitindia.attendance.AUTHORIZATION_HEADER
+import com.bpitindia.attendance.ID_KEY
+import com.bpitindia.attendance.MyActivityMethodProvider
+import com.bpitindia.attendance.R
+import com.bpitindia.attendance.SHARED_PREFERENCES_PROFILE
+import com.bpitindia.attendance.TOKEN_KEY
 import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.*
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
 
 class AddSubjectFragment : Fragment() {
@@ -49,6 +66,7 @@ class AddSubjectFragment : Fragment() {
     private lateinit var groupLayout: TextInputLayout
     private lateinit var theoryLabRadioGroup: RadioGroup
     private lateinit var labButton: RadioButton
+    private lateinit var electiveSwitch: SwitchMaterial
     private lateinit var progressBar: ProgressBar
     private lateinit var addSubjectButton: TextView
     private var sharedPrefProfile: SharedPreferences? = null
@@ -93,6 +111,7 @@ class AddSubjectFragment : Fragment() {
         groupLayout = view.findViewById(R.id.group_box)
         theoryLabRadioGroup = view.findViewById(R.id.theory_lab_radio_group)
         labButton = view.findViewById(R.id.lab_button)
+        electiveSwitch = view.findViewById(R.id.elective_switch)
         progressBar = view.findViewById(R.id.add_subject_progressBar)
         addSubjectButton = view.findViewById(R.id.add_subject_button)
         val inputMethodManager =
@@ -141,7 +160,7 @@ class AddSubjectFragment : Fragment() {
                 inputMethodManager.hideSoftInputFromWindow(subjectTextView.windowToken, 0)
                 subjectLayout.error = null
                 val selectedItem = parent.adapter.getItem(position) as SubjectItem
-                selectedSubject = selectedItem.subject_code
+                selectedSubject = selectedItem.subjectCode
             }
             subjectTextView.setOnEditorActionListener { _, actionId, event ->
                 if ((event != null && (event.keyCode == KeyEvent.KEYCODE_ENTER)) || (actionId == EditorInfo.IME_ACTION_DONE)) {
@@ -266,6 +285,7 @@ class AddSubjectFragment : Fragment() {
         val batch = batchTextView.text.toString()
         val semester = semesterTextView.text.toString()
         val isLab = labButton.isChecked
+        val isElective = electiveSwitch.isChecked
         val group = if (isLab) groupTextView.text.toString() else "null"
 
         if (subjectCode.isEmpty() || selectedSubject.isNullOrEmpty()) {
@@ -313,6 +333,7 @@ class AddSubjectFragment : Fragment() {
             put("section", section)
             put("subject_code", selectedSubject)
             put("semester", semester)
+            put("is_elective", isElective)
         }
         val jsonArray = JSONArray()
         jsonArray.put(newSubject)

@@ -1,8 +1,8 @@
 package com.bpitindia.attendance.addsubject
 
-data class SubjectItem(val subject_code: String, val subject_name: String) {
+data class SubjectItem(val subjectCode: String, val subjectName: String) {
 
     override fun toString(): String {
-        return "$subject_code $subject_name"
+        return "$subjectCode $subjectName"
     }
 }
