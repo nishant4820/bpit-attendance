@@ -1,30 +1,21 @@
 <resources>
 
     <!--    String related to Server-->
-    <string name="url_complete">http://api.bpitindia.ac.in/attendance_service</string>
-    <string name="url_scheme">http</string>
-    <string name="url_host">api.bpitindia.ac.in</string>
-    <string name="api_gateway">attendance_service</string>
-    <string name="login_api_path">/api/auth/user/login/</string>
     <string name="logout_api_path">/api/auth/logout/</string>
     <string name="faculty_profile_api_path">/api/faculty/profile/%d</string>
-    <string name="assigned_subjects_api_path">/api/faculty/subjects/</string>
     <string name="forgot_password_api_path">/api/auth/forgot_password/</string>
     <string name="validate_otp_api_path">/api/auth/validate_otp/</string>
     <string name="reset_password_api_path">/api/auth/reset_password/</string>
-    <string name="submit_attendance_api_path">/api/student/attendance/submit/</string>
-    <string name="update_version_api_path">/api/version/check_updates?platform=android</string>
     <string name="get_branches_api_path">/api/branch/</string>
     <string name="get_all_subjects_api_path">/api/subjects/</string>
-    <string name="health_api_path">/health/</string>
-    <string name="settings_api_path">/api/settings/</string>
+    <string name="get_all_specialization_api_path">/api/specialization/</string>
     <string name="server_error_message">Something went wrong. Please try again later!</string>
+    <string name="session_expired_message">Session Expired! Log in again.</string>
     <string name="internet_message">Please check Internet Connection!</string>
     <string name="error_prefix">Unable to resolve host</string>
 
     <!--    App related Strings-->
     <string name="app_name">Attendance</string>
-    <string name="year">Batch: %d</string>
     <string name="prompt_email">Email</string>
     <string name="prompt_password">Password</string>
     <string name="log_in">Log In</string>
@@ -33,24 +24,13 @@
     <string name="nav_open">Open</string>
     <string name="nav_close">Close</string>
     <string name="bpitLogo">BPIT Logo</string>
-    <string name="profile_fragment_title">Faculty Profile</string>
     <string name="name">Name</string>
     <string name="mobile">Mobile</string>
     <string name="email">Email</string>
     <string name="designation">Designation</string>
     <string name="date_of_joining">Date of Joining</string>
-    <string name="logout">Logout</string>
     <string name="log_in_to_continue">Log In to Continue</string>
     <string name="continue_">Continue</string>
-    <string name="name_image">name_image</string>
-    <string name="edit_logo">edit logo</string>
-    <string name="mobile_image">mobile image</string>
-    <string name="designation_image">designation image</string>
-    <string name="email_image">email image</string>
-    <string name="date_of_joining_image">date of joining image</string>
-    <string name="take_attendance_button">take attendance button</string>
-    <string name="view_stats_button">view stats button</string>
-    <string name="edit_attendance_button">edit attendance button</string>
     <string name="upload">Upload</string>
     <string name="log_out">Log Out</string>
     <string name="forgot_password">Forgot Password?</string>
@@ -71,7 +51,6 @@
     <string name="mark_all">Mark All</string>
     <string name="action_spinner">SPINNER</string>
     <string name="no_data">No data available for\n%s</string>
-    <string name="available_subjects">Available Subjects</string>
     <string name="no_attendance">No attendance records!!</string>
     <string name="my_profile">My Profile</string>
     <string name="about">About</string>
@@ -81,7 +60,8 @@
     <string name="android_developer">Android Developer</string>
     <string name="backend_developer">Backend Developer</string>
     <string name="backend_developer_name">Shubham Jindal</string>
-    <string name="mentor_designation">HOD (Computer Science)</string>
+    <string name="backend_developer_name_2">Manan Khandelwal</string>
+    <string name="mentor_designation">Dean Academics</string>
     <string name="mentor_name">Prof. Achal Kaushik</string>
     <string name="about_title">ABOUT US</string>
     <string name="mentors_title">Mentors</string>
@@ -102,18 +82,25 @@
     <string name="required">Required</string>
     <string name="subject_code">Subject Code</string>
     <string name="section">Section</string>
+    <string name="class_batch">Class Batch</string>
     <string name="branch">Branch</string>
     <string name="batch">Batch</string>
     <string name="semester">Semester</string>
     <string name="theory">Theory</string>
     <string name="lab">Lab</string>
-    <string name="elective">Elective Subject</string>
     <string name="group">Group</string>
+    <string name="specialization">Specialization</string>
     <string-array name="section_array">
         <item>A</item>
         <item>B</item>
         <item>C</item>
         <item>D</item>
+    </string-array>
+    <string-array name="class_batch_array">
+        <item>Batch-1</item>
+        <item>Batch-2</item>
+        <item>Batch-3</item>
+        <item>Batch-4</item>
     </string-array>
     <string-array name="semester_array">
         <item>1</item>

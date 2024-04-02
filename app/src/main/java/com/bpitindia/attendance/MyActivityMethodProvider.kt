@@ -6,8 +6,4 @@ interface MyActivityMethodProvider {
 
     fun getOkHttpClient(): OkHttpClient
 
-    fun fetchProfile()
-
-    fun checkForUpdates(callFromNavigationView: Boolean)
-
 }

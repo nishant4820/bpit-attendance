@@ -7,7 +7,12 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
-import android.view.*
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.core.view.MenuHost
@@ -18,31 +23,40 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.bpitindia.attendance.data.Repository
+import com.bpitindia.attendance.data.models.StudentRequestBody
+import com.bpitindia.attendance.data.models.StudentsResponse
+import com.bpitindia.attendance.utils.Constants
+import com.bpitindia.attendance.utils.Constants.BATCH
+import com.bpitindia.attendance.utils.Constants.BRANCH
+import com.bpitindia.attendance.utils.Constants.GROUP
+import com.bpitindia.attendance.utils.Constants.IS_LAB
+import com.bpitindia.attendance.utils.Constants.LOG_TAG
+import com.bpitindia.attendance.utils.Constants.SECTION
+import com.bpitindia.attendance.utils.Constants.SHARED_PREFERENCES_PROFILE
+import com.bpitindia.attendance.utils.Constants.SUBJECT
+import com.bpitindia.attendance.utils.Constants.TOKEN_KEY
 import com.google.android.material.snackbar.Snackbar
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import okhttp3.*
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONArray
-import org.json.JSONObject
-import java.io.IOException
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import javax.inject.Inject
 
-private const val BATCH = "batch"
-private const val SECTION = "section"
-private const val BRANCH = "branch"
-private const val AUTHORIZATION = "Authorization"
-private const val IS_LAB = "is_lab"
-private const val GROUP = "group"
-private const val SUBJECT = "subject"
-
+@AndroidEntryPoint
 class EditAttendanceFragment : Fragment() {
+    @Inject
+    lateinit var repository: Repository
     private var batch: String? = null
     private var section: String? = null
     private var branch: String? = null
     private var group: String? = null
     private var isLab: Boolean? = null
     private var subject: String? = null
+    private var classBatch: String? = null
+    private var specialization: Int? = null
     private var sharedPrefProfile: SharedPreferences? = null
     private lateinit var recyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
@@ -66,6 +80,8 @@ class EditAttendanceFragment : Fragment() {
             isLab = it.getBoolean(IS_LAB)
             group = it.getString(GROUP)
             subject = it.getString(SUBJECT)
+            classBatch = it.getString(Constants.CLASS_BATCH)
+            specialization = it.getInt(Constants.SPECIALIZATION)
         }
         sharedPrefProfile =
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
@@ -101,73 +117,63 @@ class EditAttendanceFragment : Fragment() {
             findNavController().popBackStack()
             return
         }
-        val httpUrlBuilder = HttpUrl.Builder()
-            .scheme(getString(R.string.url_scheme))
-            .host(getString(R.string.url_host))
-            .addPathSegment(getString(R.string.api_gateway))
-            .addPathSegment("api")
-            .addPathSegment("student")
-            .addPathSegment("attendance")
-            .addPathSegment("list")
-            .addPathSegment("last")
-            .addQueryParameter("batch", batch.toString())
-            .addQueryParameter("branch", branch)
-            .addQueryParameter("subject", subject)
-            .addQueryParameter("section", section)
-            .addQueryParameter("group", group)
-        val httpUrl = httpUrlBuilder.build()
-        val client = methodProvider?.getOkHttpClient() ?: OkHttpClient()
+
+        val params = mapOf(
+            "batch" to batch.orEmpty(),
+            "branch" to branch.orEmpty(),
+            "subject" to subject.orEmpty(),
+            "section" to section.toString(),
+            "class_batch" to classBatch.toString(),
+            "specialization" to specialization.toString(),
+            "group" to group.orEmpty()
+        )
         lifecycleScope.launch(Dispatchers.IO) {
-            val request: Request = Request.Builder()
-                .url(httpUrl)
-                .addHeader(AUTHORIZATION, token)
-                .get()
-                .build()
-            client.newCall(request).enqueue(object : Callback {
-
-                override fun onFailure(call: Call, e: IOException) {
-                    Log.d("debug", "fetch last attendance failed")
-                    activity?.runOnUiThread {
-                        progressBar.visibility = ProgressBar.GONE
-                        findNavController().popBackStack()
-                    }
-                }
-
-                override fun onResponse(call: Call, response: Response) {
-                    if (response.isSuccessful) {
-                        try {
-                            val jsonArray = JSONArray(response.body?.string())
+            repository.remote.getLastSubmittedAttendance(token, params)
+                .enqueue(object : Callback<StudentsResponse> {
+                    override fun onResponse(
+                        call: Call<StudentsResponse>,
+                        response: Response<StudentsResponse>
+                    ) {
+                        if (response.isSuccessful) {
+                            val body = response.body()
                             activity?.runOnUiThread {
+                                if (body?.size == 0) {
+                                    noDataTextView.visibility = TextView.VISIBLE
+                                    progressBar.visibility = ProgressBar.GONE
+                                }
                                 progressBar.visibility = ProgressBar.GONE
                                 recyclerView.apply {
                                     layoutManager = LinearLayoutManager(activity)
-                                    adapter = EditAttendanceAdapter(jsonArray)
+                                    adapter = body?.let {
+                                        EditAttendanceAdapter(it)
+                                    }
                                     setHasFixedSize(true)
                                 }
                                 addMenu(view)
                             }
-                        } catch (e: Exception) {
+                            Log.d(LOG_TAG, "edit attendance data fetch successful")
+                        } else {
+                            Log.d(
+                                LOG_TAG,
+                                "edit attendance data fetch unsuccessful code: ${response.code()}"
+                            )
                             activity?.runOnUiThread {
-                                noDataTextView.visibility = TextView.VISIBLE
-                                progressBar.visibility = ProgressBar.GONE
+                                progressBar.visibility = ProgressBar.INVISIBLE
+                                findNavController().popBackStack()
                             }
                         }
-                        response.close()
-                        Log.d("debug", "edit attendance data fetch successful")
-                    } else {
-                        Log.d(
-                            "debug",
-                            "edit attendance data fetch unsuccessful code: ${response.code}"
-                        )
-                        response.close()
+                    }
+
+                    override fun onFailure(call: Call<StudentsResponse>, t: Throwable) {
+                        Log.d(LOG_TAG, "fetch last attendance failed")
+                        t.printStackTrace()
                         activity?.runOnUiThread {
-                            progressBar.visibility = ProgressBar.INVISIBLE
+                            progressBar.visibility = ProgressBar.GONE
                             findNavController().popBackStack()
                         }
                     }
-                }
 
-            })
+                })
         }
     }
 
@@ -179,12 +185,8 @@ class EditAttendanceFragment : Fragment() {
         progressDialog.setCancelable(false)
         progressDialog.show()
         val dataSet = (recyclerView.adapter as EditAttendanceAdapter).dataSet
-        val obj = JSONObject()
-        obj.put("record", dataSet)
-        val mediaType = "application/json; charset=utf-8".toMediaType()
-        val body = obj.toString().toRequestBody(mediaType)
-        val url = getString(R.string.url_complete) + getString(R.string.submit_attendance_api_path)
-        val client = methodProvider?.getOkHttpClient() ?: OkHttpClient()
+        val body = StudentRequestBody()
+        body.record = dataSet
         sharedPrefProfile =
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
@@ -193,43 +195,28 @@ class EditAttendanceFragment : Fragment() {
             return
         }
         lifecycleScope.launch(Dispatchers.IO) {
-            val request: Request = Request.Builder()
-                .url(url)
-                .addHeader(AUTHORIZATION, token)
-                .patch(body)
-                .build()
-            client.newCall(request).enqueue(object : Callback {
-                override fun onFailure(call: Call, e: IOException) {
-                    activity?.runOnUiThread {
-                        progressDialog.dismiss()
-                        val msg = if (e.message.toString()
-                                .startsWith(getString(R.string.error_prefix))
-                        ) getString(R.string.internet_message) else getString(R.string.server_error_message)
-                        Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
-                    }
-                    Log.d("debug", "upload edited attendance failed")
-                }
-
-                override fun onResponse(call: Call, response: Response) {
+            repository.remote.editAttendance(token, body).enqueue(object : Callback<Any> {
+                override fun onResponse(
+                    call: Call<Any>,
+                    response: Response<Any>
+                ) {
                     activity?.runOnUiThread {
                         progressDialog.dismiss()
                         if (response.isSuccessful) {
-                            response.close()
                             Snackbar.make(view, "Attendance Updated", Snackbar.LENGTH_SHORT).show()
-                            Log.d("debug", "Last attendance updated")
+                            Log.d(LOG_TAG, "Last attendance updated")
                             findNavController().popBackStack()
                         } else {
                             Log.d(
-                                "debug",
-                                "Last attendance update unsuccessful code: ${response.code}"
+                                LOG_TAG,
+                                "Last attendance update unsuccessful code: ${response.code()}"
                             )
-                            when (response.code) {
+                            when (response.code()) {
                                 401 -> {
-                                    response.close()
                                     findNavController().popBackStack()
                                 }
+
                                 else -> {
-                                    response.close()
                                     Snackbar.make(
                                         view,
                                         getString(R.string.server_error_message),
@@ -239,6 +226,17 @@ class EditAttendanceFragment : Fragment() {
                             }
                         }
                     }
+                }
+
+                override fun onFailure(call: Call<Any>, t: Throwable) {
+                    activity?.runOnUiThread {
+                        progressDialog.dismiss()
+                        val msg = if (t.message.toString()
+                                .startsWith(getString(R.string.error_prefix))
+                        ) getString(R.string.internet_message) else getString(R.string.server_error_message)
+                        Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
+                    }
+                    Log.d(LOG_TAG, "upload edited attendance failed")
                 }
 
             })

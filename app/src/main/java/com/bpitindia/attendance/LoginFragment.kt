@@ -21,20 +21,30 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import com.bpitindia.attendance.data.Repository
+import com.bpitindia.attendance.data.models.LoginResponse
+import com.bpitindia.attendance.utils.Constants.ID_KEY
+import com.bpitindia.attendance.utils.Constants.LOG_TAG
+import com.bpitindia.attendance.utils.Constants.SHARED_PREFERENCES_PROFILE
+import com.bpitindia.attendance.utils.Constants.TOKEN_KEY
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.*
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONObject
-import java.io.IOException
-import java.util.*
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import java.net.ConnectException
+import java.net.UnknownHostException
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class LoginFragment : Fragment() {
+    @Inject
+    lateinit var repository: Repository
     private lateinit var button: TextView
     private lateinit var emailLayout: TextInputLayout
     private lateinit var passwordLayout: TextInputLayout
@@ -44,15 +54,6 @@ class LoginFragment : Fragment() {
     private lateinit var forgotPassword: TextView
     private lateinit var inputMethodManager: InputMethodManager
     private var sharedPrefProfile: SharedPreferences? = null
-    private var methodProvider: MyActivityMethodProvider? = null
-
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        try {
-            methodProvider = context as MyActivityMethodProvider
-        } catch (_: ClassCastException) {
-        }
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -106,8 +107,6 @@ class LoginFragment : Fragment() {
 
     private fun logIn(view: View) {
         inputMethodManager.hideSoftInputFromWindow(button.windowToken, 0)
-        val url = getString(R.string.url_complete) + getString(R.string.login_api_path)
-        val client = methodProvider?.getOkHttpClient() ?: OkHttpClient()
         val mailID: String = emailEditText.text.toString().lowercase()
         val pass: String = passwordEditText.text.toString()
 
@@ -121,79 +120,88 @@ class LoginFragment : Fragment() {
         progressBar.visibility = ProgressBar.VISIBLE
         button.visibility = TextView.INVISIBLE
         lifecycleScope.launch(Dispatchers.IO) {
-            val mediaType = "application/json; charset=utf-8".toMediaType()
-            val jsonObjectBody = JSONObject()
-            jsonObjectBody.put("email", mailID)
-            jsonObjectBody.put("password", pass)
-            val body = jsonObjectBody.toString().toRequestBody(mediaType)
-            val request: Request = Request.Builder().url(url).post(body).build()
-            client.newCall(request).enqueue(object : Callback {
-                override fun onFailure(call: Call, e: IOException) {
+            try {
+                repository.remote.login(mapOf("email" to mailID, "password" to pass))
+                    .enqueue(object : Callback<LoginResponse> {
+                        override fun onResponse(
+                            call: Call<LoginResponse>,
+                            response: Response<LoginResponse>
+                        ) {
+                            if (response.isSuccessful) {
+                                val body = response.body()
+                                val isFirstLogin = body?.isFirstLogin
+                                val key = body?.token
+                                val token = "Token $key"
+                                val idKey = body?.id!!
+                                sharedPrefProfile = activity?.getSharedPreferences(
+                                    SHARED_PREFERENCES_PROFILE,
+                                    Context.MODE_PRIVATE
+                                )
+                                val editor = sharedPrefProfile?.edit()
+                                editor?.putString(TOKEN_KEY, token)
+                                editor?.putInt(ID_KEY, idKey)
+                                editor?.apply()
+                                Log.d(LOG_TAG, "login successful")
+                                activity?.runOnUiThread {
+                                    progressBar.visibility = ProgressBar.INVISIBLE
+                                    button.visibility = TextView.VISIBLE
+                                    if (isFirstLogin == true) {
+                                        Snackbar.make(
+                                            view,
+                                            "Change Password after First Login",
+                                            Snackbar.LENGTH_LONG
+                                        ).show()
+                                        findNavController().navigate(R.id.action_loginFragment_to_changePasswordFragment)
+                                    } else {
+                                        Snackbar.make(
+                                            view,
+                                            "Login Successful",
+                                            Snackbar.LENGTH_SHORT
+                                        )
+                                            .show()
+                                        findNavController().navigate(R.id.action_loginFragment_to_subjectListFragment)
+                                    }
+                                }
 
-                    activity?.runOnUiThread {
-                        progressBar.visibility = ProgressBar.INVISIBLE
-                        button.visibility = TextView.VISIBLE
-                        val msg = if (e.message.toString()
-                                .startsWith(getString(R.string.error_prefix))
-                        ) getString(R.string.internet_message) else getString(R.string.server_error_message)
-                        Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
-                    }
-                    Log.d("debug", "login failed")
-                }
-
-                override fun onResponse(call: Call, response: Response) {
-
-                    if (response.isSuccessful) {
-                        val jsonObject = response.body?.string()?.let { JSONObject(it) }
-                        response.close()
-                        val isFirstLogin = jsonObject?.getBoolean("is_first_login")
-                        val key = jsonObject?.getString("token")
-                        val token = "Token $key"
-                        val idKey = jsonObject?.getInt("id")!!
-                        sharedPrefProfile = activity?.getSharedPreferences(
-                            SHARED_PREFERENCES_PROFILE,
-                            Context.MODE_PRIVATE
-                        )
-                        val editor = sharedPrefProfile?.edit()
-                        editor?.putString(TOKEN_KEY, token)
-                        editor?.putInt(ID_KEY, idKey)
-                        editor?.apply()
-                        Log.d("debug", "login successful")
-                        activity?.runOnUiThread {
-                            progressBar.visibility = ProgressBar.INVISIBLE
-                            button.visibility = TextView.VISIBLE
-                            if (isFirstLogin!!) {
-                                Snackbar.make(
-                                    view, "Change Password after First Login", Snackbar.LENGTH_LONG
-                                ).show()
-                                findNavController().navigate(R.id.action_loginFragment_to_changePasswordFragment)
                             } else {
-                                Snackbar.make(view, "Login Successful", Snackbar.LENGTH_SHORT)
-                                    .show()
-                                findNavController().navigate(R.id.action_loginFragment_to_subjectListFragment)
+                                activity?.runOnUiThread {
+                                    progressBar.visibility = ProgressBar.INVISIBLE
+                                    button.visibility = TextView.VISIBLE
+                                    if (response.code() == 400 || response.code() == 401) {
+                                        Snackbar.make(
+                                            view,
+                                            "Invalid Credentials",
+                                            Snackbar.LENGTH_SHORT
+                                        )
+                                            .show()
+                                    } else if (response.code() == 404) {
+                                        Log.d(LOG_TAG, "code 404")
+                                        Snackbar.make(
+                                            view,
+                                            getString(R.string.server_error_message),
+                                            Snackbar.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                }
+                                Log.d(LOG_TAG, "login unsuccessful code: ${response.code()}")
                             }
                         }
 
-                    } else {
-                        activity?.runOnUiThread {
-                            progressBar.visibility = ProgressBar.INVISIBLE
-                            button.visibility = TextView.VISIBLE
-                            if (response.code == 400 || response.code == 401) {
-                                Snackbar.make(view, "Invalid Credentials", Snackbar.LENGTH_SHORT)
-                                    .show()
-                            } else if (response.code == 404) {
-                                Snackbar.make(
-                                    view,
-                                    getString(R.string.server_error_message),
-                                    Snackbar.LENGTH_SHORT
-                                ).show()
+                        override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
+                            activity?.runOnUiThread {
+                                progressBar.visibility = ProgressBar.INVISIBLE
+                                button.visibility = TextView.VISIBLE
+                                val msg = if (t.message.toString()
+                                        .startsWith(getString(R.string.error_prefix))
+                                ) getString(R.string.internet_message) else getString(R.string.server_error_message)
+                                Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
                             }
+                            Log.d(LOG_TAG, "login failed")
                         }
-                        Log.d("debug", "login unsuccessful code: ${response.code}")
-                        response.close()
-                    }
-                }
-            })
+                    })
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -211,10 +219,10 @@ class LoginFragment : Fragment() {
             progressDialog.setCanceledOnTouchOutside(false)
             progressDialog.setCancelable(false)
             progressDialog.show()
-            Log.d("debug", "checking health of url")
+            Log.d(LOG_TAG, "checking health of url")
             val serverHealth = healthCheck()
             if (serverHealth) {
-                methodProvider?.checkForUpdates(false)
+                (activity as? MainActivity)?.checkForUpdates(false)
             }
             sharedPrefProfile =
                 activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
@@ -228,21 +236,14 @@ class LoginFragment : Fragment() {
     }
 
     private suspend fun healthCheck(): Boolean {
-        val url = getString(R.string.url_complete) + getString(R.string.health_api_path)
-        val client = methodProvider?.getOkHttpClient() ?: OkHttpClient()
-        val request = Request.Builder().url(url).get().build()
         var healthSuccessful = false
         withContext(Dispatchers.IO) {
             try {
-                val response = client.newCall(request).execute()
+                val response = repository.remote.health()
                 if (response.isSuccessful) {
                     healthSuccessful = true
-                    Log.d("debug", "health response successful")
+                    Log.d(LOG_TAG, "health response successful")
                 } else {
-                    Log.d(
-                        "debug",
-                        "cannot connect to server. Response code: ${response.code}"
-                    )
                     activity?.runOnUiThread {
                         Toast.makeText(
                             context,
@@ -250,16 +251,33 @@ class LoginFragment : Fragment() {
                             Toast.LENGTH_SHORT
                         ).show()
                     }
+                    Log.d(LOG_TAG, "health response unsuccessful")
                 }
-                response.close()
-            } catch (e: IOException) {
+            } catch (e: ConnectException) {
+                Log.d(LOG_TAG, "server unavailable")
                 activity?.runOnUiThread {
-                    val msg = if (e.message.toString()
-                            .startsWith(getString(R.string.error_prefix))
-                    ) getString(R.string.internet_message) else getString(R.string.server_error_message)
-                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        context,
+                        getString(R.string.server_error_message),
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
-                Log.d("debug", "health check failed in login fragment")
+            } catch (e: UnknownHostException) {
+                Log.d(LOG_TAG, "no internet")
+                activity?.runOnUiThread {
+                    Toast.makeText(
+                        context,
+                        getString(R.string.internet_message),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            } catch (e: Exception) {
+                Log.d(LOG_TAG, "some error occurred")
+                Toast.makeText(
+                    context,
+                    getString(R.string.server_error_message),
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
         return healthSuccessful

@@ -15,21 +15,28 @@ import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import com.bpitindia.attendance.utils.Constants.BASE_URL
+import com.bpitindia.attendance.utils.Constants.ID_KEY
+import com.bpitindia.attendance.utils.Constants.LOG_TAG
+import com.bpitindia.attendance.utils.Constants.NAME
+import com.bpitindia.attendance.utils.Constants.PHONE_NUMBER
+import com.bpitindia.attendance.utils.Constants.PROFILE
+import com.bpitindia.attendance.utils.Constants.SHARED_PREFERENCES_PROFILE
+import com.bpitindia.attendance.utils.Constants.TOKEN_KEY
 import com.bumptech.glide.Glide
 import com.google.android.material.snackbar.Snackbar
 import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import okhttp3.*
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
 import org.json.JSONObject
 import java.io.IOException
-
-private const val PROFILE = "profile"
-private const val NAME = "Name"
-private const val PHONE_NUMBER = "Phone Number"
-
 
 class ProfileFragment : Fragment() {
     private var sharedPrefProfile: SharedPreferences? = null
@@ -73,19 +80,19 @@ class ProfileFragment : Fragment() {
     private fun setProfile(view: View) {
 
         val imageView: CircleImageView = view.findViewById(R.id.card_image_profile)
-        val imageUrl = jsonObject.getString("image_url")
+        val imageUrl = jsonObject.optString("image_url", "null")
         if (imageUrl != "null" && imageUrl != "") Glide.with(view).load(imageUrl).into(imageView)
-        view.findViewById<TextView>(R.id.card_name_profile).text = jsonObject.getString("name")
-        view.findViewById<TextView>(R.id.name_profile).text = jsonObject.getString("name")
-        view.findViewById<TextView>(R.id.email_profile).text = jsonObject.getString("email")
-        view.findViewById<TextView>(R.id.phone_profile).text = jsonObject.getString("phone_number")
+        view.findViewById<TextView>(R.id.card_name_profile).text = jsonObject.optString("name", "")
+        view.findViewById<TextView>(R.id.name_profile).text = jsonObject.optString("name", "")
+        view.findViewById<TextView>(R.id.email_profile).text = jsonObject.optString("email", "")
+        view.findViewById<TextView>(R.id.phone_profile).text =
+            jsonObject.optString("phone_number", "")
         view.findViewById<TextView>(R.id.card_designation_profile).text =
-            jsonObject.getString("designation")
+            jsonObject.optString("designation", "")
         view.findViewById<TextView>(R.id.designation_profile).text =
-            jsonObject.getString("designation")
-        val dateJoined = jsonObject.getString("date_joined")
+            jsonObject.optString("designation", "")
         view.findViewById<TextView>(R.id.doj_profile).text =
-            if (dateJoined.equals("null")) "Not Available" else dateJoined
+            jsonObject.optString("date_joined", "Not Available")
     }
 
     private fun showAlertDialog(field: String, view: View) {
@@ -129,7 +136,7 @@ class ProfileFragment : Fragment() {
                     PHONE_NUMBER -> jsonObject.put("phone_number", newValue)
                 }
                 view.findViewById<TextView>(R.id.card_name_profile).text =
-                    jsonObject.getString("name")
+                    jsonObject.optString("name", "")
                 updateProfile(view)
                 dialog.dismiss()
             }
@@ -146,8 +153,7 @@ class ProfileFragment : Fragment() {
             findNavController().popBackStack()
             return
         }
-        val url =
-            getString(R.string.url_complete) + getString(R.string.faculty_profile_api_path, id)
+        val url = BASE_URL + getString(R.string.faculty_profile_api_path, id)
         val client = methodProvider?.getOkHttpClient() ?: OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val mediaType = "application/json; charset=utf-8".toMediaType()
@@ -162,15 +168,15 @@ class ProfileFragment : Fragment() {
                         ) getString(R.string.internet_message) else getString(R.string.server_error_message)
                         Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
                     }
-                    Log.d("debug", "profile update failed")
+                    Log.d(LOG_TAG, "profile update failed")
                 }
 
                 override fun onResponse(call: Call, response: Response) {
                     if (response.isSuccessful) {
-                        Log.d("debug", "profile update successful")
+                        Log.d(LOG_TAG, "profile update successful")
                         (activity as? MainActivity)?.fetchProfile()
                     } else {
-                        Log.d("debug", "profile update unsuccessful ${response.code}")
+                        Log.d(LOG_TAG, "profile update unsuccessful ${response.code}")
                         activity?.runOnUiThread {
                             Snackbar.make(view, "Profile Update Failed", Snackbar.LENGTH_SHORT)
                                 .show()
