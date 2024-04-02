@@ -13,9 +13,9 @@ android {
         applicationId "com.bpitindia.attendance"
         minSdk 26
         targetSdk 34
-        versionCode 3
+        versionCode 4
 //        versionName format: "vYEAR.MM.versionCode"
-        versionName "v2024.02.3"
+        versionName "v2024.04.4"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -36,6 +36,7 @@ android {
     buildFeatures {
         viewBinding true
     }
+    namespace 'com.bpitindia.attendance'
 }
 
 dependencies {
