@@ -15,18 +15,23 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import com.bpitindia.attendance.utils.Constants.BASE_URL
+import com.bpitindia.attendance.utils.Constants.EMAIL
+import com.bpitindia.attendance.utils.Constants.LOG_TAG
+import com.bpitindia.attendance.utils.Constants.OTP
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import okhttp3.*
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
 import org.json.JSONObject
 import java.io.IOException
-
-private const val EMAIL = "email"
-private const val OTP = "otp"
 
 class ResetPasswordFragment : Fragment() {
     private var email: String? = null
@@ -113,7 +118,7 @@ class ResetPasswordFragment : Fragment() {
         }
         progressBar.visibility = ProgressBar.VISIBLE
         resetButton.visibility = TextView.INVISIBLE
-        val url = getString(R.string.url_complete) + getString(R.string.reset_password_api_path)
+        val url = BASE_URL + getString(R.string.reset_password_api_path)
         val client = methodProvider?.getOkHttpClient() ?: OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val bodyJSONObject = JSONObject()
@@ -138,7 +143,7 @@ class ResetPasswordFragment : Fragment() {
                         ) getString(R.string.internet_message) else getString(R.string.server_error_message)
                         Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
                     }
-                    Log.d("debug", "Reset Password Request Failed")
+                    Log.d(LOG_TAG, "Reset Password Request Failed")
                 }
 
                 override fun onResponse(call: Call, response: Response) {
@@ -148,7 +153,7 @@ class ResetPasswordFragment : Fragment() {
                         resetButton.visibility = TextView.VISIBLE
                         if (response.isSuccessful) {
                             response.close()
-                            Log.d("debug", "Password reset successful")
+                            Log.d(LOG_TAG, "Password reset successful")
                             Snackbar.make(
                                 view,
                                 "Password reset successful. Please login.",
@@ -175,7 +180,7 @@ class ResetPasswordFragment : Fragment() {
                                     Snackbar.LENGTH_SHORT
                                 ).show()
                             }
-                            Log.d("debug", "Reset Password Unsuccessful code: ${response.code}")
+                            Log.d(LOG_TAG, "Reset Password Unsuccessful code: ${response.code}")
                             response.close()
                         }
                     }

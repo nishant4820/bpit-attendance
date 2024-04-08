@@ -7,13 +7,12 @@ import android.widget.TextView
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
-import org.json.JSONArray
-import org.json.JSONObject
+import com.bpitindia.attendance.data.models.StudentsResponse
 
 val attendanceMap = mutableMapOf<String, Boolean>()
 
 class StudentAdapter(
-    private val dataSet: JSONArray
+    private val dataSet: StudentsResponse
 ) : RecyclerView.Adapter<StudentAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -40,16 +39,16 @@ class StudentAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         holder.setIsRecyclable(false)
-        val studentInfo: JSONObject = dataSet.getJSONObject(position)
-        holder.enrollmentNumber.text = studentInfo.getString("enrollment_number")
-        holder.name.text = studentInfo.getString("name")
-        holder.classRollNumber.text = studentInfo.getString("class_roll_number")
+        val studentInfo = dataSet[position]
+        holder.enrollmentNumber.text = studentInfo.enrollmentNumber
+        holder.name.text = studentInfo.name
+        holder.classRollNumber.text = studentInfo.classRollNumber
         holder.attendanceCount.text = holder.itemView.context.getString(
             R.string.attendance_count,
-            studentInfo.getInt("attendance_count")
+            studentInfo.attendanceCount
         )
         val isPresent: Boolean =
-            attendanceMap[studentInfo.getString("enrollment_number")]!!
+            attendanceMap[studentInfo.enrollmentNumber]!!
         if (isPresent)
             holder.studentCard.setCardBackgroundColor(
                 ContextCompat.getColor(
@@ -66,9 +65,9 @@ class StudentAdapter(
             )
         holder.studentCard.setOnClickListener {
             val isPresent1: Boolean =
-                attendanceMap[studentInfo.getString("enrollment_number")]!!
+                attendanceMap[studentInfo.enrollmentNumber]!!
             attendanceMap.replace(
-                studentInfo.getString("enrollment_number"),
+                studentInfo.enrollmentNumber!!,
                 !isPresent1
             )
             if (isPresent1) {
@@ -90,6 +89,6 @@ class StudentAdapter(
     }
 
     override fun getItemCount(): Int {
-        return dataSet.length()
+        return dataSet.size
     }
 }

@@ -9,38 +9,59 @@ import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.util.Log
-import android.view.*
-import android.widget.*
+import android.view.Gravity
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
+import android.view.WindowInsets
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.ProgressBar
+import android.widget.Spinner
+import android.widget.TextView
 import androidx.core.content.ContextCompat
-import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import com.bpitindia.attendance.data.Repository
+import com.bpitindia.attendance.data.models.Statistics
+import com.bpitindia.attendance.data.models.Student
+import com.bpitindia.attendance.utils.Constants.BATCH
+import com.bpitindia.attendance.utils.Constants.BRANCH
+import com.bpitindia.attendance.utils.Constants.CLASS_BATCH
+import com.bpitindia.attendance.utils.Constants.GROUP
+import com.bpitindia.attendance.utils.Constants.IS_LAB
+import com.bpitindia.attendance.utils.Constants.LOG_TAG
+import com.bpitindia.attendance.utils.Constants.SECTION
+import com.bpitindia.attendance.utils.Constants.SEMESTER
+import com.bpitindia.attendance.utils.Constants.SHARED_PREFERENCES_PROFILE
+import com.bpitindia.attendance.utils.Constants.SPECIALIZATION
+import com.bpitindia.attendance.utils.Constants.SUBJECT
+import com.bpitindia.attendance.utils.Constants.TOKEN_KEY
 import com.github.zardozz.FixedHeaderTableLayout.FixedHeaderSubTableLayout
 import com.github.zardozz.FixedHeaderTableLayout.FixedHeaderTableLayout
 import com.github.zardozz.FixedHeaderTableLayout.FixedHeaderTableRow
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import okhttp3.*
-import org.json.JSONArray
-import org.json.JSONObject
-import java.io.IOException
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
+import javax.inject.Inject
 
-
-private const val BATCH = "batch"
-private const val SECTION = "section"
-private const val BRANCH = "branch"
-private const val AUTHORIZATION = "Authorization"
-private const val IS_LAB = "is_lab"
-private const val GROUP = "group"
-private const val SUBJECT = "subject"
-private const val SEMESTER = "semester"
-
+@AndroidEntryPoint
 class StatisticsFragment : Fragment() {
+    @Inject
+    lateinit var repository: Repository
     private var batch: String? = null
     private var section: String? = null
     private var branch: String? = null
@@ -48,19 +69,12 @@ class StatisticsFragment : Fragment() {
     private var isLab: Boolean? = null
     private var subject: String? = null
     private var semester: Int? = null
+    private var classBatch: String? = null
+    private var specialization: Int? = null
     private var sharedPrefProfile: SharedPreferences? = null
     private lateinit var progressBar: ProgressBar
     private lateinit var noDataTextView: TextView
     private lateinit var tableLayout: FixedHeaderTableLayout
-    private var methodProvider: MyActivityMethodProvider? = null
-
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        try {
-            methodProvider = context as MyActivityMethodProvider
-        } catch (_: ClassCastException) {
-        }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -72,6 +86,8 @@ class StatisticsFragment : Fragment() {
             group = it.getString(GROUP)
             subject = it.getString(SUBJECT)
             semester = it.getInt(SEMESTER)
+            classBatch = it.getString(CLASS_BATCH)
+            specialization = it.getInt(SPECIALIZATION)
         }
         sharedPrefProfile =
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
@@ -94,19 +110,13 @@ class StatisticsFragment : Fragment() {
         tableLayout = view.findViewById(R.id.FixedHeaderTableLayout)
         progressBar = view.findViewById(R.id.stats_progress_bar)
         noDataTextView = view.findViewById(R.id.no_data)
-        val monthFormat = SimpleDateFormat("MM", Locale.getDefault())
-        val currentMonth = monthFormat.format(Date())
-        val yearFormat = SimpleDateFormat("yyyy", Locale.getDefault())
-        val currentYear = yearFormat.format(Date())
-        val monthYearFormat = SimpleDateFormat("MMM yyyy", Locale.getDefault())
-        val currentMonthYear = monthYearFormat.format(Date())
-        Log.d("debug", "current month $currentMonth")
-        val menuHost: MenuHost = requireActivity()
-        val currMonthInt = currentMonth.toInt()
-        val currYearInt = currentYear.toInt()
+        val currDate = Date()
+        val currentMonthYear = SimpleDateFormat("MMM yyyy", Locale.getDefault()).format(currDate)
+        val currMonthInt = SimpleDateFormat("MM", Locale.getDefault()).format(currDate).toInt()
+        val currYearInt = SimpleDateFormat("yyyy", Locale.getDefault()).format(currDate).toInt()
         val list = makeListForDropdown(currMonthInt, currYearInt)
 
-        menuHost.addMenuProvider(object : MenuProvider {
+        requireActivity().addMenuProvider(object : MenuProvider {
             override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
                 menuInflater.inflate(R.menu.menu_stats_fragment, menu)
                 val spinner = menu.findItem(R.id.spinner).actionView as Spinner
@@ -159,7 +169,7 @@ class StatisticsFragment : Fragment() {
     private fun fetchData(monthYear: String) {
         progressBar.visibility = ProgressBar.VISIBLE
         noDataTextView.visibility = TextView.GONE
-        Log.d("debug", "stats month year $monthYear")
+        Log.d(LOG_TAG, "stats month year $monthYear")
         sharedPrefProfile =
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
@@ -167,70 +177,60 @@ class StatisticsFragment : Fragment() {
             findNavController().popBackStack()
             return
         }
-        val httpUrlBuilder: HttpUrl.Builder = HttpUrl.Builder()
-            .scheme(getString(R.string.url_scheme))
-            .host(getString(R.string.url_host))
-            .addPathSegment(getString(R.string.api_gateway))
-            .addPathSegment("api")
-            .addPathSegment("student")
-            .addPathSegment("attendance")
-            .addPathSegment("stats")
-            .addQueryParameter("batch", batch.toString())
-            .addQueryParameter("branch", branch)
-            .addQueryParameter("subject", subject)
-            .addQueryParameter("section", section)
-            .addQueryParameter("month", findMonth(monthYear))
-            .addQueryParameter("year", findYear(monthYear))
-            .addQueryParameter("group", group)
-        val httpUrl = httpUrlBuilder.build()
-        val client = methodProvider?.getOkHttpClient() ?: OkHttpClient()
+        val params = mapOf(
+            "month" to findMonth(monthYear),
+            "year" to findYear(monthYear),
+            "batch" to batch.orEmpty(),
+            "branch" to branch.orEmpty(),
+            "subject" to subject.orEmpty(),
+            "section" to section.toString(),
+            "class_batch" to classBatch.toString(),
+            "specialization" to specialization.toString(),
+            "group" to group.orEmpty()
+        )
         lifecycleScope.launch(Dispatchers.IO) {
-            val request: Request = Request.Builder()
-                .url(httpUrl)
-                .addHeader(AUTHORIZATION, token)
-                .get()
-                .build()
-            client.newCall(request).enqueue(object : Callback {
-                override fun onFailure(call: Call, e: IOException) {
-                    Log.d("debug", "fetch stats failed")
-                    activity?.runOnUiThread {
-                        progressBar.visibility = ProgressBar.INVISIBLE
-                        findNavController().popBackStack()
-                    }
-                }
-
-                override fun onResponse(call: Call, response: Response) {
-                    if (response.isSuccessful) {
-                        Log.d("debug", "fetch stats successful")
-                        val jsonObject = response.body?.string()
-                            ?.let { JSONObject(it) }
-                        response.close()
-                        activity?.runOnUiThread {
-                            progressBar.visibility = ProgressBar.INVISIBLE
-                            try {
-                                val arrayJSONColumns = jsonObject?.getJSONArray("columns")
-                                val studentData = jsonObject?.getJSONArray("student_data")
-                                displayData(arrayJSONColumns!!, studentData!!)
-                            } catch (_: Exception) {
-                                noDataTextView.text = getString(R.string.no_data, monthYear)
-                                noDataTextView.visibility = TextView.VISIBLE
+            repository.remote.getAttendanceStats(token, params)
+                .enqueue(object : Callback<Statistics> {
+                    override fun onResponse(
+                        call: Call<Statistics>,
+                        response: Response<Statistics>
+                    ) {
+                        if (response.isSuccessful) {
+                            Log.d(LOG_TAG, "fetch stats successful")
+                            val body = response.body()
+                            activity?.runOnUiThread {
+                                progressBar.visibility = ProgressBar.INVISIBLE
+                                try {
+                                    val arrayJSONColumns = body?.columns
+                                    val studentData = body?.studentData
+                                    displayData(arrayJSONColumns!!, studentData!!)
+                                } catch (_: Exception) {
+                                    noDataTextView.text = getString(R.string.no_data, monthYear)
+                                    noDataTextView.visibility = TextView.VISIBLE
+                                }
+                            }
+                        } else {
+                            Log.d(LOG_TAG, "fetch stats unsuccessful code: ${response.code()}")
+                            activity?.runOnUiThread {
+                                progressBar.visibility = ProgressBar.INVISIBLE
+                                findNavController().popBackStack()
                             }
                         }
-                    } else {
-                        Log.d("debug", "fetch stats unsuccessful code: ${response.code}")
-                        response.close()
+                    }
+
+                    override fun onFailure(call: Call<Statistics>, t: Throwable) {
+                        Log.d(LOG_TAG, "fetch stats failed")
                         activity?.runOnUiThread {
                             progressBar.visibility = ProgressBar.INVISIBLE
                             findNavController().popBackStack()
                         }
                     }
-                }
-            })
+                })
 
         }
     }
 
-    private fun displayData(columns: JSONArray, studentData: JSONArray) {
+    private fun displayData(columns: List<String>, studentData: List<Student>) {
 
         val cornerTableLayout = FixedHeaderSubTableLayout(context)
         val nameTV = TextView(context)
@@ -246,8 +246,8 @@ class StatisticsFragment : Fragment() {
 
         val columnHeaderLayout = FixedHeaderSubTableLayout(context)
         val columnHeader = FixedHeaderTableRow(context)
-        for (i in 0 until columns.length()) {
-            val colName = columns.getString(i).formatDate("yyyy-MM-dd'T'HH:mm:ss", "dd-MM-yy")
+        for (element in columns) {
+            val colName = element.formatDate("yyyy-MM-dd'T'HH:mm:ss", "dd-MM-yy")
             val tv = TextView(context)
             tv.gravity = Gravity.CENTER
             tv.text = colName
@@ -260,10 +260,9 @@ class StatisticsFragment : Fragment() {
 
         val width = getScreenWidth(requireActivity()) * 2 / 5
         val rowHeaderLayout = FixedHeaderSubTableLayout(context)
-        for (i in 0 until studentData.length()) {
-            val jsonObj = studentData.getJSONObject(i)
-            val name = "${jsonObj.getString("class_roll_number")}. ${
-                jsonObj.getString("name").uppercase()
+        for (element in studentData) {
+            val name = "${element.classRollNumber}. ${
+                element.name?.uppercase()
             }"
             val headerRow = FixedHeaderTableRow(context)
             val tv = TextView(context)
@@ -280,12 +279,12 @@ class StatisticsFragment : Fragment() {
         }
 
         val mainTableLayout = FixedHeaderSubTableLayout(context)
-        for (i in 0 until studentData.length()) {
-            val jsonArray = studentData.getJSONObject(i).getJSONArray("attendance_data")
+        for (element in studentData) {
+            val jsonArray = element.attendanceData
             val mainRow = FixedHeaderTableRow(context)
             var prev = -1
-            for (j in 0 until jsonArray.length()) {
-                val cumulativeSum = jsonArray.getInt(j)
+            for (j in 0 until (jsonArray?.size ?: 0)) {
+                val cumulativeSum = jsonArray?.get(j)
                 val tv = TextView(context)
                 tv.gravity = Gravity.CENTER
                 tv.text = cumulativeSum.toString()
@@ -297,7 +296,7 @@ class StatisticsFragment : Fragment() {
                         R.color.absent_color
                     )
                 )
-                prev = cumulativeSum
+                prev = cumulativeSum ?: 0
                 mainRow.addView(tv)
             }
             mainTableLayout.addView(mainRow)

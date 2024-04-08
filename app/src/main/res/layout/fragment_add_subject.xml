@@ -6,7 +6,6 @@
     android:layout_height="match_parent"
     tools:context=".addsubject.AddSubjectFragment">
 
-
     <TextView
         android:id="@+id/add_subject_heading"
         android:layout_width="wrap_content"
@@ -53,28 +52,6 @@
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/section_box"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="24dp"
-                android:layout_marginTop="10dp"
-                app:boxBackgroundColor="@color/inputEditTextBackground"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/subject_box"
-                app:startIconDrawable="@drawable/baseline_book_24">
-
-                <AutoCompleteTextView
-                    android:id="@+id/section_text_view"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="@string/section"
-                    android:inputType="none" />
-
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/branch_box"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                 android:layout_width="0dp"
@@ -84,7 +61,7 @@
                 app:boxBackgroundColor="@color/inputEditTextBackground"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/section_box"
+                app:layout_constraintTop_toBottomOf="@id/subject_box"
                 app:startIconDrawable="@drawable/baseline_book_24">
 
                 <AutoCompleteTextView
@@ -140,6 +117,54 @@
 
             </com.google.android.material.textfield.TextInputLayout>
 
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/section_box"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="24dp"
+                android:layout_marginTop="10dp"
+                android:visibility="gone"
+                app:boxBackgroundColor="@color/inputEditTextBackground"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/semester_box"
+                app:startIconDrawable="@drawable/baseline_book_24"
+                tools:visibility="visible">
+
+                <AutoCompleteTextView
+                    android:id="@+id/section_text_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/section"
+                    android:inputType="none" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/class_batch_box"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="24dp"
+                android:layout_marginTop="10dp"
+                android:visibility="gone"
+                app:boxBackgroundColor="@color/inputEditTextBackground"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/section_box"
+                app:startIconDrawable="@drawable/baseline_book_24"
+                tools:visibility="visible">
+
+                <AutoCompleteTextView
+                    android:id="@+id/class_batch_text_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/class_batch"
+                    android:inputType="none" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
             <RadioGroup
                 android:id="@+id/theory_lab_radio_group"
                 android:layout_width="0dp"
@@ -148,7 +173,7 @@
                 android:layout_marginTop="10dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/semester_box">
+                app:layout_constraintTop_toBottomOf="@id/class_batch_box">
 
                 <RadioButton
                     android:id="@+id/theory_button"
@@ -164,33 +189,48 @@
                     android:text="@string/lab" />
             </RadioGroup>
 
-            <com.google.android.material.switchmaterial.SwitchMaterial
-                android:id="@+id/elective_switch"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="24dp"
-                android:text="@string/elective"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/theory_lab_radio_group" />
-
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/group_box"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="24dp"
-                android:visibility="visible"
+                android:visibility="gone"
                 app:boxBackgroundColor="@color/inputEditTextBackground"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/elective_switch"
-                app:startIconDrawable="@drawable/baseline_book_24">
+                app:layout_constraintTop_toBottomOf="@id/theory_lab_radio_group"
+                app:startIconDrawable="@drawable/baseline_book_24"
+                tools:visibility="visible">
 
                 <AutoCompleteTextView
                     android:id="@+id/group_text_view"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/group"
+                    android:inputType="none" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/specialization_box"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="24dp"
+                android:layout_marginTop="10dp"
+                app:boxBackgroundColor="@color/inputEditTextBackground"
+                app:helperText="Choose &quot;No Specialization&quot; only when students are NOT classified into batches based on Emerging Area Elective."
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/group_box"
+                app:startIconDrawable="@drawable/baseline_book_24">
+
+                <AutoCompleteTextView
+                    android:id="@+id/specialization_text_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/specialization"
                     android:inputType="none" />
 
             </com.google.android.material.textfield.TextInputLayout>
@@ -205,7 +245,7 @@
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/group_box">
+                app:layout_constraintTop_toBottomOf="@id/specialization_box">
 
                 <RelativeLayout
                     style="@style/Widget.MaterialComponents.Button"
@@ -222,7 +262,7 @@
                         android:textColor="@color/white" />
 
                     <ProgressBar
-                        android:id="@+id/add_subject_progressBar"
+                        android:id="@+id/progress_bar"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:indeterminate="true"
@@ -233,7 +273,9 @@
                 </RelativeLayout>
 
             </androidx.cardview.widget.CardView>
+
         </androidx.constraintlayout.widget.ConstraintLayout>
+
     </ScrollView>
 
 </RelativeLayout>

@@ -16,18 +16,22 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import com.bpitindia.attendance.utils.Constants.BASE_URL
+import com.bpitindia.attendance.utils.Constants.EMAIL
+import com.bpitindia.attendance.utils.Constants.LOG_TAG
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import okhttp3.*
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
 import org.json.JSONObject
 import java.io.IOException
-
-private const val EMAIL = "email"
-
 
 class ForgotPasswordFragment : Fragment() {
     private var email: String? = null
@@ -97,7 +101,7 @@ class ForgotPasswordFragment : Fragment() {
 
     private fun requestOTP(view: View) {
         inputMethodManager.hideSoftInputFromWindow(resetEmailEditText.windowToken, 0)
-        val url = getString(R.string.url_complete) + getString(R.string.forgot_password_api_path)
+        val url = BASE_URL + getString(R.string.forgot_password_api_path)
         val client = methodProvider?.getOkHttpClient() ?: OkHttpClient()
         val mailID: String = resetEmailEditText.text.toString()
         if (mailID.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(mailID).matches()) {
@@ -125,7 +129,7 @@ class ForgotPasswordFragment : Fragment() {
                         ) getString(R.string.internet_message) else getString(R.string.server_error_message)
                         Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
                     }
-                    Log.d("debug", "OTP Request Failed")
+                    Log.d(LOG_TAG, "OTP Request Failed")
                 }
 
                 override fun onResponse(call: Call, response: Response) {
@@ -141,7 +145,7 @@ class ForgotPasswordFragment : Fragment() {
                                 bundle
                             )
                         }
-                        Log.d("debug", "OTP generated successfully")
+                        Log.d(LOG_TAG, "OTP generated successfully")
                     } else {
                         activity?.runOnUiThread {
                             progressBar.visibility = ProgressBar.INVISIBLE
@@ -156,7 +160,7 @@ class ForgotPasswordFragment : Fragment() {
                                 ).show()
                             }
                         }
-                        Log.d("debug", "OTP Request unsuccessful code: ${response.code}")
+                        Log.d(LOG_TAG, "OTP Request unsuccessful code: ${response.code}")
                         response.close()
                     }
                 }

@@ -16,22 +16,33 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.Navigation
+import com.bpitindia.attendance.data.Repository
+import com.bpitindia.attendance.utils.Constants.BASE_URL
+import com.bpitindia.attendance.utils.Constants.ID_KEY
+import com.bpitindia.attendance.utils.Constants.LOG_TAG
+import com.bpitindia.attendance.utils.Constants.SHARED_PREFERENCES_PROFILE
+import com.bpitindia.attendance.utils.Constants.TOKEN_KEY
 import com.bumptech.glide.Glide
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.snackbar.Snackbar
+import com.google.gson.Gson
+import dagger.hilt.android.AndroidEntryPoint
 import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import okhttp3.*
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
 import org.json.JSONObject
 import java.io.IOException
+import javax.inject.Inject
 
-const val SHARED_PREFERENCES_PROFILE = "profile_information"
-const val TOKEN_KEY = "token"
-const val ID_KEY = "id_key"
-const val AUTHORIZATION_HEADER = "Authorization"
-
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity(), MyDrawerLocker, MyActivityMethodProvider {
+    @Inject
+    lateinit var repository: Repository
     private lateinit var drawerLayout: DrawerLayout
     lateinit var navigationView: NavigationView
     private lateinit var actionBarDrawerToggle: ActionBarDrawerToggle
@@ -80,12 +91,15 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker, MyActivityMethodProvid
                     bundle.putString("profile", profileJSONString)
                     navController.navigate(R.id.profileFragment, bundle)
                 }
+
                 R.id.change_password -> {
                     navController.navigate(R.id.action_subjectListFragment_to_changePasswordFragment)
                 }
+
                 R.id.check_update -> {
                     checkForUpdates(true)
                 }
+
                 R.id.about -> {
                     navController.navigate(R.id.action_subjectListFragment_to_aboutFragment)
                 }
@@ -99,35 +113,23 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker, MyActivityMethodProvid
         }
     }
 
-    override fun checkForUpdates(callFromNavigationView: Boolean) {
-
-        val url = getString(R.string.url_complete) + getString(R.string.update_version_api_path)
-        val client = getOkHttpClient()
+    fun checkForUpdates(callFromNavigationView: Boolean) {
         lifecycleScope.launch(Dispatchers.IO) {
-            val request = Request.Builder().url(url).get().build()
-            client.newCall(request).enqueue(object : Callback {
-                override fun onFailure(call: Call, e: IOException) {
-                    Log.d("debug", "check update failed " + e.message)
-                    runOnUiThread {
-                        val msg = if (e.message.toString()
-                                .startsWith(getString(R.string.error_prefix))
-                        ) getString(R.string.internet_message) else getString(R.string.server_error_message)
-                        Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
-                    }
-                }
-
-                override fun onResponse(call: Call, response: Response) {
+            repository.remote.checkForUpdates().enqueue(object : retrofit2.Callback<Any> {
+                override fun onResponse(
+                    call: retrofit2.Call<Any>,
+                    response: retrofit2.Response<Any>
+                ) {
                     if (response.isSuccessful) {
-                        val jsonObject = response.body?.string()?.let { JSONObject(it) }
-                        response.close()
-                        val newVersion = jsonObject?.getInt("versionCode")
+                        val jsonObject = JSONObject(Gson().toJson(response.body()))
+                        val newVersion = jsonObject.optInt("versionCode", 0)
                         val currentVersion = BuildConfig.VERSION_CODE
                         Log.d(
-                            "debug", "latest version: $newVersion current version: $currentVersion"
+                            LOG_TAG, "latest version: $newVersion current version: $currentVersion"
                         )
-                        val apkURL = jsonObject?.getString("url")
+                        val apkURL = jsonObject.optString("url")
                         runOnUiThread {
-                            if (newVersion!! > currentVersion) {
+                            if (newVersion > currentVersion) {
                                 AlertDialog.Builder(this@MainActivity).apply {
                                     setTitle("Update App?")
                                     setMessage("It is recommended that you update to the latest version.")
@@ -172,7 +174,7 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker, MyActivityMethodProvid
                         }
                     } else {
                         runOnUiThread {
-                            if (response.code == 404) {
+                            if (response.code() == 404) {
                                 Toast.makeText(
                                     this@MainActivity,
                                     getString(R.string.server_error_message),
@@ -180,8 +182,20 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker, MyActivityMethodProvid
                                 ).show()
                             }
                         }
-                        Log.d("debug", "check update response unsuccessful code: ${response.code}")
-                        response.close()
+                        Log.d(
+                            LOG_TAG,
+                            "check update response unsuccessful code: ${response.code()}"
+                        )
+                    }
+                }
+
+                override fun onFailure(call: retrofit2.Call<Any>, t: Throwable) {
+                    Log.d(LOG_TAG, "check update failed " + t.message)
+                    runOnUiThread {
+                        val msg = if (t.message.toString()
+                                .startsWith(getString(R.string.error_prefix))
+                        ) getString(R.string.internet_message) else getString(R.string.server_error_message)
+                        Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
                     }
                 }
 
@@ -193,7 +207,7 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker, MyActivityMethodProvid
     private fun logout(view: View) {
         sharedPrefProfile = getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
-        val url = getString(R.string.url_complete) + getString(R.string.logout_api_path)
+        val url = BASE_URL + getString(R.string.logout_api_path)
         val client = getOkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val request =
@@ -208,7 +222,7 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker, MyActivityMethodProvid
                         ) getString(R.string.internet_message) else getString(R.string.server_error_message)
                         Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
                     }
-                    Log.d("debug", "logout failed")
+                    Log.d(LOG_TAG, "logout failed")
                 }
 
                 override fun onResponse(call: Call, response: Response) {
@@ -217,14 +231,14 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker, MyActivityMethodProvid
                     )
                     if (response.isSuccessful) {
                         response.close()
-                        Log.d("debug", "logout successful")
+                        Log.d(LOG_TAG, "logout successful")
                         deleteSharedPreferences(SHARED_PREFERENCES_PROFILE)
                         runOnUiThread {
                             Snackbar.make(view, "Logout Successful", Snackbar.LENGTH_SHORT).show()
                             navController.navigate(R.id.action_subjectListFragment_to_loginFragment)
                         }
                     } else {
-                        Log.d("debug", "logout response unsuccessful code: ${response.code}")
+                        Log.d(LOG_TAG, "logout response unsuccessful code: ${response.code}")
                         runOnUiThread {
                             if (response.code == 404) {
                                 response.close()
@@ -237,7 +251,7 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker, MyActivityMethodProvid
                                 response.close()
                                 Toast.makeText(
                                     this@MainActivity,
-                                    "Session Expired! Log in again.",
+                                    getString(R.string.session_expired_message),
                                     Toast.LENGTH_SHORT
                                 ).show()
                                 deleteSharedPreferences(SHARED_PREFERENCES_PROFILE)
@@ -251,25 +265,24 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker, MyActivityMethodProvid
         }
     }
 
-    override fun fetchProfile() {
+    fun fetchProfile() {
         sharedPrefProfile =
             getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)!!
         val id = sharedPrefProfile?.getInt(ID_KEY, 0)!!
-        val url =
-            getString(R.string.url_complete) + getString(R.string.faculty_profile_api_path, id)
+        val url = BASE_URL + getString(R.string.faculty_profile_api_path, id)
         val client = getOkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val request = Request.Builder().url(url).get().addHeader("Authorization", token).build()
             client.newCall(request).enqueue(object : Callback {
 
                 override fun onFailure(call: Call, e: IOException) {
-                    Log.d("debug", "profile load failed")
+                    Log.d(LOG_TAG, "profile load failed")
                 }
 
                 override fun onResponse(call: Call, response: Response) {
                     if (response.isSuccessful) {
-                        Log.d("debug", "profile loading successful")
+                        Log.d(LOG_TAG, "profile loading successful")
                         profileJSONString = response.body?.string().toString()
                         val jsonObject = JSONObject(profileJSONString!!)
                         runOnUiThread {
@@ -288,7 +301,7 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker, MyActivityMethodProvid
                         }
 
                     } else {
-                        Log.d("debug", "profile loading unsuccessful code: ${response.code}")
+                        Log.d(LOG_TAG, "profile loading unsuccessful code: ${response.code}")
                     }
                     response.close()
                 }
@@ -299,12 +312,12 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker, MyActivityMethodProvid
 
     override fun setDrawerLocked() {
         drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
-        Log.d("debug", "drawer locked")
+        Log.d(LOG_TAG, "drawer locked")
     }
 
     override fun setDrawerUnlocked() {
         drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
-        Log.d("debug", "drawer unlocked")
+        Log.d(LOG_TAG, "drawer unlocked")
     }
 
     override fun getOkHttpClient(): OkHttpClient {

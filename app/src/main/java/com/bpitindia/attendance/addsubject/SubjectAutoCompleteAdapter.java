@@ -11,6 +11,8 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.bpitindia.attendance.data.models.SubjectItem;
+
 import java.util.ArrayList;
 import java.util.List;
 

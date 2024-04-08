@@ -16,14 +16,23 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import com.bpitindia.attendance.utils.Constants.AUTHORIZATION_HEADER
+import com.bpitindia.attendance.utils.Constants.BASE_URL
+import com.bpitindia.attendance.utils.Constants.LOG_TAG
+import com.bpitindia.attendance.utils.Constants.SHARED_PREFERENCES_PROFILE
+import com.bpitindia.attendance.utils.Constants.TOKEN_KEY
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import okhttp3.*
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
 import org.json.JSONObject
 import java.io.IOException
 
@@ -131,7 +140,7 @@ class ChangePasswordFragment : Fragment() {
             findNavController().popBackStack()
             return
         }
-        val url = getString(R.string.url_complete) + getString(R.string.reset_password_api_path)
+        val url = BASE_URL + getString(R.string.reset_password_api_path)
         val client = methodProvider?.getOkHttpClient() ?: OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val bodyJSONObject = JSONObject()
@@ -154,7 +163,7 @@ class ChangePasswordFragment : Fragment() {
                         ) getString(R.string.internet_message) else getString(R.string.server_error_message)
                         Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
                     }
-                    Log.d("debug", "Change Password Request Failed")
+                    Log.d(LOG_TAG, "Change Password Request Failed")
                 }
 
                 override fun onResponse(call: Call, response: Response) {
@@ -176,13 +185,13 @@ class ChangePasswordFragment : Fragment() {
                                 bundle
                             )
                         }
-                        Log.d("debug", "Password Changed")
+                        Log.d(LOG_TAG, "Password Changed")
 
                     } else {
-                        Log.d("debug", "change password unsuccessful code: ${response.code}")
+                        Log.d(LOG_TAG, "change password unsuccessful code: ${response.code}")
                         if (response.code == 400) {
                             val error: String = jsonObject?.getJSONArray("error")?.get(0) as String
-                            Log.d("debug", "error $error")
+                            Log.d(LOG_TAG, "error $error")
                             response.close()
                             activity?.runOnUiThread {
                                 progressBar.visibility = ProgressBar.INVISIBLE
@@ -191,9 +200,11 @@ class ChangePasswordFragment : Fragment() {
                                     "Your current password was entered incorrectly. Please enter it again." -> {
                                         currentPasswordEdittext.setText("")
                                     }
+
                                     "The two password fields didn't match." -> {
                                         confirmNewPasswordEdittext.setText("")
                                     }
+
                                     "The new password cannot be same as old password." -> {
                                         newPasswordEdittext.setText("")
                                         confirmNewPasswordEdittext.setText("")

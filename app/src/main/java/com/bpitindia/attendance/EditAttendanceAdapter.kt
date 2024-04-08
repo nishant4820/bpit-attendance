@@ -6,24 +6,21 @@ import android.view.ViewGroup
 import android.widget.CheckBox
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import org.json.JSONArray
-import org.json.JSONObject
+import com.bpitindia.attendance.data.models.StudentsResponse
 
 class EditAttendanceAdapter(
-    internal val dataSet: JSONArray
+    internal val dataSet: StudentsResponse
 ) : RecyclerView.Adapter<EditAttendanceAdapter.MyViewHolder>() {
 
-    inner class MyViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        private val rollNumber: TextView = view.findViewById(R.id.edit_roll_no)
-        val name: TextView = view.findViewById(R.id.edit_name)
-        val checkBox: CheckBox = view.findViewById(R.id.edit_check_box)
+    class MyViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val tvRollNumber: TextView
+        val tvName: TextView
+        val checkBox: CheckBox
 
-        fun bind(studentData: JSONObject) {
-            with(studentData) {
-                rollNumber.text = this.getString("class_roll_number")
-                name.text = this.getString("name").uppercase()
-                checkBox.isChecked = this.getBoolean("status")
-            }
+        init {
+            tvRollNumber = view.findViewById(R.id.edit_roll_no)
+            tvName = view.findViewById(R.id.edit_name)
+            checkBox = view.findViewById(R.id.edit_check_box)
         }
     }
 
@@ -34,13 +31,15 @@ class EditAttendanceAdapter(
     }
 
     override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
-        val subInfo: JSONObject = dataSet.getJSONObject(position)
+        val studentInfo = dataSet[position]
+        holder.tvRollNumber.text = studentInfo.classRollNumber
+        holder.tvName.text = studentInfo.name
+        holder.checkBox.isChecked = studentInfo.status == true
         holder.checkBox.setOnCheckedChangeListener { _, isChecked ->
-            subInfo.put("status", isChecked)
-            dataSet.put(position, subInfo)
+            studentInfo.status = isChecked
         }
-        holder.bind(subInfo)
+        holder.setIsRecyclable(false)
     }
 
-    override fun getItemCount(): Int = dataSet.length()
+    override fun getItemCount(): Int = dataSet.size
 }

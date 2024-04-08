@@ -14,34 +14,6 @@
         <!-- Customize your theme here. -->
     </style>
 
-    <style name="TransparentText" parent="@android:style/TextAppearance">
-        <item name="android:textColor">#00000000</item>
-    </style>
-
-    <style name="parent">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">wrap_content</item>
-    </style>
-
-    <style name="textInputHintStyle" parent="TextAppearance.AppCompat.Medium.Inverse">
-        <item name="android:textColorHint">@color/blackTextColor</item>
-        <item name="android:textColor">@color/blackTextColor</item>
-        <item name="android:textSize">17sp</item>
-        <item name="android:textStyle">bold</item>
-    </style>
-
-    <style name="viewParent">
-        <item name="android:layout_width">wrap_content</item>
-        <item name="android:layout_height">wrap_content</item>
-    </style>
-
-    <style name="profileDetailsView">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">4dp</item>
-        <item name="android:background">@color/profileAccentColor</item>
-        <item name="android:layout_marginTop">5dp</item>
-    </style>
-
     <style name="AppCompatAlertDialogStyle" parent="Theme.AppCompat.Light.Dialog.Alert">
         <item name="colorAccent">@color/loaderColor</item>
     </style>

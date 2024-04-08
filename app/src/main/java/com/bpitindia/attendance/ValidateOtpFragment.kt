@@ -15,17 +15,22 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import com.bpitindia.attendance.utils.Constants.BASE_URL
+import com.bpitindia.attendance.utils.Constants.EMAIL
+import com.bpitindia.attendance.utils.Constants.LOG_TAG
 import com.chaos.view.PinView
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import okhttp3.*
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
 import org.json.JSONObject
 import java.io.IOException
-
-private const val EMAIL = "email"
 
 class ValidateOtpFragment : Fragment() {
     private var email: String? = null
@@ -100,7 +105,7 @@ class ValidateOtpFragment : Fragment() {
         progressBar.visibility = ProgressBar.VISIBLE
         button.visibility = TextView.INVISIBLE
         inputMethodManager.hideSoftInputFromWindow(pinView.windowToken, 0)
-        val url = getString(R.string.url_complete) + getString(R.string.validate_otp_api_path)
+        val url = BASE_URL + getString(R.string.validate_otp_api_path)
         val client = methodProvider?.getOkHttpClient() ?: OkHttpClient()
         lifecycleScope.launch(Dispatchers.IO) {
             val bodyJSONObject = JSONObject()
@@ -121,7 +126,7 @@ class ValidateOtpFragment : Fragment() {
                         ) getString(R.string.internet_message) else getString(R.string.server_error_message)
                         Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
                     }
-                    Log.d("debug", "OTP Validate Request Failed")
+                    Log.d(LOG_TAG, "OTP Validate Request Failed")
                 }
 
                 override fun onResponse(call: Call, response: Response) {
@@ -130,7 +135,7 @@ class ValidateOtpFragment : Fragment() {
                         button.visibility = TextView.VISIBLE
                         if (response.isSuccessful) {
                             response.close()
-                            Log.d("debug", "OTP Validated")
+                            Log.d(LOG_TAG, "OTP Validated")
                             pinView.setText("")
                             val bundle = Bundle()
                             bundle.putString("email", email)
@@ -140,7 +145,7 @@ class ValidateOtpFragment : Fragment() {
                                 bundle
                             )
                         } else {
-                            Log.d("debug", "OTP Validate Unsuccessful code: ${response.code}")
+                            Log.d(LOG_TAG, "OTP Validate Unsuccessful code: ${response.code}")
                             if (response.code == 401) {
                                 response.close()
                                 pinView.setText("")

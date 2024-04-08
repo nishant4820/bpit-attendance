@@ -14,37 +14,38 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.bpitindia.attendance.data.Repository
+import com.bpitindia.attendance.data.models.FacultySubjectsResponse
+import com.bpitindia.attendance.utils.Constants.LOG_TAG
+import com.bpitindia.attendance.utils.Constants.SHARED_PREFERENCES_PROFILE
+import com.bpitindia.attendance.utils.Constants.TOKEN_KEY
 import com.facebook.shimmer.ShimmerFrameLayout
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
+import com.google.gson.Gson
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.*
-import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
-import java.io.IOException
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class SubjectListFragment : Fragment() {
-    var jsonArray: JSONArray = JSONArray()
+    @Inject
+    lateinit var repository: Repository
     private var sharedPrefProfile: SharedPreferences? = null
     private lateinit var floatingActionButton: FloatingActionButton
     private lateinit var noSubjectTextView: TextView
     private lateinit var shimmerFrameLayout: ShimmerFrameLayout
-    private var methodProvider: MyActivityMethodProvider? = null
-
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        try {
-            methodProvider = context as MyActivityMethodProvider
-        } catch (_: ClassCastException) {
-        }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        methodProvider?.fetchProfile()
+        (activity as? MainActivity)?.fetchProfile()
         sharedPrefProfile =
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
@@ -83,78 +84,81 @@ class SubjectListFragment : Fragment() {
         shimmerFrameLayout.visibility = ShimmerFrameLayout.VISIBLE
         shimmerFrameLayout.startShimmer()
         noSubjectTextView.visibility = TextView.INVISIBLE
-        val url = getString(R.string.url_complete) + getString(R.string.assigned_subjects_api_path)
         sharedPrefProfile =
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
-        val client = methodProvider?.getOkHttpClient() ?: OkHttpClient()
 
         lifecycleScope.launch {
             withContext(Dispatchers.IO) {
-                val request: Request = Request.Builder()
-                    .url(url)
-                    .addHeader("Authorization", token!!)
-                    .get()
-                    .build()
-                client.newCall(request).enqueue(object : Callback {
-                    override fun onFailure(call: Call, e: IOException) {
-                        activity?.runOnUiThread {
-                            val msg = if (e.message.toString()
-                                    .startsWith(getString(R.string.error_prefix))
-                            ) getString(R.string.internet_message) else getString(R.string.server_error_message)
-                            Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
-                            shimmerFrameLayout.stopShimmer()
-                            shimmerFrameLayout.visibility = ShimmerFrameLayout.INVISIBLE
-                        }
-                        Log.d("debug", "subject fetch failed")
-                    }
-
-                    override fun onResponse(call: Call, response: Response) {
-                        if (response.isSuccessful) {
-                            jsonArray = JSONArray(response.body?.string())
-                            response.close()
-                            Log.d("debug", "subject fetch successful")
-                            activity?.runOnUiThread {
-                                if (jsonArray.length() == 0) {
-                                    noSubjectTextView.visibility = TextView.VISIBLE
-                                }
-                                view.findViewById<RecyclerView>(R.id.subjectList).apply {
-                                    layoutManager = LinearLayoutManager(activity)
-                                    adapter = SubjectAdapter(jsonArray)
-                                }
-                                shimmerFrameLayout.stopShimmer()
-                                shimmerFrameLayout.visibility = ShimmerFrameLayout.INVISIBLE
-                            }
-                        } else {
-                            Log.d("debug", "subject fetch unsuccessful code: ${response.code}")
-                            activity?.runOnUiThread {
-                                shimmerFrameLayout.stopShimmer()
-                                shimmerFrameLayout.visibility = ShimmerFrameLayout.INVISIBLE
-                                when (response.code) {
-                                    401 -> {
-                                        response.close()
-                                        activity?.deleteSharedPreferences(SHARED_PREFERENCES_PROFILE)
-                                        Toast.makeText(
-                                            context,
-                                            "Session Expired! Log in again.",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                        findNavController().navigate(R.id.action_subjectListFragment_to_loginFragment)
+                repository.remote.getFacultySubjects(token!!)
+                    .enqueue(object : Callback<FacultySubjectsResponse> {
+                        override fun onResponse(
+                            call: Call<FacultySubjectsResponse>,
+                            response: Response<FacultySubjectsResponse>
+                        ) {
+                            if (response.isSuccessful) {
+                                val body = response.body()
+                                Log.d(LOG_TAG, "subject fetch successful")
+                                activity?.runOnUiThread {
+                                    if (body?.size == 0) {
+                                        noSubjectTextView.visibility = TextView.VISIBLE
                                     }
-                                    else -> {
-                                        response.close()
-                                        Snackbar.make(
-                                            view,
-                                            getString(R.string.server_error_message),
-                                            Snackbar.LENGTH_SHORT
-                                        ).show()
+                                    view.findViewById<RecyclerView>(R.id.subjectList).apply {
+                                        layoutManager = LinearLayoutManager(activity)
+                                        adapter = SubjectAdapter(body!!)
+                                    }
+                                    shimmerFrameLayout.stopShimmer()
+                                    shimmerFrameLayout.visibility = ShimmerFrameLayout.GONE
+                                }
+                            } else {
+                                Log.d(
+                                    LOG_TAG,
+                                    "subject fetch unsuccessful code: ${response.code()}"
+                                )
+                                activity?.runOnUiThread {
+                                    shimmerFrameLayout.stopShimmer()
+                                    shimmerFrameLayout.visibility = ShimmerFrameLayout.GONE
+                                    when (response.code()) {
+                                        401 -> {
+                                            activity?.deleteSharedPreferences(
+                                                SHARED_PREFERENCES_PROFILE
+                                            )
+                                            Toast.makeText(
+                                                context,
+                                                getString(R.string.session_expired_message),
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                            findNavController().navigate(R.id.action_subjectListFragment_to_loginFragment)
+                                        }
+
+                                        else -> {
+                                            Snackbar.make(
+                                                view,
+                                                getString(R.string.server_error_message),
+                                                Snackbar.LENGTH_SHORT
+                                            ).show()
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
 
-                })
+                        override fun onFailure(
+                            call: Call<FacultySubjectsResponse>,
+                            t: Throwable
+                        ) {
+                            activity?.runOnUiThread {
+                                val msg = if (t.message.toString()
+                                        .startsWith(getString(R.string.error_prefix))
+                                ) getString(R.string.internet_message) else getString(R.string.server_error_message)
+                                Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
+                                shimmerFrameLayout.stopShimmer()
+                                shimmerFrameLayout.visibility = ShimmerFrameLayout.GONE
+                            }
+                            Log.d(LOG_TAG, "subject fetch failed")
+                        }
+
+                    })
             }
         }
     }
@@ -167,36 +171,34 @@ class SubjectListFragment : Fragment() {
             findNavController().popBackStack()
             return
         }
-        val client = methodProvider?.getOkHttpClient() ?: OkHttpClient()
-        val url = getString(R.string.url_complete) + getString(R.string.settings_api_path)
-        val request =
-            Request.Builder().url(url).addHeader("Authorization", token).get().build()
         lifecycleScope.launch(Dispatchers.IO) {
-            client.newCall(request).enqueue(object : Callback {
-                override fun onFailure(call: Call, e: IOException) {
-                    Log.d("debug", "settings fetch failed")
-                }
-
-                override fun onResponse(call: Call, response: Response) {
+            repository.remote.getSettings(token).enqueue(object : Callback<Any> {
+                override fun onResponse(
+                    call: Call<Any>,
+                    response: Response<Any>
+                ) {
                     if (response.isSuccessful) {
                         try {
-                            val jsonObject = JSONObject(response.body!!.string())
+                            val jsonObject = JSONObject(Gson().toJson(response.body()))
                             val subjectAssignment = jsonObject.getBoolean("SUBJECTS_ASSIGNMENT")
+                            Log.d(LOG_TAG, "subject assignment: $subjectAssignment")
                             if (subjectAssignment) {
                                 activity?.runOnUiThread {
                                     floatingActionButton.visibility = FloatingActionButton.VISIBLE
                                 }
                             }
-                            Log.d("debug", "settings fetch successful")
+                            Log.d(LOG_TAG, "settings fetch successful")
                         } catch (e: JSONException) {
-                            Log.d("debug", "SUBJECTS_ASSIGNMENT value doesn't exist")
+                            Log.d(LOG_TAG, "SUBJECTS_ASSIGNMENT value doesn't exist")
                         }
                     } else {
-                        Log.d("debug", "settings fetch unsuccessful code: ${response.code}")
+                        Log.d(LOG_TAG, "settings fetch unsuccessful code: ${response.code()}")
                     }
-                    response.close()
                 }
 
+                override fun onFailure(call: Call<Any>, t: Throwable) {
+                    Log.d(LOG_TAG, "settings fetch failed")
+                }
             })
         }
     }
