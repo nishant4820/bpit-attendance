@@ -2,13 +2,13 @@
 
     <!--    String related to Server-->
     <string name="logout_api_path">/api/auth/logout/</string>
-    <string name="faculty_profile_api_path">/api/faculty/profile/%d</string>
-    <string name="forgot_password_api_path">/api/auth/forgot_password/</string>
-    <string name="validate_otp_api_path">/api/auth/validate_otp/</string>
-    <string name="reset_password_api_path">/api/auth/reset_password/</string>
-    <string name="get_branches_api_path">/api/branch/</string>
-    <string name="get_all_subjects_api_path">/api/subjects/</string>
-    <string name="get_all_specialization_api_path">/api/specialization/</string>
+    <string name="faculty_profile_api_path">api/faculty/profile/%d</string>
+    <string name="forgot_password_api_path">api/auth/forgot_password/</string>
+    <string name="validate_otp_api_path">api/auth/validate_otp/</string>
+    <string name="reset_password_api_path">api/auth/reset_password/</string>
+    <string name="get_branches_api_path">api/branch/</string>
+    <string name="get_all_subjects_api_path">api/subjects/</string>
+    <string name="get_all_specialization_api_path">api/specialization/</string>
     <string name="server_error_message">Something went wrong. Please try again later!</string>
     <string name="session_expired_message">Session Expired! Log in again.</string>
     <string name="internet_message">Please check Internet Connection!</string>
