@@ -3,10 +3,15 @@ package com.bpitindia.attendance
 import android.app.Activity
 import android.content.Context
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.graphics.Insets
 import android.graphics.Typeface
+import android.Manifest
+import android.content.ContentValues
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
+import android.provider.MediaStore
 import android.text.TextUtils
 import android.util.Log
 import android.view.Gravity
@@ -19,9 +24,15 @@ import android.view.ViewGroup
 import android.view.WindowInsets
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.Spinner
 import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
@@ -43,15 +54,23 @@ import com.bpitindia.attendance.utils.Constants.SHARED_PREFERENCES_PROFILE
 import com.bpitindia.attendance.utils.Constants.SPECIALIZATION
 import com.bpitindia.attendance.utils.Constants.SUBJECT
 import com.bpitindia.attendance.utils.Constants.TOKEN_KEY
+import com.bpitindia.attendance.utils.sdk29AndUp
 import com.github.zardozz.FixedHeaderTableLayout.FixedHeaderSubTableLayout
 import com.github.zardozz.FixedHeaderTableLayout.FixedHeaderTableLayout
 import com.github.zardozz.FixedHeaderTableLayout.FixedHeaderTableRow
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.apache.poi.ss.usermodel.Cell
+import org.apache.poi.ss.usermodel.Row
+import org.apache.poi.ss.usermodel.Workbook
+import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.io.File
+import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -76,6 +95,11 @@ class StatisticsFragment : Fragment() {
     private lateinit var noDataTextView: TextView
     private lateinit var tableLayout: FixedHeaderTableLayout
 
+    private lateinit var requestPermissionLauncher: ActivityResultLauncher<String>
+    private var columns = listOf("")
+    private var rows = listOf<Student>()
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
@@ -89,6 +113,9 @@ class StatisticsFragment : Fragment() {
             classBatch = it.getString(CLASS_BATCH)
             specialization = it.getInt(SPECIALIZATION)
         }
+
+
+
         sharedPrefProfile =
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
@@ -105,6 +132,7 @@ class StatisticsFragment : Fragment() {
         return inflater.inflate(R.layout.fragment_statistics, container, false)
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         tableLayout = view.findViewById(R.id.FixedHeaderTableLayout)
@@ -115,6 +143,24 @@ class StatisticsFragment : Fragment() {
         val currMonthInt = SimpleDateFormat("MM", Locale.getDefault()).format(currDate).toInt()
         val currYearInt = SimpleDateFormat("yyyy", Locale.getDefault()).format(currDate).toInt()
         val list = makeListForDropdown(currMonthInt, currYearInt)
+
+        val downloadButton: FloatingActionButton = view.findViewById(R.id.fabDownload)
+        downloadButton.setOnClickListener {
+            val name = "$currMonthInt/$currYearInt"
+            requestWritePermissionAndWrite(name,columns, rows)
+        }
+
+        requestPermissionLauncher =
+            registerForActivityResult(
+                ActivityResultContracts.RequestPermission()
+            ){isGranted:Boolean->
+                if (isGranted){
+                    Log.i("Statistics fragment", "onCreate: Write permission granted")
+                }
+                else{
+                    Log.i("Statistics fragment", "checkWritePermission: not granted")
+                }
+            }
 
         requireActivity().addMenuProvider(object : MenuProvider {
             override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
@@ -203,7 +249,10 @@ class StatisticsFragment : Fragment() {
                                 try {
                                     val arrayJSONColumns = body?.columns
                                     val studentData = body?.studentData
+                                    columns = arrayJSONColumns!!
+                                    rows = studentData!!
                                     displayData(arrayJSONColumns!!, studentData!!)
+
                                 } catch (_: Exception) {
                                     noDataTextView.text = getString(R.string.no_data, monthYear)
                                     noDataTextView.visibility = TextView.VISIBLE
@@ -229,6 +278,69 @@ class StatisticsFragment : Fragment() {
 
         }
     }
+
+
+    @RequiresApi(Build.VERSION_CODES.Q)
+    private fun requestWritePermissionAndWrite(name:String, columns: List<String>, studentData: List<Student>) {
+
+        val workbook: Workbook = XSSFWorkbook()
+        val sheet = workbook.createSheet("Attendance Data")
+
+        // Create header row
+        val headerRow: Row = sheet.createRow(0)
+        val firstCell: Cell = headerRow.createCell(0)
+        firstCell.setCellValue("Name")
+
+        columns.forEachIndexed { index, column ->
+            val cell: Cell = headerRow.createCell(index+1)
+            cell.setCellValue(column.formatDate("yyyy-MM-dd'T'HH:mm:ss", "dd-MM-yy"))
+        }
+
+
+        // Populate data rows
+        studentData.forEachIndexed { rowIndex, student ->
+            val row: Row = sheet.createRow(rowIndex + 1)
+            val nameCell: Cell = row.createCell(0)
+            nameCell.setCellValue("${student.classRollNumber}. ${student.name?.uppercase()}")
+
+            student.attendanceData?.forEachIndexed { colIndex, attendance ->
+                val cell: Cell = row.createCell(colIndex + 1)
+                cell.setCellValue(attendance.toString())
+            }
+        }
+
+        val documentCollection = sdk29AndUp {
+            MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+        }?:MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL)
+
+        // Write to file in Downloads folder using MediaStore
+        val contentValues = ContentValues().apply {
+            put(MediaStore.Downloads.DISPLAY_NAME, "$name.xlsx")
+            put(MediaStore.Downloads.MIME_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+        }
+
+        val resolver = requireContext().contentResolver
+        val uri = resolver.insert(documentCollection, contentValues)
+
+        uri?.let {
+            try {
+                resolver.openOutputStream(it)?.use { outputStream ->
+                    workbook.write(outputStream)
+                    Toast.makeText(context, "File downloaded successfully", Toast.LENGTH_SHORT).show()
+                    Log.d("StatisticsFragment", "createExcelFileInDownloads: wrote file")
+                }
+            } catch (e: Exception) {
+                Toast.makeText(context, "Some error occurred", Toast.LENGTH_SHORT).show()
+                e.printStackTrace()
+            } finally {
+                workbook.close()
+            }
+        }
+    }
+
+
+
 
     private fun displayData(columns: List<String>, studentData: List<Student>) {
 
