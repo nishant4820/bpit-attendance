@@ -1,12 +1,22 @@
 package com.bpitindia.attendance
 
+import android.Manifest
 import android.app.Activity
+import android.app.AlertDialog
+import android.content.ActivityNotFoundException
+import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.graphics.Insets
 import android.graphics.Typeface
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
+import android.provider.MediaStore
+import android.provider.Settings
 import android.text.TextUtils
 import android.util.Log
 import android.view.Gravity
@@ -22,7 +32,12 @@ import android.widget.ArrayAdapter
 import android.widget.ProgressBar
 import android.widget.Spinner
 import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
@@ -46,12 +61,15 @@ import com.bpitindia.attendance.utils.Constants.TOKEN_KEY
 import com.github.zardozz.FixedHeaderTableLayout.FixedHeaderSubTableLayout
 import com.github.zardozz.FixedHeaderTableLayout.FixedHeaderTableLayout
 import com.github.zardozz.FixedHeaderTableLayout.FixedHeaderTableRow
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -75,6 +93,13 @@ class StatisticsFragment : Fragment() {
     private lateinit var progressBar: ProgressBar
     private lateinit var noDataTextView: TextView
     private lateinit var tableLayout: FixedHeaderTableLayout
+    private lateinit var downloadButton : FloatingActionButton
+
+    private lateinit var requestPermissionLauncher: ActivityResultLauncher<String>
+    private var columns = listOf("")
+    private var rows = listOf<Student>()
+    private lateinit var nameOfFile : String
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -89,6 +114,9 @@ class StatisticsFragment : Fragment() {
             classBatch = it.getString(CLASS_BATCH)
             specialization = it.getInt(SPECIALIZATION)
         }
+
+
+
         sharedPrefProfile =
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
@@ -105,6 +133,7 @@ class StatisticsFragment : Fragment() {
         return inflater.inflate(R.layout.fragment_statistics, container, false)
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         tableLayout = view.findViewById(R.id.FixedHeaderTableLayout)
@@ -115,6 +144,25 @@ class StatisticsFragment : Fragment() {
         val currMonthInt = SimpleDateFormat("MM", Locale.getDefault()).format(currDate).toInt()
         val currYearInt = SimpleDateFormat("yyyy", Locale.getDefault()).format(currDate).toInt()
         val list = makeListForDropdown(currMonthInt, currYearInt)
+
+        downloadButton= view.findViewById(R.id.fabDownload)
+        downloadButton.setOnClickListener {
+            handlePermissionAndWrite(nameOfFile,columns, rows)
+        }
+
+        requestPermissionLauncher =
+            registerForActivityResult(
+                ActivityResultContracts.RequestPermission()
+            ){isGranted:Boolean->
+                if (isGranted){
+                    handlePermissionAndWrite(nameOfFile,columns, rows)
+                    Log.i("Statistics fragment", "onCreate: Write permission granted")
+                }
+                else{
+                    Toast.makeText(requireContext(), "Permission required to download attendance", Toast.LENGTH_SHORT).show()
+                    Log.i("Statistics fragment", "checkWritePermission: not granted")
+                }
+            }
 
         requireActivity().addMenuProvider(object : MenuProvider {
             override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
@@ -203,9 +251,18 @@ class StatisticsFragment : Fragment() {
                                 try {
                                     val arrayJSONColumns = body?.columns
                                     val studentData = body?.studentData
-                                    displayData(arrayJSONColumns!!, studentData!!)
+                                    columns = arrayJSONColumns!!
+                                    rows = studentData!!
+                                    displayData(arrayJSONColumns, studentData)
+
+                                    // Show the download button if data is available
+                                    nameOfFile = "${findMonth(monthYear)}_${findYear(monthYear)}"
+                                    downloadButton.visibility = View.VISIBLE
+
                                 } catch (_: Exception) {
                                     noDataTextView.text = getString(R.string.no_data, monthYear)
+                                    downloadButton.visibility = View.INVISIBLE
+                                    Log.d(LOG_TAG, "onResponse: ${columns[0]}")
                                     noDataTextView.visibility = TextView.VISIBLE
                                 }
                             }
@@ -229,6 +286,171 @@ class StatisticsFragment : Fragment() {
 
         }
     }
+
+
+    private fun handlePermissionAndWrite(name: String, columns: List<String>, studentData: List<Student>){
+        if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.Q){
+            writeCSV(name,columns,studentData)
+        }else{
+            when {
+
+                ContextCompat.checkSelfPermission(
+                    requireContext(),
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+                ) == PackageManager.PERMISSION_GRANTED -> {
+                    // Permission is already granted, write the CSV file
+                    Log.i("Statistics fragment", "handlePermissionAndWrite: permission is already granted")
+                    writeCSVLegacy(name, columns, studentData)
+                }
+
+                shouldShowRequestPermissionRationale(Manifest.permission.WRITE_EXTERNAL_STORAGE) -> {
+                    //permission was denied once, asking again
+                    Log.i("Statistics fragment", "handlePermissionAndWrite: permission was denied earlier at least once, asking again")
+                    AlertDialog.Builder(requireContext())
+                        .setTitle("Permission Required")
+                        .setMessage("This permission is necessary to save files. Please grant it to continue.")
+                        .setPositiveButton("Grant Permission") { _, _ ->
+                        // Redirect to app settings
+                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                            val uri = Uri.fromParts("package", requireActivity().packageName, null)
+                            intent.setData(uri)
+                            startActivity(intent)
+                    }
+                    .setNegativeButton("Cancel") { _, _ ->
+                        Log.i("Statistics fragment", "handlePermissionAndWrite: permission denied from alert box")
+                        Toast.makeText(requireContext(), "Permission required to save file", Toast.LENGTH_SHORT).show()
+                    }
+                    .setCancelable(false)
+                    .show()
+                }
+
+                else -> {
+                    // Permission is yet to be asked, request the permission
+                    requestPermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                }
+            }
+        }
+    }
+
+    private fun writeCSVLegacy(name: String, columns: List<String>, studentData: List<Student>) {
+        // Create CSV content as StringBuilder
+        val csvContent = createCSVContent(columns, studentData)
+
+        // Create the file in legacy storage (Downloads directory)
+        val downloadsDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        val fileDirectory = File(downloadsDirectory, "Attendance")
+        if (!fileDirectory.exists()) {
+            fileDirectory.mkdirs() // Create directory if it doesn't exist
+            Log.d("Statistics Fragment", "writeCSVLegacy: created directory")
+        }
+        val file = File(fileDirectory, "$name.csv")
+        Log.d("StatisticsFragment", "File path: ${file.absolutePath}")
+        try {
+            // Write CSV content to the file
+            file.outputStream().use { outputStream ->
+                outputStream.write(csvContent.toByteArray())
+                view?.let { showFileDownloadedSnackbar(file, it) }
+                Log.d("StatisticsFragment", "File written successfully")
+            }
+        } catch (e: Exception) {
+            // Handle any exceptions
+            Toast.makeText(context, "Error occurred while writing the file", Toast.LENGTH_SHORT).show()
+            Log.e("StatisticsFragment", "Error writing file", e)
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.Q)
+    private fun writeCSV(name: String, columns: List<String>, studentData: List<Student>) {
+
+        // Create CSV content as StringBuilder
+        val csvContent = createCSVContent(columns, studentData)
+        val documentCollection = MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+
+        // Write to file in Downloads folder using MediaStore
+        val contentValues = ContentValues().apply {
+            put(MediaStore.Downloads.DISPLAY_NAME, "$name.csv")
+            put(MediaStore.Downloads.MIME_TYPE, "text/csv")
+            put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+        }
+
+        val resolver = requireContext().contentResolver
+        val uri = resolver.insert(documentCollection, contentValues)
+
+        uri?.let {
+            try {
+                resolver.openOutputStream(it)?.use { outputStream ->
+                    outputStream.write(csvContent.toByteArray())
+                    // Show a Snackbar with an action to open the file
+                    view?.let { view ->
+                        Snackbar.make(view, "File downloaded successfully", Snackbar.LENGTH_LONG)
+                            .setAction("Open") {
+                                openFile(uri)
+                            }.show()
+                    }
+                    Log.d("StatisticsFragment", "requestWritePermissionAndWriteCSV: wrote file")
+                }
+            } catch (e: Exception) {
+                Toast.makeText(context, "Some error occurred", Toast.LENGTH_SHORT).show()
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun createCSVContent(columns: List<String>, studentData: List<Student>): String {
+        val csvContent = StringBuilder()
+        csvContent.append("Name,")
+        csvContent.append(columns.joinToString(",") { it.formatDate("yyyy-MM-dd'T'HH:mm:ss", "dd-MM-yy") })
+        csvContent.append("\n")
+
+        studentData.forEach { student ->
+            val row = StringBuilder()
+            row.append("${student.classRollNumber}. ${student.name?.uppercase()},")
+            row.append(student.attendanceData?.joinToString(",") { it.toString() } ?: "")
+            csvContent.append(row.toString())
+            csvContent.append("\n")
+        }
+        return csvContent.toString()
+    }
+
+    private fun showFileDownloadedSnackbar(file: File, view: View) {
+        Snackbar.make(view, "File downloaded successfully", Snackbar.LENGTH_LONG)
+            .setAction("Open") {
+                openFile(file)
+            }
+            .show()
+    }
+    private fun openFile(uri: Uri) {
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "text/csv")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        try {
+            startActivity(intent)
+        } catch (e: ActivityNotFoundException) {
+            Toast.makeText(context, "No application found to open this file.", Toast.LENGTH_SHORT).show()
+        }
+    }
+    private fun openFile(file: File) {
+        val uri: Uri = FileProvider.getUriForFile(
+            requireContext(),
+            "${requireActivity().packageName}.fileprovider",
+            file
+        )
+
+        val intent = Intent(Intent.ACTION_VIEW)
+        intent.setDataAndType(uri, "text/csv")
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+
+        try {
+            startActivity(intent)
+        } catch (e: ActivityNotFoundException) {
+            Toast.makeText(context, "No application found to open this file.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+
+
+
 
     private fun displayData(columns: List<String>, studentData: List<Student>) {
 
