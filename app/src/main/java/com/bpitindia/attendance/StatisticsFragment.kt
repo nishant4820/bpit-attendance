@@ -89,6 +89,7 @@ class StatisticsFragment : Fragment() {
     private lateinit var requestPermissionLauncher: ActivityResultLauncher<String>
     private var columns = listOf("")
     private var rows = listOf<Student>()
+    private lateinit var nameOfFile : String
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -137,8 +138,7 @@ class StatisticsFragment : Fragment() {
 
         downloadButton= view.findViewById(R.id.fabDownload)
         downloadButton.setOnClickListener {
-            val name = "$currMonthInt/$currYearInt"
-            requestWritePermissionAndWrite(name,columns, rows)
+            requestWritePermissionAndWrite(nameOfFile,columns, rows)
         }
 
         requestPermissionLauncher =
@@ -245,6 +245,7 @@ class StatisticsFragment : Fragment() {
                                     displayData(arrayJSONColumns, studentData)
 
                                     // Show the download button if data is available
+                                    nameOfFile = "${findMonth(monthYear)}/${findYear(monthYear)}"
                                     downloadButton.visibility = View.VISIBLE
 
                                 } catch (_: Exception) {
