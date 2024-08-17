@@ -3,10 +3,8 @@ package com.bpitindia.attendance
 import android.app.Activity
 import android.content.Context
 import android.content.SharedPreferences
-import android.content.pm.PackageManager
 import android.graphics.Insets
 import android.graphics.Typeface
-import android.Manifest
 import android.content.ContentValues
 import android.os.Build
 import android.os.Bundle
@@ -24,7 +22,6 @@ import android.view.ViewGroup
 import android.view.WindowInsets
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
-import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.Spinner
 import android.widget.TextView
@@ -32,7 +29,6 @@ import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
@@ -62,15 +58,9 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.apache.poi.ss.usermodel.Cell
-import org.apache.poi.ss.usermodel.Row
-import org.apache.poi.ss.usermodel.Workbook
-import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import java.io.File
-import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -94,6 +84,7 @@ class StatisticsFragment : Fragment() {
     private lateinit var progressBar: ProgressBar
     private lateinit var noDataTextView: TextView
     private lateinit var tableLayout: FixedHeaderTableLayout
+    private lateinit var downloadButton : FloatingActionButton
 
     private lateinit var requestPermissionLauncher: ActivityResultLauncher<String>
     private var columns = listOf("")
@@ -144,7 +135,7 @@ class StatisticsFragment : Fragment() {
         val currYearInt = SimpleDateFormat("yyyy", Locale.getDefault()).format(currDate).toInt()
         val list = makeListForDropdown(currMonthInt, currYearInt)
 
-        val downloadButton: FloatingActionButton = view.findViewById(R.id.fabDownload)
+        downloadButton= view.findViewById(R.id.fabDownload)
         downloadButton.setOnClickListener {
             val name = "$currMonthInt/$currYearInt"
             requestWritePermissionAndWrite(name,columns, rows)
@@ -251,10 +242,14 @@ class StatisticsFragment : Fragment() {
                                     val studentData = body?.studentData
                                     columns = arrayJSONColumns!!
                                     rows = studentData!!
-                                    displayData(arrayJSONColumns!!, studentData!!)
+                                    displayData(arrayJSONColumns, studentData)
+
+                                    // Show the download button if data is available
+                                    downloadButton.visibility = View.VISIBLE
 
                                 } catch (_: Exception) {
                                     noDataTextView.text = getString(R.string.no_data, monthYear)
+                                    downloadButton.visibility = View.INVISIBLE
                                     noDataTextView.visibility = TextView.VISIBLE
                                 }
                             }
@@ -281,42 +276,33 @@ class StatisticsFragment : Fragment() {
 
 
     @RequiresApi(Build.VERSION_CODES.Q)
-    private fun requestWritePermissionAndWrite(name:String, columns: List<String>, studentData: List<Student>) {
+    private fun requestWritePermissionAndWrite(name: String, columns: List<String>, studentData: List<Student>) {
 
-        val workbook: Workbook = XSSFWorkbook()
-        val sheet = workbook.createSheet("Attendance Data")
+        // Create CSV content as StringBuilder
+        val csvContent = StringBuilder()
 
-        // Create header row
-        val headerRow: Row = sheet.createRow(0)
-        val firstCell: Cell = headerRow.createCell(0)
-        firstCell.setCellValue("Name")
-
-        columns.forEachIndexed { index, column ->
-            val cell: Cell = headerRow.createCell(index+1)
-            cell.setCellValue(column.formatDate("yyyy-MM-dd'T'HH:mm:ss", "dd-MM-yy"))
-        }
-
+        // Add header row
+        csvContent.append("Name,")
+        csvContent.append(columns.joinToString(",") { it.formatDate("yyyy-MM-dd'T'HH:mm:ss", "dd-MM-yy") })
+        csvContent.append("\n")
 
         // Populate data rows
-        studentData.forEachIndexed { rowIndex, student ->
-            val row: Row = sheet.createRow(rowIndex + 1)
-            val nameCell: Cell = row.createCell(0)
-            nameCell.setCellValue("${student.classRollNumber}. ${student.name?.uppercase()}")
-
-            student.attendanceData?.forEachIndexed { colIndex, attendance ->
-                val cell: Cell = row.createCell(colIndex + 1)
-                cell.setCellValue(attendance.toString())
-            }
+        studentData.forEach { student ->
+            val row = StringBuilder()
+            row.append("${student.classRollNumber}. ${student.name?.uppercase()},")
+            row.append(student.attendanceData?.joinToString(",") { it.toString() } ?: "")
+            csvContent.append(row.toString())
+            csvContent.append("\n")
         }
 
         val documentCollection = sdk29AndUp {
             MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
-        }?:MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL)
+        } ?: MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL)
 
         // Write to file in Downloads folder using MediaStore
         val contentValues = ContentValues().apply {
-            put(MediaStore.Downloads.DISPLAY_NAME, "$name.xlsx")
-            put(MediaStore.Downloads.MIME_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            put(MediaStore.Downloads.DISPLAY_NAME, "$name.csv")
+            put(MediaStore.Downloads.MIME_TYPE, "text/csv")
             put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
         }
 
@@ -326,18 +312,17 @@ class StatisticsFragment : Fragment() {
         uri?.let {
             try {
                 resolver.openOutputStream(it)?.use { outputStream ->
-                    workbook.write(outputStream)
+                    outputStream.write(csvContent.toString().toByteArray())
                     Toast.makeText(context, "File downloaded successfully", Toast.LENGTH_SHORT).show()
-                    Log.d("StatisticsFragment", "createExcelFileInDownloads: wrote file")
+                    Log.d("StatisticsFragment", "requestWritePermissionAndWriteCSV: wrote file")
                 }
             } catch (e: Exception) {
                 Toast.makeText(context, "Some error occurred", Toast.LENGTH_SHORT).show()
                 e.printStackTrace()
-            } finally {
-                workbook.close()
             }
         }
     }
+
 
 
 
