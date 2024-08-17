@@ -155,7 +155,7 @@ class StatisticsFragment : Fragment() {
                 ActivityResultContracts.RequestPermission()
             ){isGranted:Boolean->
                 if (isGranted){
-
+                    handlePermissionAndWrite(nameOfFile,columns, rows)
                     Log.i("Statistics fragment", "onCreate: Write permission granted")
                 }
                 else{
@@ -293,36 +293,40 @@ class StatisticsFragment : Fragment() {
             writeCSV(name,columns,studentData)
         }else{
             when {
+
                 ContextCompat.checkSelfPermission(
                     requireContext(),
                     Manifest.permission.WRITE_EXTERNAL_STORAGE
                 ) == PackageManager.PERMISSION_GRANTED -> {
                     // Permission is already granted, write the CSV file
+                    Log.i("Statistics fragment", "handlePermissionAndWrite: permission is already granted")
                     writeCSVLegacy(name, columns, studentData)
                 }
+
                 shouldShowRequestPermissionRationale(Manifest.permission.WRITE_EXTERNAL_STORAGE) -> {
-                    // Permission was denied previously, show a rationale
+                    //permission was denied once, asking again
+                    Log.i("Statistics fragment", "handlePermissionAndWrite: permission was denied earlier at least once, asking again")
                     AlertDialog.Builder(requireContext())
                         .setTitle("Permission Required")
                         .setMessage("This permission is necessary to save files. Please grant it to continue.")
-                        .setPositiveButton("Grant Permission") {dialog, which ->
+                        .setPositiveButton("Grant Permission") { _, _ ->
                         // Redirect to app settings
                             val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
                             val uri = Uri.fromParts("package", requireActivity().packageName, null)
                             intent.setData(uri)
                             startActivity(intent)
                     }
-                    .setNegativeButton("Cancel") {dialog, which ->
-                        // Permission denied, show a toast
-                        Toast.makeText(requireContext(), "Permission required to save file", Toast.LENGTH_SHORT).show();
+                    .setNegativeButton("Cancel") { _, _ ->
+                        Log.i("Statistics fragment", "handlePermissionAndWrite: permission denied from alert box")
+                        Toast.makeText(requireContext(), "Permission required to save file", Toast.LENGTH_SHORT).show()
                     }
                     .setCancelable(false)
-                    .show();
+                    .show()
                 }
+
                 else -> {
                     // Permission is yet to be asked, request the permission
                     requestPermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                    writeCSVLegacy(name,columns, studentData)
                 }
             }
         }
@@ -330,21 +334,7 @@ class StatisticsFragment : Fragment() {
 
     private fun writeCSVLegacy(name: String, columns: List<String>, studentData: List<Student>) {
         // Create CSV content as StringBuilder
-        val csvContent = StringBuilder()
-
-        // Add header row
-        csvContent.append("Name,")
-        csvContent.append(columns.joinToString(",") { it.formatDate("yyyy-MM-dd'T'HH:mm:ss", "dd-MM-yy") })
-        csvContent.append("\n")
-
-        // Populate data rows
-        studentData.forEach { student ->
-            val row = StringBuilder()
-            row.append("${student.classRollNumber}. ${student.name?.uppercase()},")
-            row.append(student.attendanceData?.joinToString(",") { it.toString() } ?: "")
-            csvContent.append(row.toString())
-            csvContent.append("\n")
-        }
+        val csvContent = createCSVContent(columns, studentData)
 
         // Create the file in legacy storage (Downloads directory)
         val downloadsDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
@@ -358,8 +348,7 @@ class StatisticsFragment : Fragment() {
         try {
             // Write CSV content to the file
             file.outputStream().use { outputStream ->
-                outputStream.write(csvContent.toString().toByteArray())
-                //Toast.makeText(context, "File downloaded successfully", Toast.LENGTH_SHORT).show()
+                outputStream.write(csvContent.toByteArray())
                 view?.let { showFileDownloadedSnackbar(file, it) }
                 Log.d("StatisticsFragment", "File written successfully")
             }
@@ -370,26 +359,11 @@ class StatisticsFragment : Fragment() {
         }
     }
 
-
     @RequiresApi(Build.VERSION_CODES.Q)
     private fun writeCSV(name: String, columns: List<String>, studentData: List<Student>) {
 
         // Create CSV content as StringBuilder
-        val csvContent = StringBuilder()
-
-        // Add header row
-        csvContent.append("Name,")
-        csvContent.append(columns.joinToString(",") { it.formatDate("yyyy-MM-dd'T'HH:mm:ss", "dd-MM-yy") })
-        csvContent.append("\n")
-
-        // Populate data rows
-        studentData.forEach { student ->
-            val row = StringBuilder()
-            row.append("${student.classRollNumber}. ${student.name?.uppercase()},")
-            row.append(student.attendanceData?.joinToString(",") { it.toString() } ?: "")
-            csvContent.append(row.toString())
-            csvContent.append("\n")
-        }
+        val csvContent = createCSVContent(columns, studentData)
         val documentCollection = MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
 
         // Write to file in Downloads folder using MediaStore
@@ -404,10 +378,8 @@ class StatisticsFragment : Fragment() {
 
         uri?.let {
             try {
-
                 resolver.openOutputStream(it)?.use { outputStream ->
-                    outputStream.write(csvContent.toString().toByteArray())
-                    //Toast.makeText(context, "File downloaded successfully", Toast.LENGTH_SHORT).show()
+                    outputStream.write(csvContent.toByteArray())
                     // Show a Snackbar with an action to open the file
                     view?.let { view ->
                         Snackbar.make(view, "File downloaded successfully", Snackbar.LENGTH_LONG)
@@ -422,6 +394,22 @@ class StatisticsFragment : Fragment() {
                 e.printStackTrace()
             }
         }
+    }
+
+    private fun createCSVContent(columns: List<String>, studentData: List<Student>): String {
+        val csvContent = StringBuilder()
+        csvContent.append("Name,")
+        csvContent.append(columns.joinToString(",") { it.formatDate("yyyy-MM-dd'T'HH:mm:ss", "dd-MM-yy") })
+        csvContent.append("\n")
+
+        studentData.forEach { student ->
+            val row = StringBuilder()
+            row.append("${student.classRollNumber}. ${student.name?.uppercase()},")
+            row.append(student.attendanceData?.joinToString(",") { it.toString() } ?: "")
+            csvContent.append(row.toString())
+            csvContent.append("\n")
+        }
+        return csvContent.toString()
     }
 
     private fun showFileDownloadedSnackbar(file: File, view: View) {
