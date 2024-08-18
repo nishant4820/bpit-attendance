@@ -31,10 +31,10 @@
         android:id="@+id/subjectList"
         android:name="com.bpitindia.attendance.SubjectListFragment"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginBottom="24dp"
-        tools:context=".SubjectListFragment"
+        android:layout_height="wrap_content"
+        android:clipToPadding="false"
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="24dp"
         tools:listitem="@layout/subject_list_item" />
 
     <TextView

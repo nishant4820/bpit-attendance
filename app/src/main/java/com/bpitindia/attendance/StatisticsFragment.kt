@@ -1,12 +1,21 @@
 package com.bpitindia.attendance
 
+import android.Manifest
 import android.app.Activity
+import android.content.ActivityNotFoundException
+import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.graphics.Insets
 import android.graphics.Typeface
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
+import android.provider.MediaStore
+import android.provider.Settings
 import android.text.TextUtils
 import android.util.Log
 import android.view.Gravity
@@ -22,7 +31,13 @@ import android.widget.ArrayAdapter
 import android.widget.ProgressBar
 import android.widget.Spinner
 import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AlertDialog
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
@@ -46,12 +61,15 @@ import com.bpitindia.attendance.utils.Constants.TOKEN_KEY
 import com.github.zardozz.FixedHeaderTableLayout.FixedHeaderSubTableLayout
 import com.github.zardozz.FixedHeaderTableLayout.FixedHeaderTableLayout
 import com.github.zardozz.FixedHeaderTableLayout.FixedHeaderTableRow
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -75,6 +93,11 @@ class StatisticsFragment : Fragment() {
     private lateinit var progressBar: ProgressBar
     private lateinit var noDataTextView: TextView
     private lateinit var tableLayout: FixedHeaderTableLayout
+    private lateinit var downloadButton: FloatingActionButton
+
+    private var selectedMonthYear: String = ""
+    private var attendanceTimestamps: List<String>? = null
+    private var studentRecords: List<Student>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -98,8 +121,7 @@ class StatisticsFragment : Fragment() {
     }
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_statistics, container, false)
@@ -110,6 +132,11 @@ class StatisticsFragment : Fragment() {
         tableLayout = view.findViewById(R.id.FixedHeaderTableLayout)
         progressBar = view.findViewById(R.id.stats_progress_bar)
         noDataTextView = view.findViewById(R.id.no_data)
+        downloadButton = view.findViewById(R.id.fabDownload)
+        downloadButton.setOnClickListener {
+            initiateDownloadProcess()
+        }
+
         val currDate = Date()
         val currentMonthYear = SimpleDateFormat("MMM yyyy", Locale.getDefault()).format(currDate)
         val currMonthInt = SimpleDateFormat("MM", Locale.getDefault()).format(currDate).toInt()
@@ -128,14 +155,11 @@ class StatisticsFragment : Fragment() {
                 spinner.setSelection(list.indexOf(currentMonthYear.uppercase()))
                 spinner.onItemSelectedListener = (object : AdapterView.OnItemSelectedListener {
                     override fun onItemSelected(
-                        parent: AdapterView<*>?,
-                        view2: View?,
-                        position: Int,
-                        id: Long
+                        parent: AdapterView<*>?, view2: View?, position: Int, id: Long
                     ) {
-                        val monthYear: String = parent?.getItemAtPosition(position) as String
+                        selectedMonthYear = parent?.getItemAtPosition(position) as String
                         tableLayout.removeAllViews()
-                        fetchData(monthYear)
+                        fetchData()
                     }
 
                     override fun onNothingSelected(parent: AdapterView<*>?) {}
@@ -152,24 +176,37 @@ class StatisticsFragment : Fragment() {
     private fun makeListForDropdown(currMonthInt: Int, currYearInt: Int): List<String> {
         val list: List<String> = if (semester?.rem(2) == 0) {
             listOf(
-                "JAN $currYearInt", "FEB $currYearInt", "MAR $currYearInt", "APR $currYearInt",
-                "MAY $currYearInt", "JUN $currYearInt", "JUL $currYearInt", "AUG $currYearInt"
+                "JAN $currYearInt",
+                "FEB $currYearInt",
+                "MAR $currYearInt",
+                "APR $currYearInt",
+                "MAY $currYearInt",
+                "JUN $currYearInt",
+                "JUL $currYearInt",
+                "AUG $currYearInt"
             )
         } else {
             val yearX = if (currMonthInt in 7..12) currYearInt else currYearInt - 1
             val yearY = yearX + 1
             listOf(
-                "AUG $yearX", "SEP $yearX", "OCT $yearX", "NOV $yearX",
-                "DEC $yearX", "JAN $yearY", "FEB $yearY", "MAR $yearY"
+                "AUG $yearX",
+                "SEP $yearX",
+                "OCT $yearX",
+                "NOV $yearX",
+                "DEC $yearX",
+                "JAN $yearY",
+                "FEB $yearY",
+                "MAR $yearY"
             )
         }
         return list
     }
 
-    private fun fetchData(monthYear: String) {
+    private fun fetchData() {
         progressBar.visibility = ProgressBar.VISIBLE
         noDataTextView.visibility = TextView.GONE
-        Log.d(LOG_TAG, "stats month year $monthYear")
+        downloadButton.visibility = View.GONE
+        Log.d(LOG_TAG, "stats month year $selectedMonthYear")
         sharedPrefProfile =
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
@@ -178,8 +215,8 @@ class StatisticsFragment : Fragment() {
             return
         }
         val params = mapOf(
-            "month" to findMonth(monthYear),
-            "year" to findYear(monthYear),
+            "month" to findMonth(selectedMonthYear),
+            "year" to findYear(selectedMonthYear),
             "batch" to batch.orEmpty(),
             "branch" to branch.orEmpty(),
             "subject" to subject.orEmpty(),
@@ -192,27 +229,28 @@ class StatisticsFragment : Fragment() {
             repository.remote.getAttendanceStats(token, params)
                 .enqueue(object : Callback<Statistics> {
                     override fun onResponse(
-                        call: Call<Statistics>,
-                        response: Response<Statistics>
+                        call: Call<Statistics>, response: Response<Statistics>
                     ) {
                         if (response.isSuccessful) {
                             Log.d(LOG_TAG, "fetch stats successful")
                             val body = response.body()
                             activity?.runOnUiThread {
-                                progressBar.visibility = ProgressBar.INVISIBLE
-                                try {
-                                    val arrayJSONColumns = body?.columns
-                                    val studentData = body?.studentData
-                                    displayData(arrayJSONColumns!!, studentData!!)
-                                } catch (_: Exception) {
-                                    noDataTextView.text = getString(R.string.no_data, monthYear)
+                                progressBar.visibility = ProgressBar.GONE
+                                attendanceTimestamps = body?.columns
+                                studentRecords = body?.studentData
+                                if (attendanceTimestamps != null && studentRecords != null) {
+                                    downloadButton.visibility = View.VISIBLE
+                                    displayData(attendanceTimestamps!!, studentRecords!!)
+                                } else {
+                                    noDataTextView.text =
+                                        getString(R.string.no_data, selectedMonthYear)
                                     noDataTextView.visibility = TextView.VISIBLE
                                 }
                             }
                         } else {
                             Log.d(LOG_TAG, "fetch stats unsuccessful code: ${response.code()}")
                             activity?.runOnUiThread {
-                                progressBar.visibility = ProgressBar.INVISIBLE
+                                progressBar.visibility = ProgressBar.GONE
                                 findNavController().popBackStack()
                             }
                         }
@@ -221,7 +259,7 @@ class StatisticsFragment : Fragment() {
                     override fun onFailure(call: Call<Statistics>, t: Throwable) {
                         Log.d(LOG_TAG, "fetch stats failed")
                         activity?.runOnUiThread {
-                            progressBar.visibility = ProgressBar.INVISIBLE
+                            progressBar.visibility = ProgressBar.GONE
                             findNavController().popBackStack()
                         }
                     }
@@ -309,6 +347,188 @@ class StatisticsFragment : Fragment() {
             cornerTableLayout
         )
 
+    }
+
+    private fun initiateDownloadProcess() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            writeCSV()
+        } else {
+            requestPermission()
+        }
+    }
+
+    private fun requestPermission() {
+        if (ContextCompat.checkSelfPermission(
+                requireContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            // Permission is already granted, perform the operation
+            writeCSVLegacy()
+        } else if (ActivityCompat.shouldShowRequestPermissionRationale(
+                requireActivity(), Manifest.permission.WRITE_EXTERNAL_STORAGE
+            )
+        ) {
+            // Show permission rationale
+            showPermissionRationale()
+        } else {
+            // Request permission
+            requestPermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        }
+    }
+
+    private val requestPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+            if (isGranted) {
+                // Permission is granted, perform the operation
+                requestPermission()
+            } else if (
+                ActivityCompat.shouldShowRequestPermissionRationale(
+                    requireActivity(),
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+                )
+            ) {
+                // Show permission rationale
+                showPermissionRationale()
+            } else {
+                // Permission is permanently denied, take to settings
+                showSettingsDialog()
+            }
+        }
+
+    private fun showPermissionRationale() {
+        AlertDialog.Builder(requireContext()).apply {
+            setTitle("Storage Permission Needed")
+            setMessage("We need storage permission to download files.")
+            setPositiveButton("OK") { dialog, _ ->
+                requestPermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                dialog.dismiss()
+            }
+            setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            show()
+        }
+    }
+
+    private fun showSettingsDialog() {
+        AlertDialog.Builder(requireContext()).apply {
+            setTitle("Storage Permission Needed")
+            setMessage("We need storage permission to download files. You may grant them in app settings.")
+            setPositiveButton("Go to Settings") { dialog, _ ->
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                val uri = Uri.fromParts("package", requireActivity().packageName, null)
+                intent.setData(uri)
+                startActivity(intent)
+                dialog.dismiss()
+            }
+            setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            show()
+        }
+    }
+
+    private fun createCsvContent(): String {
+        val csvContent = StringBuilder()
+
+        // Add header row
+        csvContent.append("Roll No.,Name,")
+        csvContent.append(attendanceTimestamps?.joinToString(",") {
+            it.formatDate("yyyy-MM-dd'T'HH:mm:ss", "dd-MM-yy")
+        })
+        csvContent.append("\n")
+
+        // Populate data rows
+        studentRecords?.forEach { student ->
+            val row = StringBuilder()
+            row.append("${student.classRollNumber},${student.name?.uppercase()},")
+            row.append(student.attendanceData?.joinToString(",") { it.toString() } ?: "")
+            csvContent.append(row.toString())
+            csvContent.append("\n")
+        }
+        return csvContent.toString()
+    }
+
+    @RequiresApi(Build.VERSION_CODES.Q)
+    private fun writeCSV() {
+        try {
+            val csvContent = createCsvContent()
+
+            // Write to file in Downloads folder using MediaStore
+            val contentValues = ContentValues().apply {
+                put(MediaStore.Downloads.DISPLAY_NAME, "$selectedMonthYear Attendance Records.csv")
+                put(MediaStore.Downloads.MIME_TYPE, "text/csv")
+                put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+            }
+
+            val resolver = activity?.contentResolver
+            val uri = resolver?.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+
+            uri?.let {
+                resolver.openOutputStream(it)?.use { outputStream ->
+                    outputStream.write(csvContent.toByteArray())
+                    outputStream.flush()
+                }
+                showDownloadConfirmation(it)
+            } ?: run {
+                showErrorSnackbar()
+            }
+        } catch (e: Exception) {
+            showErrorSnackbar()
+            e.printStackTrace()
+        }
+    }
+
+    private fun writeCSVLegacy() {
+        try {
+            val csvContent = createCsvContent()
+
+            // Create the file in legacy storage (Downloads directory)
+            val downloadsDirectory =
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            val csvFile = File(downloadsDirectory, "$selectedMonthYear Attendance Records.csv")
+
+            // Write CSV content to the file
+            csvFile.bufferedWriter().use { out ->
+                out.write(csvContent)
+            }
+            val fileUri = FileProvider.getUriForFile(
+                requireContext(),
+                "${activity?.packageName}.provider",
+                csvFile
+            )
+            showDownloadConfirmation(fileUri)
+        } catch (e: Exception) {
+            showErrorSnackbar()
+            e.printStackTrace()
+        }
+    }
+
+    private fun showDownloadConfirmation(uri: Uri) {
+        view?.let { view ->
+            Snackbar.make(view, "File downloaded successfully", Snackbar.LENGTH_LONG)
+                .setAction("Open") { openFile(uri) }
+                .show()
+        }
+    }
+
+    private fun openFile(uri: Uri) {
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "text/csv")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        try {
+            startActivity(intent)
+        } catch (e: ActivityNotFoundException) {
+            Toast.makeText(context, "No app found to open this file.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun showErrorSnackbar() {
+        view?.let { view ->
+            Snackbar.make(view, "Error occurred while saving the file", Snackbar.LENGTH_SHORT)
+                .show()
+        }
     }
 
     private fun getScreenWidth(activity: Activity): Int {
