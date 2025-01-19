@@ -1,0 +1,66 @@
+package com.bpitindia.attendance
+
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.ImageButton
+import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.navigation.findNavController
+import androidx.recyclerview.widget.RecyclerView
+import com.bpitindia.attendance.data.models.LocalAttendanceRecords
+
+class LocalSubjectsAdapter(
+    private val dataSet: List<LocalAttendanceRecords>,
+    private val onUploadClick: (LocalAttendanceRecords) -> Unit,
+) : RecyclerView.Adapter<LocalSubjectsAdapter.ViewHolder>() {
+
+    class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val subjectName: TextView = view.findViewById(R.id.local_subject_name)
+        val subjectDate: TextView = view.findViewById(R.id.local_subject_date)
+        val batch: TextView = view.findViewById(R.id.local_batch)
+        val uploadButton: ImageButton = view.findViewById(R.id.local_upload_image_button)
+        val takeAttendance: LinearLayout = view.findViewById(R.id.local_info_layout)
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        val view = LayoutInflater.from(parent.context)
+            .inflate(R.layout.local_subject_item, parent, false)
+        return ViewHolder(view)
+    }
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val item = dataSet[position]
+        holder.subjectName.text = item.subject
+        holder.batch.text = findYear(item.batch!!.toInt())
+        holder.subjectDate.text = item.date
+        val bundle = Bundle()
+        bundle.putString("BATCH", item.batch)
+        bundle.putString("NAME",item.subject)
+        bundle.putString("DATE",item.date)
+
+        holder.uploadButton.setOnClickListener {
+            onUploadClick(LocalAttendanceRecords(item.subject,item.date,item.batch))
+        }
+
+        holder.takeAttendance.setOnClickListener {
+            holder.itemView.findNavController()
+                .navigate(R.id.action_localSubjectsFragment_to_localStudentListFragment,bundle)
+        }
+    }
+
+    override fun getItemCount() = dataSet.size
+
+    private fun findYear(semester: Int): String {
+        return when (semester) {
+            1, 2 -> "1st Year"
+            3, 4 -> "2nd Year"
+            5, 6 -> "3rd Year"
+            7, 8 -> "4th Year"
+            else -> "Invalid Year"
+        }
+    }
+}
+
+

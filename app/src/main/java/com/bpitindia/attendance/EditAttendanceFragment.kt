@@ -3,6 +3,7 @@
 package com.bpitindia.attendance
 
 import android.app.AlertDialog
+import android.app.ProgressDialog
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
@@ -36,6 +37,8 @@ import com.bpitindia.attendance.utils.Constants.SECTION
 import com.bpitindia.attendance.utils.Constants.SHARED_PREFERENCES_PROFILE
 import com.bpitindia.attendance.utils.Constants.SUBJECT
 import com.bpitindia.attendance.utils.Constants.TOKEN_KEY
+import com.bpitindia.attendance.utils.canUpdateOnServer
+import com.bpitindia.attendance.utils.saveAttendanceLocally
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -178,68 +181,64 @@ class EditAttendanceFragment : Fragment() {
     }
 
     private fun markAttendance(view: View) {
-        val progressDialog = android.app.ProgressDialog(context, R.style.AppCompatAlertDialogStyle)
+        val progressDialog = ProgressDialog(context, R.style.AppCompatAlertDialogStyle)
         progressDialog.setTitle("Submitting Attendance")
         progressDialog.setMessage("Please Wait...")
         progressDialog.setCanceledOnTouchOutside(false)
         progressDialog.setCancelable(false)
         progressDialog.show()
+
         val dataSet = (recyclerView.adapter as EditAttendanceAdapter).dataSet
         val body = StudentRequestBody()
         body.record = dataSet
-        sharedPrefProfile =
-            activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
+
+        sharedPrefProfile = activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
         if (token == null) {
             findNavController().popBackStack()
             return
         }
-        lifecycleScope.launch(Dispatchers.IO) {
-            repository.remote.editAttendance(token, body).enqueue(object : Callback<Any> {
-                override fun onResponse(
-                    call: Call<Any>,
-                    response: Response<Any>
-                ) {
-                    activity?.runOnUiThread {
-                        progressDialog.dismiss()
-                        if (response.isSuccessful) {
-                            Snackbar.make(view, "Attendance Updated", Snackbar.LENGTH_SHORT).show()
-                            Log.d(LOG_TAG, "Last attendance updated")
-                            findNavController().popBackStack()
-                        } else {
-                            Log.d(
-                                LOG_TAG,
-                                "Last attendance update unsuccessful code: ${response.code()}"
-                            )
-                            when (response.code()) {
-                                401 -> {
+        lifecycleScope.launch {
+            // Check if the device is connected to the internet and server is available
+            if (canUpdateOnServer(context,repository)) {
+                lifecycleScope.launch(Dispatchers.IO) {
+                    repository.remote.editAttendance(token, body).enqueue(object : Callback<Any> {
+                        override fun onResponse(call: Call<Any>, response: Response<Any>) {
+                            activity?.runOnUiThread {
+                                progressDialog.dismiss()
+                                if (response.isSuccessful) {
+                                    Snackbar.make(view, "Attendance Updated", Snackbar.LENGTH_SHORT).show()
+                                    Log.d(LOG_TAG, "Last attendance updated")
                                     findNavController().popBackStack()
-                                }
-
-                                else -> {
-                                    Snackbar.make(
-                                        view,
-                                        getString(R.string.server_error_message),
-                                        Snackbar.LENGTH_SHORT
-                                    ).show()
+                                } else {
+                                    Log.d(LOG_TAG, "Last attendance update unsuccessful code: ${response.code()}")
+                                    when (response.code()) {
+                                        401 -> {
+                                            findNavController().popBackStack()
+                                        }
+                                        else -> {
+                                            Snackbar.make(view, getString(R.string.server_error_message), Snackbar.LENGTH_SHORT).show()
+                                        }
+                                    }
                                 }
                             }
                         }
-                    }
-                }
 
-                override fun onFailure(call: Call<Any>, t: Throwable) {
-                    activity?.runOnUiThread {
-                        progressDialog.dismiss()
-                        val msg = if (t.message.toString()
-                                .startsWith(getString(R.string.error_prefix))
-                        ) getString(R.string.internet_message) else getString(R.string.server_error_message)
-                        Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
-                    }
-                    Log.d(LOG_TAG, "upload edited attendance failed")
+                        override fun onFailure(call: Call<Any>, t: Throwable) {
+                            activity?.runOnUiThread {
+                                progressDialog.dismiss()
+                                val msg = if (t.message.toString().startsWith(getString(R.string.error_prefix)))
+                                    getString(R.string.internet_message) else getString(R.string.server_error_message)
+                                Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
+                            }
+                            Log.d(LOG_TAG, "upload edited attendance failed")
+                        }
+                    })
                 }
-
-            })
+            } else {
+                // Store the attendance data locally when offline or server not available
+                saveAttendanceLocally(dataSet, repository, lifecycleScope)
+            }
         }
 
     }
@@ -257,7 +256,9 @@ class EditAttendanceFragment : Fragment() {
                         setTitle("Submit")
                         setMessage("Are you sure you want to update attendance?")
                         setPositiveButton("Confirm") { _, _ ->
-                            markAttendance(view)
+                            lifecycleScope.launch {
+                                markAttendance(view)
+                            }
                         }
                         setNegativeButton("Cancel") { _, _ -> }
                     }.create().show()

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_marginTop="16dp"
+    app:cardBackgroundColor="@color/card_bg"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="5dp">
+
+    <LinearLayout
+        android:id="@+id/local_info_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="12dp"
+        android:background="@color/info_bg"
+        android:orientation="horizontal"
+        android:paddingVertical="8dp"
+        android:gravity="center_vertical">
+
+        <!-- Subject Batch and Date Information -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="6"
+            android:orientation="vertical">
+
+            <!-- Subject Name -->
+            <TextView
+                android:id="@+id/local_subject_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="16dp"
+                android:textColor="@color/black"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                tools:text="Database Management System" />
+
+            <!-- Batch -->
+            <TextView
+                android:id="@+id/local_batch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="16dp"
+                android:textStyle="bold"
+                tools:text="2nd year" />
+
+            <!-- Date -->
+            <TextView
+                android:id="@+id/local_subject_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="16dp"
+                android:textStyle="bold"
+                tools:text="22/01/2003" />
+        </LinearLayout>
+
+        <!-- Upload Icon (Aligned to the right) -->
+        <ImageButton
+            android:id="@+id/local_upload_image_button"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_marginEnd="8dp"
+            android:layout_gravity="center"
+            android:padding="8dp"
+            android:background="@android:color/transparent"
+            android:src="@drawable/ic_baseline_upload_24"
+            android:contentDescription="@string/upload"
+            android:focusable="false"
+            android:focusableInTouchMode="false"
+            android:clickable="true"
+            app:tint="@color/black" />
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
+

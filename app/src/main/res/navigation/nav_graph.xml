@@ -94,7 +94,18 @@
             app:exitAnim="@anim/nav_default_exit_anim"
             app:popEnterAnim="@anim/nav_default_pop_enter_anim"
             app:popExitAnim="@anim/nav_default_pop_exit_anim" />
+        <action
+            android:id="@+id/action_subjectListFragment_to_localSubjectListFragment"
+            app:destination="@+id/localSubjectListFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim"
+            app:popExitAnim="@anim/nav_default_pop_exit_anim"/>
     </fragment>
+    <fragment
+        android:id="@+id/localSubjectListFragment"
+        android:name="com.bpitindia.attendance.LocalSubjectsFragment"
+        android:label="fragment_local_subjects"
+        tools:layout="@layout/local_subject_list"/>
     <fragment
         android:id="@+id/studentListFragment"
         android:name="com.bpitindia.attendance.StudentListFragment"
@@ -208,4 +219,24 @@
         android:name="com.bpitindia.attendance.addsubject.AddSubjectFragment"
         android:label="fragment_add_subject"
         tools:layout="@layout/fragment_add_subject" />
+
+    <fragment
+        android:id="@+id/LocalSubjectsFragment"
+        android:name="com.bpitindia.attendance.LocalSubjectsFragment"
+        tools:layout="@layout/local_subject_list">
+
+        <action
+            android:id="@+id/action_localSubjectsFragment_to_localStudentListFragment"
+            app:destination="@id/localStudentListFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/localStudentListFragment"
+        android:name="com.bpitindia.attendance.LocalStudentListFragment"
+        tools:layout="@layout/fragment_local_student_list">
+        <argument
+            android:name="attendanceRecords"
+            app:argType="com.example.LocalAttendanceRecords" />
+    </fragment>
+
 </navigation>
