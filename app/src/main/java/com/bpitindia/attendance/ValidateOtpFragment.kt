@@ -1,0 +1,171 @@
+package com.bpitindia.attendance
+
+import android.content.Context
+import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
+import android.util.Log
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
+import android.widget.ProgressBar
+import android.widget.TextView
+import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
+import com.bpitindia.attendance.utils.Constants.BASE_URL
+import com.bpitindia.attendance.utils.Constants.EMAIL
+import com.bpitindia.attendance.utils.Constants.LOG_TAG
+import com.chaos.view.PinView
+import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
+import org.json.JSONObject
+import java.io.IOException
+
+class ValidateOtpFragment : Fragment() {
+    private var email: String? = null
+    private lateinit var button: TextView
+    private lateinit var pinView: PinView
+    private lateinit var progressBar: ProgressBar
+    private lateinit var inputMethodManager: InputMethodManager
+    private var methodProvider: MyActivityMethodProvider? = null
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        try {
+            methodProvider = context as MyActivityMethodProvider
+        } catch (_: ClassCastException) {
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        arguments?.let {
+            email = it.getString(EMAIL)
+        }
+    }
+
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        // Inflate the layout for this fragment
+        inputMethodManager =
+            activity?.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        return inflater.inflate(R.layout.fragment_validate_otp, container, false)
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        view.findViewById<TextView>(R.id.otp_message).text = getString(R.string.otp_message, email)
+        pinView = view.findViewById(R.id.firstPinView)
+        progressBar = view.findViewById(R.id.progressBarValidateOTP)
+        button = view.findViewById(R.id.submit_otp_button)
+        pinView.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                if (s.toString().length == 6) {
+                    verifyOTP(view)
+                }
+            }
+
+            override fun afterTextChanged(s: Editable?) {}
+
+        })
+        pinView.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_GO) {
+                verifyOTP(view)
+                true
+            } else false
+        }
+        pinView.requestFocus()
+
+        inputMethodManager.showSoftInput(pinView, 0)
+        button.setOnClickListener {
+            verifyOTP(view)
+        }
+    }
+
+    private fun verifyOTP(view: View) {
+        val otp: String = pinView.text.toString()
+        if (otp.length != 6) {
+            Snackbar.make(view, "Enter 6 digit OTP", Snackbar.LENGTH_SHORT).show()
+            return
+        }
+        progressBar.visibility = ProgressBar.VISIBLE
+        button.visibility = TextView.INVISIBLE
+        inputMethodManager.hideSoftInputFromWindow(pinView.windowToken, 0)
+        val url = BASE_URL + getString(R.string.validate_otp_api_path)
+        val client = methodProvider?.getOkHttpClient() ?: OkHttpClient()
+        lifecycleScope.launch(Dispatchers.IO) {
+            val bodyJSONObject = JSONObject()
+            bodyJSONObject.apply {
+                put("email", email!!)
+                put("otp", otp)
+            }
+            val mediaType = "application/json; charset=utf-8".toMediaType()
+            val body = bodyJSONObject.toString().toRequestBody(mediaType)
+            val request: Request = Request.Builder().url(url).post(body).build()
+            client.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    activity?.runOnUiThread {
+                        progressBar.visibility = ProgressBar.INVISIBLE
+                        button.visibility = TextView.VISIBLE
+                        val msg = if (e.message.toString()
+                                .startsWith(getString(R.string.error_prefix))
+                        ) getString(R.string.internet_message) else getString(R.string.server_error_message)
+                        Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
+                    }
+                    Log.d(LOG_TAG, "OTP Validate Request Failed")
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    activity?.runOnUiThread {
+                        progressBar.visibility = ProgressBar.INVISIBLE
+                        button.visibility = TextView.VISIBLE
+                        if (response.isSuccessful) {
+                            response.close()
+                            Log.d(LOG_TAG, "OTP Validated")
+                            pinView.setText("")
+                            val bundle = Bundle()
+                            bundle.putString("email", email)
+                            bundle.putString("otp", otp)
+                            findNavController().navigate(
+                                R.id.action_validateOtpFragment_to_resetPasswordFragment,
+                                bundle
+                            )
+                        } else {
+                            Log.d(LOG_TAG, "OTP Validate Unsuccessful code: ${response.code}")
+                            if (response.code == 401) {
+                                response.close()
+                                pinView.setText("")
+                                Snackbar.make(
+                                    view,
+                                    "Invalid OTP! Try again.",
+                                    Snackbar.LENGTH_SHORT
+                                ).show()
+                            } else {
+                                response.close()
+                                Snackbar.make(
+                                    view,
+                                    getString(R.string.server_error_message),
+                                    Snackbar.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                    }
+                }
+            })
+        }
+    }
+}

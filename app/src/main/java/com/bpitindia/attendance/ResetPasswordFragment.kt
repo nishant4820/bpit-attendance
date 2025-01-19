@@ -1,0 +1,193 @@
+package com.bpitindia.attendance
+
+import android.content.Context
+import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
+import android.util.Log
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
+import android.widget.ProgressBar
+import android.widget.TextView
+import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
+import com.bpitindia.attendance.utils.Constants.BASE_URL
+import com.bpitindia.attendance.utils.Constants.EMAIL
+import com.bpitindia.attendance.utils.Constants.LOG_TAG
+import com.bpitindia.attendance.utils.Constants.OTP
+import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.textfield.TextInputEditText
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
+import org.json.JSONObject
+import java.io.IOException
+
+class ResetPasswordFragment : Fragment() {
+    private var email: String? = null
+    private var otp: String? = null
+    private lateinit var newPasswordEditText: TextInputEditText
+    private lateinit var confirmNewPasswordEditText: TextInputEditText
+    private lateinit var resetButton: TextView
+    private lateinit var progressBar: ProgressBar
+    private lateinit var inputMethodManager: InputMethodManager
+    private var methodProvider: MyActivityMethodProvider? = null
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        try {
+            methodProvider = context as MyActivityMethodProvider
+        } catch (_: ClassCastException) {
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        arguments?.let {
+            email = it.getString(EMAIL)
+            otp = it.getString(OTP)
+        }
+    }
+
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        inputMethodManager =
+            activity?.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        // Inflate the layout for this fragment
+        return inflater.inflate(R.layout.fragment_reset_password, container, false)
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        newPasswordEditText = view.findViewById(R.id.new_password_edittext)
+        confirmNewPasswordEditText = view.findViewById(R.id.confirm_new_password_edittext)
+        resetButton = view.findViewById(R.id.reset_button)
+        progressBar = view.findViewById(R.id.reset_progressBar)
+        resetButton.setOnClickListener {
+            resetPassword(view)
+        }
+        newPasswordEditText.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+
+                val length = s.toString().length
+                if (length < 8) {
+                    newPasswordEditText.error = "Minimum Length should be 8"
+                } else {
+                    newPasswordEditText.error = null
+                }
+            }
+
+            override fun afterTextChanged(s: Editable?) {}
+        })
+
+        confirmNewPasswordEditText.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                resetPassword(view)
+                true
+            } else false
+        }
+
+    }
+
+    private fun resetPassword(view: View) {
+        inputMethodManager.hideSoftInputFromWindow(confirmNewPasswordEditText.windowToken, 0)
+        val newPassword: String = newPasswordEditText.text.toString()
+        if (newPassword.length < 8) {
+            Snackbar.make(view, "Password should be of atleast 8 length", Snackbar.LENGTH_LONG)
+                .show()
+            return
+        }
+        val confirmNewPassword: String = confirmNewPasswordEditText.text.toString()
+        if (confirmNewPassword != newPassword) {
+            Snackbar.make(view, "Passwords do not match.", Snackbar.LENGTH_SHORT).show()
+            return
+        }
+        progressBar.visibility = ProgressBar.VISIBLE
+        resetButton.visibility = TextView.INVISIBLE
+        val url = BASE_URL + getString(R.string.reset_password_api_path)
+        val client = methodProvider?.getOkHttpClient() ?: OkHttpClient()
+        lifecycleScope.launch(Dispatchers.IO) {
+            val bodyJSONObject = JSONObject()
+            bodyJSONObject.apply {
+                put("current_password", "")
+                put("new_password", newPassword)
+                put("new_password_confirm", confirmNewPassword)
+                put("password_otp", otp)
+                put("forget", true)
+                put("email", email)
+            }
+            val mediaType = "application/json; charset=utf-8".toMediaType()
+            val body = bodyJSONObject.toString().toRequestBody(mediaType)
+            val request: Request = Request.Builder().url(url).put(body).build()
+            client.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    activity?.runOnUiThread {
+                        progressBar.visibility = ProgressBar.INVISIBLE
+                        resetButton.visibility = TextView.VISIBLE
+                        val msg = if (e.message.toString()
+                                .startsWith(getString(R.string.error_prefix))
+                        ) getString(R.string.internet_message) else getString(R.string.server_error_message)
+                        Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
+                    }
+                    Log.d(LOG_TAG, "Reset Password Request Failed")
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+
+                    activity?.runOnUiThread {
+                        progressBar.visibility = ProgressBar.INVISIBLE
+                        resetButton.visibility = TextView.VISIBLE
+                        if (response.isSuccessful) {
+                            response.close()
+                            Log.d(LOG_TAG, "Password reset successful")
+                            Snackbar.make(
+                                view,
+                                "Password reset successful. Please login.",
+                                Snackbar.LENGTH_SHORT
+                            ).show()
+                            val bundle = Bundle()
+                            bundle.putString("fromFragment", "reset")
+                            findNavController().navigate(
+                                R.id.action_resetPasswordFragment_to_resetSuccessfulFragment,
+                                bundle
+                            )
+
+                        } else {
+                            if (response.code == 400) {
+                                val jsonObject: JSONObject? =
+                                    response.body?.string()?.let { JSONObject(it) }
+                                val error: String =
+                                    jsonObject?.getJSONArray("error")?.get(0) as String
+                                Snackbar.make(view, error, Snackbar.LENGTH_SHORT).show()
+                            } else {
+                                Snackbar.make(
+                                    view,
+                                    getString(R.string.server_error_message),
+                                    Snackbar.LENGTH_SHORT
+                                ).show()
+                            }
+                            Log.d(LOG_TAG, "Reset Password Unsuccessful code: ${response.code}")
+                            response.close()
+                        }
+                    }
+                }
+
+            })
+        }
+    }
+
+}

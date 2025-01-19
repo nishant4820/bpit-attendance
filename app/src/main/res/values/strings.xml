@@ -1,0 +1,122 @@
+<resources>
+
+    <!--    String related to Server-->
+    <string name="logout_api_path">/api/auth/logout/</string>
+    <string name="faculty_profile_api_path">api/faculty/profile/%d</string>
+    <string name="forgot_password_api_path">api/auth/forgot_password/</string>
+    <string name="validate_otp_api_path">api/auth/validate_otp/</string>
+    <string name="reset_password_api_path">api/auth/reset_password/</string>
+    <string name="get_branches_api_path">api/branch/</string>
+    <string name="get_all_subjects_api_path">api/subjects/</string>
+    <string name="get_all_specialization_api_path">api/specialization/</string>
+    <string name="server_error_message">Something went wrong. Please try again later!</string>
+    <string name="session_expired_message">Session Expired! Log in again.</string>
+    <string name="internet_message">Please check Internet Connection!</string>
+    <string name="error_prefix">Unable to resolve host</string>
+
+    <!--    App related Strings-->
+    <string name="app_name">Attendance</string>
+    <string name="prompt_email">Email</string>
+    <string name="prompt_password">Password</string>
+    <string name="log_in">Log In</string>
+    <string name="confirm_dialog">Total Students: %d\nPresent Students: %d\nAbsent Students: %d</string>
+    <string name="attendance_count">Total Attendance: %d</string>
+    <string name="nav_open">Open</string>
+    <string name="nav_close">Close</string>
+    <string name="bpitLogo">BPIT Logo</string>
+    <string name="name">Name</string>
+    <string name="mobile">Mobile</string>
+    <string name="email">Email</string>
+    <string name="designation">Designation</string>
+    <string name="date_of_joining">Date of Joining</string>
+    <string name="log_in_to_continue">Log In to Continue</string>
+    <string name="continue_">Continue</string>
+    <string name="upload">Upload</string>
+    <string name="log_out">Log Out</string>
+    <string name="forgot_password">Forgot Password?</string>
+    <string name="reset_message">Enter the email associated with your account and we\'ll send an email with instructions to reset your password.</string>
+    <string name="reset_password">Reset password</string>
+    <string name="request_otp">Request OTP</string>
+    <string name="otp_message">We have sent an OTP on %s. Please check your inbox/spam.</string>
+    <string name="submit_and_verify">Submit and Verify</string>
+    <string name="forgot_npassword">Forgot\nPassword?</string>
+    <string name="password_changed_message">Your password has been changed successfully.</string>
+    <string name="change_password">Change Password</string>
+    <string name="current_password">Current password</string>
+    <string name="new_password">New password</string>
+    <string name="confirm_new_password">Confirm new password</string>
+    <string name="confirm">Confirm</string>
+    <string name="enter_otp">Enter OTP</string>
+    <string name="reset">reset</string>
+    <string name="mark_all">Mark All</string>
+    <string name="action_spinner">SPINNER</string>
+    <string name="no_data">No data available for\n%s</string>
+    <string name="no_attendance">No attendance records!!</string>
+    <string name="my_profile">My Profile</string>
+    <string name="about">About</string>
+    <string name="welcome">Welcome!</string>
+    <string name="check_for_updates">Check for Updates</string>
+    <string name="android_developer_name">Nishant Mittal</string>
+    <string name="android_developer">Android Developer</string>
+    <string name="backend_developer">Backend Developer</string>
+    <string name="backend_developer_name">Shubham Jindal</string>
+    <string name="backend_developer_name_2">Manan Khandelwal</string>
+    <string name="mentor_designation">Dean Academics</string>
+    <string name="mentor_name">Prof. Achal Kaushik</string>
+    <string name="about_title">ABOUT US</string>
+    <string name="mentors_title">Mentors</string>
+    <string name="developers_title">Developers</string>
+    <string name="view_statistics">View Statistics</string>
+    <string name="edit_last_attendance">Edit Last Attendance</string>
+    <string name="optionIcon">⋮</string>
+    <string name="start_typing">Start typing to search</string>
+    <string name="profile">Profile</string>
+    <string name="my">My</string>
+    <string name="tick_logo">Tick Logo</string>
+    <string name="password_changed">Password Changed!</string>
+    <string name="fab_content_desc">Floating Button</string>
+    <string name="add_subject">Add Subject</string>
+    <string name="student_data_not_available">Student Data not Available</string>
+    <string name="no_subject_assigned">No Subject Assigned!!</string>
+    <string name="made_by">Made with ❤ by BPITians</string>
+    <string name="required">Required</string>
+    <string name="subject_code">Subject Code</string>
+    <string name="section">Section</string>
+    <string name="class_batch">Class Batch</string>
+    <string name="branch">Branch</string>
+    <string name="batch">Batch</string>
+    <string name="semester">Semester</string>
+    <string name="theory">Theory</string>
+    <string name="lab">Lab</string>
+    <string name="group">Group</string>
+    <string name="specialization">Specialization</string>
+    <string name="downloadAttendance">Download Attendance</string>
+    <string-array name="section_array">
+        <item>A</item>
+        <item>B</item>
+        <item>C</item>
+        <item>D</item>
+    </string-array>
+    <string-array name="class_batch_array">
+        <item>Batch-1</item>
+        <item>Batch-2</item>
+        <item>Batch-3</item>
+        <item>Batch-4</item>
+    </string-array>
+    <string-array name="semester_array">
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+        <item>7</item>
+        <item>8</item>
+    </string-array>
+    <string-array name="group_array">
+        <item>G1</item>
+        <item>G2</item>
+        <item>G3</item>
+    </string-array>
+
+</resources>
