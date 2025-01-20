@@ -14,6 +14,10 @@
                     android:id="@+id/change_password"
                     android:icon="@drawable/ic_baseline_lock_reset_24"
                     android:title="@string/change_password" />
+                <item
+                    android:id="@+id/sync_data"
+                    android:icon="@drawable/ic_baseline_sync_24"
+                    android:title="Sync local data" />
 
             </menu>
         </item>

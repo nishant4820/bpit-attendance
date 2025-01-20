@@ -1,6 +1,7 @@
 package com.bpitindia.attendance
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -39,7 +40,7 @@ class SubjectAdapter(private val dataSet: FacultySubjectsResponse) :
             if (subInfo.specialization != 1) {
                 specializationTextView.visibility = View.VISIBLE
                 specializationTextView.text = subInfo.specializationName
-            }
+            }else specializationTextView.visibility = View.VISIBLE
         }
     }
 
@@ -92,6 +93,7 @@ class SubjectAdapter(private val dataSet: FacultySubjectsResponse) :
         }
 
         holder.takeAttendance.setOnClickListener {
+            Log.d("TAG", "onBindViewHolder: $bundle")
             holder.itemView.findNavController()
                 .navigate(R.id.action_subjectListFragment_to_studentListFragment, bundle)
         }

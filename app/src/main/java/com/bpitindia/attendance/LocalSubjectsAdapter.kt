@@ -1,6 +1,7 @@
 package com.bpitindia.attendance
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -32,23 +33,32 @@ class LocalSubjectsAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = dataSet[position]
-        holder.subjectName.text = item.subject
-        holder.batch.text = findYear(item.batch!!.toInt())
-        holder.subjectDate.text = item.date
-        val bundle = Bundle()
-        bundle.putString("BATCH", item.batch)
-        bundle.putString("NAME",item.subject)
-        bundle.putString("DATE",item.date)
 
-        holder.uploadButton.setOnClickListener {
-            onUploadClick(LocalAttendanceRecords(item.subject,item.date,item.batch))
+        // Safely handle null values in the subject and batch properties
+        holder.subjectName.text = item.subject ?: "Unknown Subject"
+        holder.batch.text = item.batch?.toIntOrNull()?.let { findYear(it) } ?: "Invalid Year"
+        holder.subjectDate.text = item.date ?: "Unknown Date"
+
+        // Prepare bundle for navigation
+        val bundle = Bundle().apply {
+            putString("BATCH", item.batch)
+            putString("NAME", item.subject)
+            putString("DATE", item.date)
         }
 
+        // Set onClickListener for upload button
+        holder.uploadButton.setOnClickListener {
+            Log.d("TAG", "onBindViewHolder: upload button clickwed")
+            onUploadClick(LocalAttendanceRecords(item.subject, item.date, item.batch))
+        }
+
+        // Set onClickListener for attendance layout
         holder.takeAttendance.setOnClickListener {
             holder.itemView.findNavController()
-                .navigate(R.id.action_localSubjectsFragment_to_localStudentListFragment,bundle)
+                .navigate(R.id.action_localSubjectListFragment_to_localStudentListFragment, bundle)
         }
     }
+
 
     override fun getItemCount() = dataSet.size
 

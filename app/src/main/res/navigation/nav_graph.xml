@@ -105,7 +105,11 @@
         android:id="@+id/localSubjectListFragment"
         android:name="com.bpitindia.attendance.LocalSubjectsFragment"
         android:label="fragment_local_subjects"
-        tools:layout="@layout/local_subject_list"/>
+        tools:layout="@layout/local_subject_list">
+        <action
+            android:id="@+id/action_localSubjectListFragment_to_localStudentListFragment"
+            app:destination="@id/localStudentListFragment" />
+    </fragment>
     <fragment
         android:id="@+id/studentListFragment"
         android:name="com.bpitindia.attendance.StudentListFragment"
@@ -221,22 +225,12 @@
         tools:layout="@layout/fragment_add_subject" />
 
     <fragment
-        android:id="@+id/LocalSubjectsFragment"
-        android:name="com.bpitindia.attendance.LocalSubjectsFragment"
-        tools:layout="@layout/local_subject_list">
-
-        <action
-            android:id="@+id/action_localSubjectsFragment_to_localStudentListFragment"
-            app:destination="@id/localStudentListFragment" />
-    </fragment>
-
-    <fragment
         android:id="@+id/localStudentListFragment"
         android:name="com.bpitindia.attendance.LocalStudentListFragment"
         tools:layout="@layout/fragment_local_student_list">
         <argument
             android:name="attendanceRecords"
-            app:argType="com.example.LocalAttendanceRecords" />
+            app:argType="com.bpitindia.attendance.data.models.LocalAttendanceRecords" />
     </fragment>
 
 </navigation>

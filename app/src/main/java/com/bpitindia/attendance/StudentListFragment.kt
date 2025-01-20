@@ -13,7 +13,6 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import android.widget.Toast
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
@@ -37,6 +36,9 @@ import com.bpitindia.attendance.utils.Constants.SHARED_PREFERENCES_PROFILE
 import com.bpitindia.attendance.utils.Constants.SPECIALIZATION
 import com.bpitindia.attendance.utils.Constants.SUBJECT
 import com.bpitindia.attendance.utils.Constants.TOKEN_KEY
+import com.bpitindia.attendance.utils.canUpdateOnServer
+import com.bpitindia.attendance.utils.saveAttendanceLocally
+import com.bpitindia.attendance.utils.submitAttendance
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -68,14 +70,14 @@ class StudentListFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
-            batch = it.getString(BATCH)
-            section = it.getString(SECTION)
-            branch = it.getString(BRANCH)
-            isLab = it.getBoolean(IS_LAB)
-            group = it.getString(GROUP)
-            subject = it.getString(SUBJECT)
-            classBatch = it.getString(CLASS_BATCH)
-            specialization = it.getInt(SPECIALIZATION)
+            batch = it.getString("batch")
+            section = it.getString("section")
+            branch = it.getString("branch")
+            isLab = it.getBoolean("is_lab")
+            group = it.getString("group")
+            subject = it.getString("subject")
+            classBatch = it.getString("class_batch")
+            specialization = it.getInt("specialization")
         }
         sharedPrefProfile =
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
@@ -96,10 +98,10 @@ class StudentListFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         attendanceMap.clear()
-        fetchStudents()
+        fetchStudents(view)
     }
 
-    private fun fetchStudents() {
+    private fun fetchStudents(view: View) {
         sharedPrefProfile =
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
         val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
@@ -130,7 +132,7 @@ class StudentListFragment : Fragment() {
                             val body = response.body()
                             for (i in 0 until (body?.size ?: 0)) {
                                 val student = body?.get(i)
-                                attendanceMap[student?.enrollmentNumber!!] = false
+                                attendanceMap[student?.enrollmentNumber!!] = Pair(student.name!!,false)
                             }
                             activity?.runOnUiThread {
                                 binding.studentProgressBar.visibility = View.GONE
@@ -141,7 +143,7 @@ class StudentListFragment : Fragment() {
                                     layoutManager = LinearLayoutManager(activity)
                                     adapter = body?.let { StudentAdapter(it) }
                                 }
-                                addMenu()
+                                addMenu(view)
                             }
                         } else {
                             Log.d(LOG_TAG, "students fetch unsuccessful code: ${response.code()}")
@@ -166,7 +168,7 @@ class StudentListFragment : Fragment() {
 
     }
 
-    private fun addMenu() {
+    private fun addMenu(view: View) {
         val menuHost: MenuHost = requireActivity()
         menuHost.addMenuProvider(object : MenuProvider {
             override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
@@ -179,7 +181,7 @@ class StudentListFragment : Fragment() {
                     var present = 0
                     var absent = 0
                     attendanceMap.forEach { (_, value) ->
-                        if (value) present++ else absent++
+                        if (value.second) present++ else absent++
                     }
                     AlertDialog.Builder(context).apply {
                         setTitle("Submit?")
@@ -192,7 +194,8 @@ class StudentListFragment : Fragment() {
                             )
                         )
                         setPositiveButton("Confirm") { _, _ ->
-                            markAttendance()
+
+                            markAttendance(view)
                         }
                         setNegativeButton("Cancel") { _, _ -> }
                     }.create().show()
@@ -200,14 +203,14 @@ class StudentListFragment : Fragment() {
                 }
                 if (menuItem.itemId == R.id.mark_all) {
                     if (isMarkedAll) {
-                        attendanceMap.forEach { (key, _) ->
-                            attendanceMap[key] = false
+                        attendanceMap.forEach { (key, value) ->
+                            attendanceMap[key] = value.copy(second = false)
                         }
                         isMarkedAll = !isMarkedAll
                         Snackbar.make(binding.root, "Unmarked All", Snackbar.LENGTH_SHORT).show()
                     } else {
-                        attendanceMap.forEach { (key, _) ->
-                            attendanceMap[key] = true
+                        attendanceMap.forEach { (key, value) ->
+                            attendanceMap[key] = value.copy(second = true)
                         }
                         isMarkedAll = !isMarkedAll
                         Snackbar.make(binding.root, "Marked All", Snackbar.LENGTH_SHORT).show()
@@ -222,7 +225,7 @@ class StudentListFragment : Fragment() {
     }
 
     @Suppress("DEPRECATION")
-    private fun markAttendance() {
+    private fun markAttendance(view: View) {
         val progressDialog = android.app.ProgressDialog(context, R.style.AppCompatAlertDialogStyle)
         progressDialog.setTitle("Submitting Attendance")
         progressDialog.setMessage("Please Wait...")
@@ -232,13 +235,15 @@ class StudentListFragment : Fragment() {
         val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
         val currentDateAndTime = sdf.format(Date())
         val recordsArray = StudentsResponse()
+        Log.d("TAG", "markAttendance: making records $subject $batch")
         attendanceMap.forEach { (key, value) ->
             val attendanceRecord = Student(enrollmentNumber = "",date="")
             attendanceRecord.enrollmentNumber = key
             attendanceRecord.subject = subject
             attendanceRecord.batch = batch
-            attendanceRecord.status = value
+            attendanceRecord.status = value.second
             attendanceRecord.date = currentDateAndTime
+            attendanceRecord.name = value.first
             recordsArray.add(attendanceRecord)
         }
         val body = StudentRequestBody()
@@ -246,60 +251,13 @@ class StudentListFragment : Fragment() {
 
         sharedPrefProfile =
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
-        val token = sharedPrefProfile?.getString(TOKEN_KEY, null)
 
-        lifecycleScope.launch {
-            repository.remote.submitAttendance(token!!, body)
-                .enqueue(object : Callback<Any> {
-                    override fun onResponse(
-                        call: Call<Any>,
-                        response: Response<Any>
-                    ) {
-                        progressDialog.dismiss()
-                        activity?.runOnUiThread {
-                            if (response.isSuccessful) {
-                                Snackbar.make(
-                                    binding.root,
-                                    "Attendance Submitted",
-                                    Snackbar.LENGTH_SHORT
-                                )
-                                    .show()
-                                findNavController().popBackStack()
-                            } else {
-                                when (response.code()) {
-                                    401 -> {
-                                        Toast.makeText(
-                                            context,
-                                            getString(R.string.session_expired_message),
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                        findNavController().popBackStack()
-                                    }
-
-                                    else -> {
-                                        Snackbar.make(
-                                            binding.root,
-                                            getString(R.string.server_error_message),
-                                            Snackbar.LENGTH_SHORT
-                                        ).show()
-                                    }
-                                }
-
-                            }
-                        }
-                    }
-
-                    override fun onFailure(call: Call<Any>, t: Throwable) {
-                        progressDialog.dismiss()
-                        activity?.runOnUiThread {
-                            val msg = if (t.message.toString()
-                                    .startsWith(getString(R.string.error_prefix))
-                            ) getString(R.string.internet_message) else getString(R.string.server_error_message)
-                            Snackbar.make(binding.root, msg, Snackbar.LENGTH_SHORT).show()
-                        }
-                        Log.d(LOG_TAG, "upload attendance failed")
-                    }
-                })
+        lifecycleScope.launch(Dispatchers.IO) {
+            submitAttendance(body,sharedPrefProfile,lifecycleScope,repository, context, activity)
+            progressDialog.dismiss()
+            activity?.runOnUiThread{
+                findNavController().popBackStack()
+            }
         }
     }
 }

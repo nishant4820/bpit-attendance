@@ -237,7 +237,7 @@ class EditAttendanceFragment : Fragment() {
                 }
             } else {
                 // Store the attendance data locally when offline or server not available
-                saveAttendanceLocally(dataSet, repository, lifecycleScope)
+                saveAttendanceLocally(dataSet, repository, requireContext(),lifecycleScope)
             }
         }
 

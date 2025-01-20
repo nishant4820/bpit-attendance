@@ -236,15 +236,15 @@ class LoginFragment : Fragment() {
     }
 
     private suspend fun healthCheck(): Boolean {
-        var healthSuccessful = false
-        withContext(Dispatchers.IO) {
+        return withContext(Dispatchers.IO) {
+            var healthSuccessful = false
             try {
                 val response = repository.remote.health()
                 if (response.isSuccessful) {
                     healthSuccessful = true
                     Log.d(LOG_TAG, "health response successful")
                 } else {
-                    activity?.runOnUiThread {
+                    withContext(Dispatchers.Main) {
                         Toast.makeText(
                             context,
                             getString(R.string.server_error_message),
@@ -255,7 +255,7 @@ class LoginFragment : Fragment() {
                 }
             } catch (e: ConnectException) {
                 Log.d(LOG_TAG, "server unavailable")
-                activity?.runOnUiThread {
+                withContext(Dispatchers.Main) {
                     Toast.makeText(
                         context,
                         getString(R.string.server_error_message),
@@ -264,7 +264,7 @@ class LoginFragment : Fragment() {
                 }
             } catch (e: UnknownHostException) {
                 Log.d(LOG_TAG, "no internet")
-                activity?.runOnUiThread {
+                withContext(Dispatchers.Main) {
                     Toast.makeText(
                         context,
                         getString(R.string.internet_message),
@@ -273,14 +273,17 @@ class LoginFragment : Fragment() {
                 }
             } catch (e: Exception) {
                 Log.d(LOG_TAG, "some error occurred")
-                Toast.makeText(
-                    context,
-                    getString(R.string.server_error_message),
-                    Toast.LENGTH_SHORT
-                ).show()
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        context,
+                        getString(R.string.server_error_message),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
+            healthSuccessful
         }
-        return healthSuccessful
     }
+
 
 }

@@ -15,6 +15,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
+import android.widget.Toast.LENGTH_SHORT
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
 import androidx.lifecycle.Lifecycle
@@ -102,6 +103,9 @@ class LocalStudentListFragment : Fragment() {
                     }
                 }
                 .collect {students->
+                    students.forEach {student->
+                        attendanceMap[student.enrollmentNumber] = Pair(student.name!!,student.status!!)
+                    }
                     activity?.runOnUiThread {
                         binding.studentProgressBar.visibility = View.GONE
                         if (students.size == 0) {
@@ -110,9 +114,8 @@ class LocalStudentListFragment : Fragment() {
                         binding.studentList.apply {
                             layoutManager = LinearLayoutManager(activity)
                             val response = StudentsResponse()
-                            students.forEach { student ->
-                                response.add(student)
-                            }
+                            response.addAll(students)
+                            Log.d(LOG_TAG, "fetchStudents: $response")
                             adapter = students.let { StudentAdapter(response) }
                         }
                         addMenu(view)
@@ -148,7 +151,7 @@ class LocalStudentListFragment : Fragment() {
     }
 
     private fun handleUploadAttendance(view: View) {
-        val present = attendanceMap.values.count { it }
+        val present = attendanceMap.values.count { it.second }
         val absent = attendanceMap.size - present
         AlertDialog.Builder(context).apply {
             setTitle("Submit?")
@@ -159,8 +162,19 @@ class LocalStudentListFragment : Fragment() {
     }
 
     private fun toggleMarkAll() {
-        isMarkedAll = !isMarkedAll
-        attendanceMap.forEach { (key, _) -> attendanceMap[key] = isMarkedAll }
+        if (isMarkedAll) {
+            attendanceMap.forEach { (key, value) ->
+                attendanceMap[key] = value.copy(second = false)
+            }
+            isMarkedAll = !isMarkedAll
+            Snackbar.make(binding.root, "Unmarked All", Snackbar.LENGTH_SHORT).show()
+        } else {
+            attendanceMap.forEach { (key, value) ->
+                attendanceMap[key] = value.copy(second = true)
+            }
+            isMarkedAll = !isMarkedAll
+            Snackbar.make(binding.root, "Marked All", Snackbar.LENGTH_SHORT).show()
+        }
         val message = if (isMarkedAll) "Marked All" else "Unmarked All"
         Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT).show()
         (binding.studentList.adapter as StudentAdapter).notifyDataSetChanged()
@@ -182,8 +196,9 @@ class LocalStudentListFragment : Fragment() {
             attendanceRecord.enrollmentNumber = key
             attendanceRecord.subject = subject
             attendanceRecord.batch = batch
-            attendanceRecord.status = value
+            attendanceRecord.status = value.second
             attendanceRecord.date = currentDateAndTime
+            attendanceRecord.name = value.first
             recordsArray.add(attendanceRecord)
         }
         val body = StudentRequestBody()
@@ -194,21 +209,13 @@ class LocalStudentListFragment : Fragment() {
 
         lifecycleScope.launch {
             if (canUpdateOnServer(context,repository)){
-                if(!submitAttendance(body,sharedPrefProfile,lifecycleScope,repository, context, activity)){
-                    if(saveAttendanceLocally(recordsArray, repository, lifecycleScope)){
-                        showSnackbar("Attendance saved locally, sync with server later to update attendance")
-                    }else{
-                        showSnackbar("attendance not saved locally")
-                    }
-
-                }
+                submitAttendance(body,sharedPrefProfile,lifecycleScope,repository, context, activity)
+                progressDialog.dismiss()
+            }else{
+                progressDialog.dismiss()
+                Toast.makeText(context,"Try again later",LENGTH_SHORT).show()
 
             }
-            else{
-                showToast("Uploaded attendance successfully")
-            }
-            progressDialog.dismiss()
-
         }
     }
 

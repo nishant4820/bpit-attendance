@@ -238,6 +238,8 @@ class StatisticsFragment : Fragment() {
                                 progressBar.visibility = ProgressBar.GONE
                                 attendanceTimestamps = body?.columns
                                 studentRecords = body?.studentData
+                                Log.d(LOG_TAG, "onResponse: $studentRecords")
+                                Log.d(LOG_TAG, "onResponse: $attendanceTimestamps")
                                 if (attendanceTimestamps != null && studentRecords != null) {
                                     downloadButton.visibility = View.VISIBLE
                                     displayData(attendanceTimestamps!!, studentRecords!!)
@@ -548,6 +550,9 @@ class StatisticsFragment : Fragment() {
         toDateFormat: String,
         timeZone: TimeZone = TimeZone.getTimeZone("Asia/Kolkata")
     ): String {
+        Log.d(LOG_TAG, "formatDate: $fromDateFormat")
+        Log.d(LOG_TAG, "formatDate: $toDateFormat")
+        Log.d(LOG_TAG, "formatDate: $timeZone")
         val parser = SimpleDateFormat(fromDateFormat, Locale.getDefault())
         parser.timeZone = timeZone
         val date = parser.parse(this)!!

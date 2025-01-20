@@ -3,9 +3,12 @@ package com.bpitindia.attendance.utils
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.util.Log
 import com.bpitindia.attendance.data.Repository
+import com.bpitindia.attendance.utils.Constants.LOG_TAG
 
 suspend fun canUpdateOnServer(context: Context?=null,repository: Repository): Boolean {
+    Log.d(LOG_TAG, "canUpdateOnServer: check")
     val connectivityManager = context?.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     val network = connectivityManager.activeNetwork
     val capabilities = connectivityManager.getNetworkCapabilities(network)

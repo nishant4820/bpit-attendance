@@ -99,7 +99,10 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker, MyActivityMethodProvid
                 R.id.check_update -> {
                     checkForUpdates(true)
                 }
-
+                R.id.sync_data->{
+                    /*TODO*/
+                    navController.navigate(R.id.action_subjectListFragment_to_localSubjectListFragment)
+                }
                 R.id.about -> {
                     navController.navigate(R.id.action_subjectListFragment_to_aboutFragment)
                 }

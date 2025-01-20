@@ -9,7 +9,7 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.bpitindia.attendance.data.models.StudentsResponse
 
-val attendanceMap = mutableMapOf<String, Boolean>()
+val attendanceMap = mutableMapOf<String, Pair<String,Boolean>>() //enrollment number : Name, Status
 
 class StudentAdapter(
     private val dataSet: StudentsResponse
@@ -48,7 +48,7 @@ class StudentAdapter(
             studentInfo.attendanceCount
         )
         val isPresent: Boolean =
-            attendanceMap[studentInfo.enrollmentNumber]!!
+            attendanceMap[studentInfo.enrollmentNumber]!!.second
         if (isPresent)
             holder.studentCard.setCardBackgroundColor(
                 ContextCompat.getColor(
@@ -65,10 +65,10 @@ class StudentAdapter(
             )
         holder.studentCard.setOnClickListener {
             val isPresent1: Boolean =
-                attendanceMap[studentInfo.enrollmentNumber]!!
+                attendanceMap[studentInfo.enrollmentNumber]!!.second
             attendanceMap.replace(
                 studentInfo.enrollmentNumber!!,
-                !isPresent1
+                Pair(attendanceMap[studentInfo.enrollmentNumber]!!.first, !isPresent1)
             )
             if (isPresent1) {
                 (it as CardView).setCardBackgroundColor(
