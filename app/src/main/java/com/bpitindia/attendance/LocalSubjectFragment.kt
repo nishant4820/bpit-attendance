@@ -68,7 +68,7 @@ class LocalSubjectsFragment : Fragment() {
 
     private fun initializeViews(view: View) {
         recyclerView = view.findViewById(R.id.rvLocalSubjects)
-        noDataTextView = view.findViewById(R.id.no_data_edit)
+        noDataTextView = view.findViewById(R.id.no_local_data_edit)
         progressBar = view.findViewById(R.id.stats_progress_bar)
 
         recyclerView.apply {
@@ -110,50 +110,9 @@ class LocalSubjectsFragment : Fragment() {
             noDataTextView.visibility = View.GONE
             recyclerView.visibility = View.VISIBLE
             recyclerView.adapter = LocalSubjectsAdapter(
-                data,
-                onUploadClick = { record ->
-                    handleUpload(record)
-                }
+                data
             )
         }
-    }
-
-    private fun handleUpload(record: LocalAttendanceRecords) {
-        Log.d("TAG", "handleUpload: called")
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                // Run the heavy operation on the IO dispatcher
-                withContext(Dispatchers.IO) {
-                    uploadRecord(record)
-                }
-            }  catch (e: Exception) {
-                Log.e(LOG_TAG, "Upload failed: ${e.message}")
-            }
-        }
-    }
-
-    private suspend fun uploadRecord(record: LocalAttendanceRecords) {
-        Log.d("TAG", "uploadRecord: upload record $record")
-        val sharedPrefProfile = activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
-        val studentRequestBody = StudentRequestBody()
-        val studentsResponse = StudentsResponse()
-
-        repository.local.attendanceDataDao()
-            .getLocalData( record.date ?: "",record.subject ?: "")
-            .flowOn(Dispatchers.IO)
-            .catch { e -> Log.e(LOG_TAG, "Error fetching local data for upload: $e") }
-            .collect { students ->
-                students.forEach { student ->
-                    studentsResponse.add(student)
-                }
-            }
-
-        studentRequestBody.record = studentsResponse
-        //first delete this record from local db
-        Log.d(LOG_TAG, "uploadRecord: ${record.date} ${record.subject}")
-        repository.local.attendanceDataDao().deleteRecordByEnrollment(record.date?:"",record.subject?:"")
-        //now try sending data to server, if sent then good else it will again save in local db
-        submitAttendance(studentRequestBody, sharedPrefProfile, lifecycleScope, repository, context, activity)
     }
 
     private fun showToast(message: String) {

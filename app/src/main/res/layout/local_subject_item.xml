@@ -57,21 +57,7 @@
                 tools:text="22/01/2003" />
         </LinearLayout>
 
-        <!-- Upload Icon (Aligned to the right) -->
-        <ImageButton
-            android:id="@+id/local_upload_image_button"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:layout_marginEnd="8dp"
-            android:layout_gravity="center"
-            android:padding="8dp"
-            android:background="@android:color/transparent"
-            android:src="@drawable/ic_baseline_upload_24"
-            android:contentDescription="@string/upload"
-            android:focusable="false"
-            android:focusableInTouchMode="false"
-            android:clickable="true"
-            app:tint="@color/black" />
+
 
     </LinearLayout>
 </androidx.cardview.widget.CardView>

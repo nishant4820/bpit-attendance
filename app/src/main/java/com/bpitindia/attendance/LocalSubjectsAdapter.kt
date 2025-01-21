@@ -14,14 +14,12 @@ import com.bpitindia.attendance.data.models.LocalAttendanceRecords
 
 class LocalSubjectsAdapter(
     private val dataSet: List<LocalAttendanceRecords>,
-    private val onUploadClick: (LocalAttendanceRecords) -> Unit,
 ) : RecyclerView.Adapter<LocalSubjectsAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val subjectName: TextView = view.findViewById(R.id.local_subject_name)
         val subjectDate: TextView = view.findViewById(R.id.local_subject_date)
         val batch: TextView = view.findViewById(R.id.local_batch)
-        val uploadButton: ImageButton = view.findViewById(R.id.local_upload_image_button)
         val takeAttendance: LinearLayout = view.findViewById(R.id.local_info_layout)
     }
 
@@ -36,7 +34,8 @@ class LocalSubjectsAdapter(
 
         // Safely handle null values in the subject and batch properties
         holder.subjectName.text = item.subject ?: "Unknown Subject"
-        holder.batch.text = item.batch?.toIntOrNull()?.let { findYear(it) } ?: "Invalid Year"
+        val batchText = "Batch: ${item.batch}"
+        holder.batch.text = batchText
         holder.subjectDate.text = item.date ?: "Unknown Date"
 
         // Prepare bundle for navigation
@@ -46,11 +45,6 @@ class LocalSubjectsAdapter(
             putString("DATE", item.date)
         }
 
-        // Set onClickListener for upload button
-        holder.uploadButton.setOnClickListener {
-            Log.d("TAG", "onBindViewHolder: upload button clickwed")
-            onUploadClick(LocalAttendanceRecords(item.subject, item.date, item.batch))
-        }
 
         // Set onClickListener for attendance layout
         holder.takeAttendance.setOnClickListener {

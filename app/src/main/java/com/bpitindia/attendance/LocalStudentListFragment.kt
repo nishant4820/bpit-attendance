@@ -138,6 +138,7 @@ class LocalStudentListFragment : Fragment() {
                 when (menuItem.itemId) {
                     R.id.upload_attendance -> {
                         handleUploadAttendance(view)
+
                         return true
                     }
                     R.id.mark_all -> {
@@ -208,13 +209,19 @@ class LocalStudentListFragment : Fragment() {
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
 
         lifecycleScope.launch {
+            repository.local.attendanceDataDao().deleteRecord(subject!!,date!!,batch!!)
             if (canUpdateOnServer(context,repository)){
                 submitAttendance(body,sharedPrefProfile,lifecycleScope,repository, context, activity)
                 progressDialog.dismiss()
+                activity?.runOnUiThread{
+                    findNavController().popBackStack()
+                }
             }else{
                 progressDialog.dismiss()
                 Toast.makeText(context,"Try again later",LENGTH_SHORT).show()
-
+                activity?.runOnUiThread{
+                    findNavController().popBackStack()
+                }
             }
         }
     }

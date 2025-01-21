@@ -52,6 +52,7 @@
     <string name="action_spinner">SPINNER</string>
     <string name="no_data">No data available for\n%s</string>
     <string name="no_attendance">No attendance records!!</string>
+    <string name="no_local_attendance">No local attendance records!!</string>
     <string name="my_profile">My Profile</string>
     <string name="about">About</string>
     <string name="welcome">Welcome!</string>

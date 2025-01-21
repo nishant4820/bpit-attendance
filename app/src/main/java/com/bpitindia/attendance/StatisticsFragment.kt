@@ -119,7 +119,6 @@ class StatisticsFragment : Fragment() {
             findNavController().popBackStack()
         }
     }
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {

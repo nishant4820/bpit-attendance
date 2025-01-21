@@ -25,7 +25,7 @@ interface AttendanceDataDao {
     @Query("SELECT DISTINCT subject, date, batch FROM students")
     fun getUniqueRecords(): Flow<List<LocalAttendanceRecords>>
 
-    @Query("DELETE FROM students WHERE date = :date AND subject = :subject")
-    suspend fun deleteRecordByEnrollment(date: String, subject: String)
+    @Query("DELETE FROM students WHERE date = :date AND subject = :subject AND batch = :batch")
+    suspend fun deleteRecord( subject: String,date: String,batch:String)
 
 }
