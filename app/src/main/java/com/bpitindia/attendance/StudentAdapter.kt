@@ -48,7 +48,7 @@ class StudentAdapter(
             studentInfo.attendanceCount
         )
         val isPresent: Boolean =
-            attendanceMap[studentInfo.enrollmentNumber]!!.second
+            attendanceMap[studentInfo.enrollmentNumber]?.second?:false
         if (isPresent)
             holder.studentCard.setCardBackgroundColor(
                 ContextCompat.getColor(
@@ -65,10 +65,10 @@ class StudentAdapter(
             )
         holder.studentCard.setOnClickListener {
             val isPresent1: Boolean =
-                attendanceMap[studentInfo.enrollmentNumber]!!.second
+                attendanceMap[studentInfo.enrollmentNumber]?.second?:false
             attendanceMap.replace(
-                studentInfo.enrollmentNumber!!,
-                Pair(attendanceMap[studentInfo.enrollmentNumber]!!.first, !isPresent1)
+                studentInfo.enrollmentNumber,
+                Pair(attendanceMap[studentInfo.enrollmentNumber]?.first?:"", !isPresent1)
             )
             if (isPresent1) {
                 (it as CardView).setCardBackgroundColor(

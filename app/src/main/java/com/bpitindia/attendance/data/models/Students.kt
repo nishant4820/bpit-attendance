@@ -2,6 +2,8 @@ package com.bpitindia.attendance.data.models
 
 import android.os.Parcelable
 import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverter
 import com.google.gson.Gson
@@ -12,7 +14,7 @@ import kotlinx.parcelize.Parcelize
 
 class StudentsResponse : ArrayList<Student>()
 
-@Entity(tableName = "students", primaryKeys = ["enrollmentNumber","date"])
+@Entity(tableName = "students_attendance", primaryKeys = ["enrollmentNumber","date"])
 @Parcelize
 data class Student(
     @SerializedName("enrollment_number")
@@ -62,6 +64,67 @@ data class StudentRequestBody(
     @Expose
     var record: StudentsResponse? = null
 )
+
+
+@Entity(
+    tableName = "students_records",
+    primaryKeys = ["enrollmentNumber","facultySubjectId"],
+    foreignKeys = [
+        ForeignKey(
+            entity = FacultySubject::class,
+            parentColumns = ["id"],
+            childColumns = ["facultySubjectId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index(value = ["facultySubjectId"])]
+)
+@Parcelize
+data class StudentRecords(
+    @SerializedName("facultySubjectId")
+    @Expose
+    var facultySubjectId: Int, // This is the foreign key referencing FacultySubjects.id
+
+    @SerializedName("enrollment_number")
+    @Expose
+    var enrollmentNumber: String,
+
+    @SerializedName("name")
+    @Expose
+    var name: String? = null,
+
+    @SerializedName("class_roll_number")
+    @Expose
+    var classRollNumber: String? = null,
+
+    @SerializedName("attendance_count")
+    @Expose
+    var attendanceCount: Int? = null,
+
+    @SerializedName("attendance_data")
+    @Expose
+    var attendanceData: List<Int>? = null,
+
+    @SerializedName("status")
+    @Expose
+    var status: Boolean? = null,
+
+    @SerializedName("id")
+    @Expose
+    var id: Int? = null,
+
+    @SerializedName("batch")
+    @Expose
+    var batch: String? = null,
+
+    @SerializedName("date")
+    @Expose
+    var date: String,
+
+    @SerializedName("subject")
+    @Expose
+    var subject: String? = null
+) : Parcelable
 
 class Converters {
     @TypeConverter

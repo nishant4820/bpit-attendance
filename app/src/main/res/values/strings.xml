@@ -12,6 +12,7 @@
     <string name="server_error_message">Something went wrong. Please try again later!</string>
     <string name="session_expired_message">Session Expired! Log in again.</string>
     <string name="internet_message">Please check Internet Connection!</string>
+    <string name="working_offline">Working Offline</string>
     <string name="error_prefix">Unable to resolve host</string>
 
     <!--    App related Strings-->
@@ -58,6 +59,7 @@
     <string name="welcome">Welcome!</string>
     <string name="check_for_updates">Check for Updates</string>
     <string name="android_developer_name">Nishant Mittal</string>
+    <string name="android_developer_name_2">Mokshit Garg</string>
     <string name="android_developer">Android Developer</string>
     <string name="backend_developer">Backend Developer</string>
     <string name="backend_developer_name">Shubham Jindal</string>

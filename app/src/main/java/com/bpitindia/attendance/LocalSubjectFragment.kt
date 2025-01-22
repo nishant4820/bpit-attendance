@@ -11,24 +11,15 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bpitindia.attendance.data.Repository
 import com.bpitindia.attendance.data.models.LocalAttendanceRecords
-import com.bpitindia.attendance.data.models.Student
-import com.bpitindia.attendance.data.models.StudentRequestBody
-import com.bpitindia.attendance.data.models.StudentsResponse
-import com.bpitindia.attendance.utils.Constants.LOG_TAG
-import com.bpitindia.attendance.utils.Constants.SHARED_PREFERENCES_PROFILE
-import com.bpitindia.attendance.utils.submitAttendance
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.retry
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -86,7 +77,7 @@ class LocalSubjectsFragment : Fragment() {
 
         lifecycleScope.launch {
             repository.local.attendanceDataDao()
-                .getUniqueRecords()
+                .getUniqueRecordsLocalSubjects()
                 .flowOn(Dispatchers.IO)
                 .catch { e ->
                     Log.e(LOG_TAG, "Error fetching data: $e")

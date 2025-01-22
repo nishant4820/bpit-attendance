@@ -368,7 +368,7 @@ class AddSubjectFragment : Fragment() {
 
             val body = FacultySubjectsBody().apply {
                 this.subjects = FacultySubjectsResponse().apply {
-                    add(FacultySubject().apply {
+                    add(FacultySubject(id=0).apply {
                         this.batch = batch
                         this.branchCode = selectedBranch
                         this.group = group

@@ -13,6 +13,7 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import android.widget.Toast.LENGTH_SHORT
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
@@ -22,6 +23,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bpitindia.attendance.data.Repository
 import com.bpitindia.attendance.data.models.Student
+import com.bpitindia.attendance.data.models.StudentRecords
 import com.bpitindia.attendance.data.models.StudentRequestBody
 import com.bpitindia.attendance.data.models.StudentsResponse
 import com.bpitindia.attendance.databinding.FragmentStudentListBinding
@@ -56,6 +58,7 @@ class StudentListFragment : Fragment() {
     @Inject
     lateinit var repository: Repository
     private lateinit var binding: FragmentStudentListBinding
+    private var id: Int? = null
     private var batch: String? = null
     private var section: String? = null
     private var branch: String? = null
@@ -70,6 +73,7 @@ class StudentListFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
+            id = it.getInt("id")
             batch = it.getString("batch")
             section = it.getString("section")
             branch = it.getString("branch")
@@ -134,6 +138,27 @@ class StudentListFragment : Fragment() {
                                 val student = body?.get(i)
                                 attendanceMap[student?.enrollmentNumber!!] = Pair(student.name!!,false)
                             }
+                            lifecycleScope.launch(Dispatchers.IO) {
+                                val facultySubjectId = id
+                                val studentRecords: List<StudentRecords> = body!!.map { student ->
+                                    StudentRecords(
+                                        facultySubjectId = facultySubjectId!!,
+                                        enrollmentNumber = student.enrollmentNumber,
+                                        name = student.name,
+                                        classRollNumber = student.classRollNumber,
+                                        attendanceCount = student.attendanceCount,
+                                        attendanceData = student.attendanceData,
+                                        status = student.status,
+                                        id = student.id,
+                                        batch = student.batch,
+                                        date = student.date,
+                                        subject = student.subject
+                                    )
+                                }
+                                Log.d("TAG", "onResponse: $studentRecords")
+                                repository.local.studentRecordsDao().insertStudentRecords(studentRecords)
+                                Log.d(LOG_TAG, "onResponse: successfully changes in db")
+                            }
                             activity?.runOnUiThread {
                                 binding.studentProgressBar.visibility = View.GONE
                                 if (body?.size == 0) {
@@ -153,16 +178,51 @@ class StudentListFragment : Fragment() {
                             }
                         }
                     }
-
-                    override fun onFailure(call: Call<StudentsResponse>, t: Throwable) {
+                    override fun onFailure(
+                        call: Call<StudentsResponse>,
+                        t: Throwable
+                    ) {
                         Log.d(LOG_TAG, "fetch student failed")
                         t.printStackTrace()
                         activity?.runOnUiThread {
-                            binding.studentProgressBar.visibility = View.GONE
-                            findNavController().popBackStack()
+                            val msg = getString(R.string.working_offline)
+                            Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
+                        }
+                        lifecycleScope.launch (Dispatchers.IO){
+                            val body = repository.local.studentRecordsDao().getStudentRecordsByFacultySubjectId(id?:0)
+                            val studentsResponse = StudentsResponse().apply {
+                                addAll(body.map { record ->
+                                    Student(
+                                        enrollmentNumber = record.enrollmentNumber,
+                                        name = record.name,
+                                        classRollNumber = record.classRollNumber,
+                                        attendanceCount = record.attendanceCount,
+                                        attendanceData = record.attendanceData,
+                                        status = record.status,
+                                        id = record.id,
+                                        batch = record.batch,
+                                        date = record.date,
+                                        subject = record.subject
+                                    )
+                                })
+                            }
+                            for (i in 0 until (studentsResponse?.size ?: 0)) {
+                                val student = studentsResponse?.get(i)
+                                attendanceMap[student?.enrollmentNumber!!] = Pair(student.name!!,false)
+                            }
+                            activity?.runOnUiThread {
+                                binding.studentProgressBar.visibility = View.GONE
+                                if (body?.size == 0) {
+                                    binding.noStudent.visibility = TextView.VISIBLE
+                                }
+                                binding.studentList.apply {
+                                    layoutManager = LinearLayoutManager(activity)
+                                    adapter = body?.let { StudentAdapter(studentsResponse) }
+                                }
+                                addMenu(view)
+                            }
                         }
                     }
-
                 })
         }
 

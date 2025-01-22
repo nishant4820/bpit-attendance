@@ -31,7 +31,6 @@ import com.bpitindia.attendance.utils.Constants.LOG_TAG
 import com.bpitindia.attendance.utils.Constants.SHARED_PREFERENCES_PROFILE
 import com.bpitindia.attendance.utils.Constants.TOKEN_KEY
 import com.bpitindia.attendance.utils.canUpdateOnServer
-import com.bpitindia.attendance.utils.saveAttendanceLocally
 import com.bpitindia.attendance.utils.submitAttendance
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
@@ -92,7 +91,7 @@ class LocalStudentListFragment : Fragment() {
 
         lifecycleScope.launch(Dispatchers.IO) {
             Log.d(LOG_TAG, "fetching students")
-            repository.local.attendanceDataDao().getLocalData(date!!, subject!!)
+            repository.local.attendanceDataDao().getLocalDataStudents(date!!, subject!!)
                 .flowOn(Dispatchers.IO)
                 .catch { e ->
                     Log.d(LOG_TAG, "fetch student failed")
@@ -209,7 +208,7 @@ class LocalStudentListFragment : Fragment() {
             activity?.getSharedPreferences(SHARED_PREFERENCES_PROFILE, Context.MODE_PRIVATE)
 
         lifecycleScope.launch {
-            repository.local.attendanceDataDao().deleteRecord(subject!!,date!!,batch!!)
+            repository.local.attendanceDataDao().deleteLocalDataStudents(subject!!,date!!,batch!!)
             if (canUpdateOnServer(context,repository)){
                 submitAttendance(body,sharedPrefProfile,lifecycleScope,repository, context, activity)
                 progressDialog.dismiss()
@@ -217,6 +216,7 @@ class LocalStudentListFragment : Fragment() {
                     findNavController().popBackStack()
                 }
             }else{
+                repository.local.attendanceDataDao().insertLocalDataStudents(recordsArray)
                 progressDialog.dismiss()
                 Toast.makeText(context,"Try again later",LENGTH_SHORT).show()
                 activity?.runOnUiThread{

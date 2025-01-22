@@ -100,14 +100,12 @@ class MainActivity : AppCompatActivity(), MyDrawerLocker, MyActivityMethodProvid
                     checkForUpdates(true)
                 }
                 R.id.sync_data->{
-                    /*TODO*/
                     navController.navigate(R.id.action_subjectListFragment_to_localSubjectListFragment)
                 }
                 R.id.about -> {
                     navController.navigate(R.id.action_subjectListFragment_to_aboutFragment)
                 }
             }
-
             true
         }
         navigationView.findViewById<TextView>(R.id.logout).setOnClickListener {

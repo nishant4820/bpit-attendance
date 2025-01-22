@@ -231,6 +231,9 @@ class LoginFragment : Fragment() {
             progressDialog.dismiss()
             if (serverHealth && token != null && id != null) {
                 findNavController().navigate(R.id.action_loginFragment_to_subjectListFragment)
+            }else if(token != null && id != null){
+                Snackbar.make(requireView(),getString(R.string.working_offline),Snackbar.LENGTH_SHORT).show()
+                findNavController().navigate(R.id.action_loginFragment_to_subjectListFragment)
             }
         }
     }

@@ -15,6 +15,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bpitindia.attendance.data.Repository
+import com.bpitindia.attendance.data.models.FacultySubject
 import com.bpitindia.attendance.data.models.FacultySubjectsResponse
 import com.bpitindia.attendance.utils.Constants.LOG_TAG
 import com.bpitindia.attendance.utils.Constants.SHARED_PREFERENCES_PROFILE
@@ -97,6 +98,7 @@ class SubjectListFragment : Fragment() {
                             response: Response<FacultySubjectsResponse>
                         ) {
                             if (response.isSuccessful) {
+
                                 val body = response.body()
                                 Log.d(LOG_TAG, "subject fetch successful")
                                 activity?.runOnUiThread {
@@ -109,6 +111,15 @@ class SubjectListFragment : Fragment() {
                                     }
                                     shimmerFrameLayout.stopShimmer()
                                     shimmerFrameLayout.visibility = ShimmerFrameLayout.GONE
+                                }
+                                lifecycleScope.launch(Dispatchers.IO) {
+                                    val subjects = body!!.map {facultySubject ->
+                                        facultySubject
+                                    }
+                                    Log.d(LOG_TAG, "onResponse: $subjects")
+                                    val newIds:List<Int> = subjects.map { it.id }
+                                    repository.local.facultySubjectDao().deleteRecordsNotIn(newIds)
+                                    repository.local.facultySubjectDao().insertFacultySubjects(subjects)
                                 }
                             } else {
                                 Log.d(
@@ -130,7 +141,6 @@ class SubjectListFragment : Fragment() {
                                             ).show()
                                             findNavController().navigate(R.id.action_subjectListFragment_to_loginFragment)
                                         }
-
                                         else -> {
                                             Snackbar.make(
                                                 view,
@@ -142,22 +152,53 @@ class SubjectListFragment : Fragment() {
                                 }
                             }
                         }
-
                         override fun onFailure(
                             call: Call<FacultySubjectsResponse>,
                             t: Throwable
                         ) {
+                            Log.d(LOG_TAG, "fetch student failed")
+                            t.printStackTrace()
                             activity?.runOnUiThread {
-                                val msg = if (t.message.toString()
-                                        .startsWith(getString(R.string.error_prefix))
-                                ) getString(R.string.internet_message) else getString(R.string.server_error_message)
+                                val msg = getString(R.string.working_offline)
                                 Snackbar.make(view, msg, Snackbar.LENGTH_SHORT).show()
-                                shimmerFrameLayout.stopShimmer()
-                                shimmerFrameLayout.visibility = ShimmerFrameLayout.GONE
                             }
-                            Log.d(LOG_TAG, "subject fetch failed")
-                        }
+                            lifecycleScope.launch(Dispatchers.IO) {
+                                val body = repository.local.facultySubjectDao().fetchFacultySubjects()
+                                val facultySubjectsResponse:FacultySubjectsResponse = FacultySubjectsResponse().apply {
+                                    addAll(body.map {facultySubject ->
+                                        FacultySubject(
+                                            id = facultySubject.id,
+                                            batch = facultySubject.batch,
+                                            branchCode = facultySubject.subjectCode,
+                                            branchName = facultySubject.branchName,
+                                            branchSlug = facultySubject.branchSlug,
+                                            section = facultySubject.section,
+                                            classBatch = facultySubject.classBatch,
+                                            specialization = facultySubject.specialization,
+                                            specializationName = facultySubject.specializationName,
+                                            isLab = facultySubject.isLab,
+                                            group = facultySubject.group,
+                                            subjectCode = facultySubject.subjectCode,
+                                            subjectName = facultySubject.subjectName,
+                                            semester =facultySubject.semester
+                                        )
+                                    })
+                                }
+                                activity?.runOnUiThread {
+                                    if (body?.size == 0) {
+                                        noSubjectTextView.visibility = TextView.VISIBLE
+                                    }
+                                    view.findViewById<RecyclerView>(R.id.subjectList).apply {
+                                        layoutManager = LinearLayoutManager(activity)
+                                        adapter = SubjectAdapter(facultySubjectsResponse)
+                                    }
+                                    shimmerFrameLayout.stopShimmer()
+                                    shimmerFrameLayout.visibility = ShimmerFrameLayout.GONE
+                                }
+                            }
 
+                            Log.d(LOG_TAG, "subject fetch failed, working offline")
+                        }
                     })
             }
         }
@@ -195,14 +236,12 @@ class SubjectListFragment : Fragment() {
                         Log.d(LOG_TAG, "settings fetch unsuccessful code: ${response.code()}")
                     }
                 }
-
                 override fun onFailure(call: Call<Any>, t: Throwable) {
                     Log.d(LOG_TAG, "settings fetch failed")
                 }
             })
         }
     }
-
     override fun onDestroyView() {
         super.onDestroyView()
         (activity as MainActivity).setDrawerLocked()

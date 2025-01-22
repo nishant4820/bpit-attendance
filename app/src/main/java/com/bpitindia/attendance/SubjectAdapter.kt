@@ -55,6 +55,7 @@ class SubjectAdapter(private val dataSet: FacultySubjectsResponse) :
         holder.bind(subInfo)
 
         val bundle = Bundle()
+        bundle.putInt("id",subInfo.id)
         bundle.putString("batch", subInfo.batch)
         bundle.putString("section", subInfo.section)
         bundle.putString("branch", subInfo.branchCode)

@@ -8,25 +8,16 @@ import android.widget.Toast.LENGTH_SHORT
 import androidx.core.content.ContextCompat.getString
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.LifecycleCoroutineScope
-import androidx.navigation.fragment.NavHostFragment.Companion.findNavController
-import androidx.navigation.fragment.findNavController
 import com.bpitindia.attendance.R
 import com.bpitindia.attendance.data.Repository
-import com.bpitindia.attendance.data.models.LocalAttendanceRecords
 import com.bpitindia.attendance.data.models.StudentRequestBody
-import com.bpitindia.attendance.data.models.StudentsResponse
 import com.bpitindia.attendance.utils.Constants.LOG_TAG
 import com.bpitindia.attendance.utils.Constants.TOKEN_KEY
-import com.google.android.material.snackbar.Snackbar
-import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.flowOn
 import retrofit2.Callback
 import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Response
-import java.util.concurrent.CountDownLatch
 
 
 /*

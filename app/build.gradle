@@ -15,14 +15,15 @@ android {
         targetSdk 34
         versionCode 4
 //        versionName format: "vYEAR.MM.versionCode"
-        versionName "v2024.04.4"
+        versionName "v2025.01.5"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled = true
+            shrinkResources = true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }

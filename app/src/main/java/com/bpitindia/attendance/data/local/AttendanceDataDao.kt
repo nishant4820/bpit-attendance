@@ -1,31 +1,30 @@
 package com.bpitindia.attendance.data.local
 
-import android.util.Log
 import androidx.room.Dao
-import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
 import com.bpitindia.attendance.data.models.LocalAttendanceRecords
 import com.bpitindia.attendance.data.models.Student
 import com.bpitindia.attendance.data.models.StudentsResponse
-import com.bpitindia.attendance.utils.Constants.LOG_TAG
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface AttendanceDataDao {
+    
+    //this function stores data related to attendance of student, it keeps record of who were present or not
     @Insert
-    suspend fun insertLocalData(studentsResponse: StudentsResponse)
+    suspend fun insertLocalDataStudents(studentsResponse: StudentsResponse)
+    
+    //this function is to fetch list of student for a particular subject and date
+    @Query("SELECT * FROM students_attendance WHERE date = :date AND subject = :subject")
+    fun getLocalDataStudents(date: String, subject: String): Flow<List<Student>>
 
-    @Delete
-    suspend fun deleteLocalData(students: List<Student>)
+    //this function is ti get list of subjects whose attendance is saved locally
+    @Query("SELECT DISTINCT subject, date, batch FROM students_attendance")
+    fun getUniqueRecordsLocalSubjects(): Flow<List<LocalAttendanceRecords>>
 
-    @Query("SELECT * FROM students WHERE date = :date AND subject = :subject")
-    fun getLocalData(date: String, subject: String): Flow<List<Student>>
-
-    @Query("SELECT DISTINCT subject, date, batch FROM students")
-    fun getUniqueRecords(): Flow<List<LocalAttendanceRecords>>
-
-    @Query("DELETE FROM students WHERE date = :date AND subject = :subject AND batch = :batch")
-    suspend fun deleteRecord( subject: String,date: String,batch:String)
+    //this function is to delete record of a particular subject and date 
+    @Query("DELETE FROM students_attendance WHERE date = :date AND subject = :subject AND batch = :batch")
+    suspend fun deleteLocalDataStudents(subject: String, date: String, batch:String)
 
 }

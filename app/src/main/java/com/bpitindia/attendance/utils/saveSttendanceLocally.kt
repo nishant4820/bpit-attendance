@@ -21,7 +21,7 @@ suspend fun saveAttendanceLocally(
     Log.d(LOG_TAG, "saveAttendanceLocally: $dataset")
     coroutineScope.launch(Dispatchers.IO) {
         try {
-            repository.local.attendanceDataDao().insertLocalData(dataset)
+            repository.local.attendanceDataDao().insertLocalDataStudents(dataset)
             withContext(Dispatchers.Main){
                 Toast.makeText(context,"Data saved locally",LENGTH_SHORT).show()
             }

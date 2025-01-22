@@ -2,8 +2,7 @@ package com.bpitindia.attendance.utils
 
 object Constants {
 
-//    const val BASE_URL = "http://api.bpitindia.ac.in/attendance_service/"
-    const val BASE_URL = "http://[2402:3a80:438b:ac1:4318:627:8daf:c86b]:5000/"
+    const val BASE_URL = "http://api.bpitindia.ac.in/attendance_service/"
 
     const val LOG_TAG = "AttendanceLogTag"
     const val BATCH = "batch"

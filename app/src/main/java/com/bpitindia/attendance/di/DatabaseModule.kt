@@ -1,6 +1,5 @@
 package com.bpitindia.attendance.di
 
-import android.app.Application
 import android.content.Context
 import androidx.room.Room
 import com.bpitindia.attendance.data.local.AppDatabase
@@ -14,7 +13,10 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
+
+
 object DatabaseModule {
+
     @Singleton
     @Provides
     fun provideDatabase(@ApplicationContext context: Context):AppDatabase{
@@ -22,7 +24,10 @@ object DatabaseModule {
             context.applicationContext,
             AppDatabase::class.java,
             "attendance_data"
-        ).build()
+        )
+            .fallbackToDestructiveMigration()
+            .build()
+
     }
 
     @Provides
@@ -30,3 +35,6 @@ object DatabaseModule {
         return database.attendanceDataDao()
     }
 }
+
+
+
